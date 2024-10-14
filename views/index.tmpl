@@ -1,12 +1,139 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-    <link rel="stylesheet" href="/assets/style.css">
+    <title>Записи на лабораторные работы</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 8px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        form {
+            margin-top: 20px;
+        }
+        input[type="text"],
+        input[type="datetime-local"],
+        input[type="number"],
+        select {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            box-sizing: border-box;
+        }
+        input[type="submit"] {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            cursor: pointer;
+        }
+    </style>
 </head>
 <body>
-    <H1>HELLO {{.Name}}</H1>
+    <h1>Записи на лабораторные работы</h1>
+
+    <form id="lab-form">
+        <label for="time-start">Время начала:</label>
+        <input type="datetime-local" id="time-start" name="time-start" required><br>
+
+        <label for="audience-number">Номер аудитории:</label>
+        <input type="number" id="audience-number" name="audience-number" required><br>
+
+        <label for="tutor">Преподаватель:</label>
+        <input type="text" id="tutor" name="tutor" required><br>
+
+        <input type="submit" value="Добавить запись">
+    </form>
+
+    <table id="lab-table">
+        <thead>
+            <tr>
+                <th>Время начала</th>
+                <th>Номер аудитории</th>
+                <th>Преподаватель</th>
+                <th>ID студентов</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Здесь будет динамически добавляться информация о записях -->
+        </tbody>
+    </table>
+
+    <script>
+        const labForm = document.getElementById('lab-form');
+        const labTable = document.getElementById('lab-table');
+
+        labForm.addEventListener('submit', (event) => {
+            event.preventDefault();
+
+            // Получение значений из формы
+            const timeStart = document.getElementById('time-start').value;
+            const audienceNumber = parseInt(document.getElementById('audience-number').value);
+            const tutor = document.getElementById('tutor').value;
+            // Отправка данных на бекэнд (например, с помощью fetch API)
+            fetch('/add-record', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    LabTimeStart: timeStart,
+                    AudienceNumber: audienceNumber,
+                    Tutor: tutor,
+                })
+            })
+            .then(response => {
+                // Обработка ответа от бекэнда
+                if (response.ok) {
+                    labForm.reset();
+                    updateLabTable();
+                } else {
+                    console.error('Ошибка отправки данных на бекэнд.');
+                }
+            })
+            .catch(error => {
+                console.error('Ошибка сети:', error);
+            });
+        });
+
+        // Функция для обновления таблицы с данными из бекэнда
+        function updateLabTable() {
+            fetch('/get-records')
+            .then(response => {
+                return response.json();
+            })
+            .then(records => {
+                const tableBody = labTable.querySelector('tbody');
+                tableBody.innerHTML = '';
+
+                records.forEach(record => {
+                    const row = tableBody.insertRow();
+                    row.insertCell().textContent = record.LabTimeStart; // Предполагается, что LabTimeStart будет в формате строки
+                    row.insertCell().textContent = record.AudienceNumber;
+                    row.insertCell().textContent = record.Tutor;
+                    row.insertCell().textContent = record.Student_IDs.join(', ');
+                });
+            })
+            .catch(error => {
+                console.error('Ошибка получения данных из бекэнда:', error);
+            });
+        }
+
+        // Инициализация таблицы
+        updateLabTable();
+    </script>
 </body>
 </html>

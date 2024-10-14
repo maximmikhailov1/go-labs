@@ -4,5 +4,6 @@ import "gorm.io/gorm"
 
 type Lab struct {
 	gorm.Model
-	Lab_number string
+	Subject_name string
+	Lab_number   string
 }
