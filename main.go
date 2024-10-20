@@ -18,5 +18,5 @@ func main() {
 		Views: engine,
 	})
 	routes.SetupRoutes(app)
-	app.Listen(":3000")
+	app.Listen("192.168.0.170:3000")
 }
