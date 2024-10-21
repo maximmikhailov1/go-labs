@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Записи на лабораторные работы</title>
+    <link href="static/style.css" rel="stylesheet" />
+</head>
+<body>
+    <h1>Записи на лабораторные работы</h1>
+
+    <form id="lab-form">
+        <label for="time-start">Время начала:</label>
+        <input type="datetime-local" id="time-start" name="time-start" required><br>
+
+        <label for="audience-number">Номер аудитории:</label>
+        <input type="number" id="audience-number" name="audience-number" required><br>
+
+        <label for="tutor">Преподаватель:</label>
+        <input type="text" id="tutor" name="tutor" required><br>
+
+        <input type="submit" value="Добавить запись">
+    </form>
+
+    <table id="lab-table">
+        <thead>
+            <tr>
+                <th>Время начала</th>
+                <th>Номер аудитории</th>
+                <th>Преподаватель</th>
+                <th>ID студентов</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Здесь будет динамически добавляться информация о записях -->
+        </tbody>
+    </table>
+<script src="static/records.js"></script>
+</body>
+</html>

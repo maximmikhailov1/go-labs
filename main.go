@@ -1,6 +1,9 @@
 package main
 
 import (
+	"fmt"
+	"os"
+
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/template/html/v2"
 	"github.com/maximmikhailov1/go-labs/api/initializers"
@@ -17,6 +20,8 @@ func main() {
 	app := fiber.New(fiber.Config{
 		Views: engine,
 	})
+
 	routes.SetupRoutes(app)
-	app.Listen("192.168.0.170:3000")
+	ip := fmt.Sprintf("%s:%s", os.Getenv("IP_LOCAL"), os.Getenv("PORTLOCAL"))
+	app.Listen(ip)
 }
