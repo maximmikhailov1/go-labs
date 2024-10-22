@@ -23,7 +23,8 @@ func RecordCreate(c *fiber.Ctx) error {
 }
 func RecordsGet(c *fiber.Ctx) error {
 	var records []models.Record
-	result := initializers.DB.Find(&records)
+	//TODO: FIX ORDER
+	result := initializers.DB.Order("lab_time_start ASC").Find(&records)
 	if result.Error != nil {
 		return c.Status(404).JSON(fiber.Map{"status": "error", "message": "No records present", "data": nil})
 	}

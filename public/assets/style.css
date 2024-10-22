@@ -1,14 +1,8 @@
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
-body {
-    font-family: Arial, sans-serif;
-}
+
 table {
-    width: 100%;
-    border-collapse: collapse;
+  width: 95%;
+  margin: 10px;
+  border-collapse: collapse;
 }
 th, td {
     padding: 8px;
@@ -38,38 +32,17 @@ input[type="submit"] {
     border: none;
     cursor: pointer;
 }
-.registration form {
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-}
 
-.registration label {
-    font-weight: bold;  
-}
-
-.registration input,
-.registration select {
-    padding: 8px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-}
-
-.registration button {
-    background-color: #333;
-    color: #fff;
-    padding: 10px 20px;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-}
 body {
+  font-family: Arial, sans-serif;
   background-color: #181818;
   color: #fff;
   font-family: sans-serif;
   margin: 0;
   padding: 0;
   display: flex;
+  flex-wrap: wrap;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
   min-height: 100vh;
@@ -111,7 +84,7 @@ textarea {
 }
 
 button {
-  background-color: #4285f4; /* Голубой цвет */
+  background-color: #fe880b; /*  Красный цвет */
   color: #fff;
   padding: 12px 20px;
   border: none;
@@ -122,5 +95,5 @@ button {
 }
 
 button:hover {
-  background-color: #357aed;
+  background-color: #ff0000;
 }

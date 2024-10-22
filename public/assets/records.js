@@ -1,7 +1,6 @@
 
 const labForm = document.getElementById('lab-form');
 const labTable = document.getElementById('lab-table');
-
 labForm.addEventListener('submit', (event) => {
     event.preventDefault();
 
@@ -34,7 +33,6 @@ labForm.addEventListener('submit', (event) => {
         console.error('Ошибка сети:', error);
     });
 });
-
 // Функция для обновления таблицы с данными из бекэнда
 function updateLabTable() {
     fetch('/get-records')
@@ -47,11 +45,12 @@ function updateLabTable() {
         for (let i = 0; i< records.length; i++){
             const row = tableBody.insertRow();
             record = records[i]
+            recordId = record.ID
             row.insertCell().textContent = record.LabTimeStart; // Предполагается, что LabTimeStart будет в формате строки
             row.insertCell().textContent = record.AudienceNumber;
             row.insertCell().textContent = record.Tutor;
             row.insertCell().textContent = record.Student_IDs;
-            //TODO: ADD DELETE BUTTON
+            row.insertCell().innerHTML=`<input class="button delete"type="submit" id="button${recordId}" value="Удалить">`
         }
         })
     .catch(error => {

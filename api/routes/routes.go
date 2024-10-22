@@ -17,5 +17,5 @@ func SetupRoutes(app *fiber.App) {
 	app.Get("/get-records", controllers.RecordsGet)
 	app.Get("/get-records/dates", controllers.RecordsDatesGet)
 	app.Get("/get-records/times/:date", controllers.RecordsTimesGet)
-	app.Delete("/delete-record/:id")
+	app.Delete("/delete-record/:id", controllers.RecordDelete)
 }
