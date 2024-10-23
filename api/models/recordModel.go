@@ -1,15 +1,15 @@
 package models
 
 import (
-	"time"
-
+	"gorm.io/datatypes"
 	"gorm.io/gorm"
 )
 
 type Record struct {
 	gorm.Model
-	LabTimeStart   time.Time
-	AudienceNumber int
-	Tutor          string
-	Students       []Student `gorm:"foreignKey:StudentID"`
+	LabDate        datatypes.Date //Дата пары
+	ClassNumber    int            //Номер пары
+	AudienceNumber int            // Номер аудитории
+	Tutor          string         // ФИО преподавателя
+	Students       []Student      `gorm:"foreignKey:StudentID"`
 }

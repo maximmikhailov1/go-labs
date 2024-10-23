@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/log"
 	"github.com/maximmikhailov1/go-labs/api/initializers"
 	"github.com/maximmikhailov1/go-labs/api/models"
 )
@@ -12,6 +13,7 @@ import (
 func RecordCreate(c *fiber.Ctx) error {
 	record := new(models.Record)
 	if err := c.BodyParser(record); err != nil {
+		log.Info(err)
 		return err
 	}
 	result := initializers.DB.Create(record)
@@ -24,7 +26,7 @@ func RecordCreate(c *fiber.Ctx) error {
 func RecordsGet(c *fiber.Ctx) error {
 	var records []models.Record
 	//TODO: FIX ORDER
-	result := initializers.DB.Order("lab_time_start ASC").Find(&records)
+	result := initializers.DB.Order("lab_date ASC").Find(&records)
 	if result.Error != nil {
 		return c.Status(404).JSON(fiber.Map{"status": "error", "message": "No records present", "data": nil})
 	}
@@ -40,33 +42,32 @@ func RecordDelete(c *fiber.Ctx) error {
 	return c.Status(http.StatusAccepted).JSON(fiber.Map{"status": "success", "message": "deleted successfully"})
 }
 func RecordsDatesGet(c *fiber.Ctx) error {
-	// Запрос к базе данных
-	var recordsDate []models.Record // или другая модель, хранящая даты
-	initializers.DB.Model(&recordsDate).Distinct().Pluck("LabTimeStart", &recordsDate)
-	// Преобразование дат в строки (формат YYYY-MM-DD)
+	var recordsDate []models.Record
+	initializers.DB.Model(&recordsDate).Distinct().Pluck("lab_date", &recordsDate)
 	dates := make([]string, len(recordsDate))
+
 	for i, record := range recordsDate {
-		dates[i] = record.LabTimeStart.Format("2006-01-02")
+		date, err := record.LabDate.Value()
+		dateA := date.(time.Time)
+		if err != nil {
+			return c.Status(http.StatusBadRequest).JSON(fiber.Map{"status": "error", "message": "Wrong date"})
+		}
+		dates[i] = dateA.Format("2006-01-02")
+
 	}
 
 	return c.JSON(dates)
 }
 
-func RecordsTimesGet(c *fiber.Ctx) error {
+func RecordsClassesGet(c *fiber.Ctx) error {
 	dateStr := c.Params("date")
-	date, err := time.Parse("2006-01-02", dateStr)
-	dateNextDay := date.Add(time.Hour * 24)
-	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "Неверный формат даты"})
-	}
 
 	// Запрос к базе данных для получения времен для выбранной даты
-	var recordTimes []models.Record // или другая модель, хранящая времена
-	initializers.DB.Model(&recordTimes).Where("lab_time_start BETWEEN ? AND ?", date, dateNextDay).Pluck("LabTimeStart", &recordTimes)
-	times := make([]string, len(recordTimes))
-	// Преобразование времен в строки (формат HH:MM)
-	for i, time := range recordTimes {
-		times[i] = time.LabTimeStart.Format("15:04") // 15:04 - формат HH:MM
+	var recordClasses []models.Record // или другая модель, хранящая времена
+	initializers.DB.Model(&recordClasses).Where("lab_date = ?", dateStr).Pluck("class_number", &recordClasses)
+	times := make([]int, len(recordClasses))
+	for i, time := range recordClasses {
+		times[i] = time.ClassNumber
 	}
 
 	return c.JSON(times)

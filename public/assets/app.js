@@ -1,5 +1,5 @@
-const dateSelect = document.getElementById('date');
-const timeSelect = document.getElementById('time-start');
+const dateSelect = document.getElementById('lab-date');
+const timeSelect = document.getElementById('class-number');
 
 // Функция для получения дат с сервера
 async function getDates() {
@@ -7,7 +7,6 @@ async function getDates() {
     const response = await fetch('/get-records/dates');
     const dates = await response.json();
 
-    dateSelect.innerHTML = '';
     dates.forEach(date => {
       const option = document.createElement('option');
       option.value = date;

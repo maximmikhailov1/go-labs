@@ -16,7 +16,7 @@ form {
     margin-top: 20px;
 }
 input[type="text"],
-input[type="datetime-local"],
+input[type="date"],
 input[type="number"],
 select {
     width: 100%;

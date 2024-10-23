@@ -5,9 +5,13 @@ labForm.addEventListener('submit', (event) => {
     event.preventDefault();
 
     // Получение значений из формы
-    const timeStart = document.getElementById('time-start').value;
+
+    const labDate = document.getElementById('lab-date').value;
+    const labDateToBack = new Date(labDate)
+    const classNumber = parseInt(document.getElementById('class-number').value)
     const audienceNumber = parseInt(document.getElementById('audience-number').value);
     const tutor = document.getElementById('tutor').value;
+    console.log(labDate,classNumber,audienceNumber,tutor)
     // Отправка данных на бекэнд (например, с помощью fetch API)
     fetch('/add-record', {
         method: 'POST',
@@ -15,7 +19,8 @@ labForm.addEventListener('submit', (event) => {
             'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-            LabTimeStart: timeStart,
+            LabDate: labDateToBack,
+            ClassNumber : classNumber,
             AudienceNumber: audienceNumber,
             Tutor: tutor,
         })
@@ -46,17 +51,31 @@ function updateLabTable() {
             const row = tableBody.insertRow();
             record = records[i]
             recordId = record.ID
-            row.insertCell().textContent = record.LabTimeStart; // Предполагается, что LabTimeStart будет в формате строки
+            const LabDateUnFormatted = new Date(record.LabDate);
+            const LabDateFormatted = new Intl.DateTimeFormat(['ban', 'id']).format(LabDateUnFormatted);
+            console.log(LabDateFormatted);
+            row.insertCell().textContent = LabDateFormatted;
+            row.insertCell().textContent = record.ClassNumber;
             row.insertCell().textContent = record.AudienceNumber;
             row.insertCell().textContent = record.Tutor;
             row.insertCell().textContent = record.Student_IDs;
-            row.insertCell().innerHTML=`<input class="button delete"type="submit" id="button${recordId}" value="Удалить">`
+            row.insertCell().innerHTML=`<input class="button delete" type="button" id="button${recordId}" value="Удалить" onclick="deleteRow(this,${recordId})">`
         }
         })
     .catch(error => {
         console.error('Ошибка получения данных из бекэнда:', error);
     });
 }
-
+// Функция для удаления строки в таблице
+function deleteRow(obj, id){
+    var row = obj.parentNode.parentNode;
+    row.parentNode.removeChild(row)
+    fetch(`/delete-record/${id}`, {
+        method: 'DELETE',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+    })
+}
 // Инициализация таблицы
 updateLabTable();
