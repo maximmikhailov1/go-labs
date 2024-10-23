@@ -13,9 +13,9 @@ func SetupRoutes(app *fiber.App) {
 	app.Get("/records", func(c *fiber.Ctx) error {
 		return c.Render("records", fiber.Map{})
 	})
-	app.Post("/add-record", controllers.RecordCreate)
-	app.Get("/get-records", controllers.RecordsGet)
-	app.Get("/get-records/dates", controllers.RecordsDatesGet)
-	app.Get("/get-records/times/:date", controllers.RecordsClassesGet)
-	app.Delete("/delete-record/:id", controllers.RecordDelete)
+	app.Post("/records", controllers.RecordCreate)
+	app.Get("/records", controllers.RecordsGet)
+	app.Get("/records/dates", controllers.RecordsDatesGet)
+	app.Get("/records/times/:date", controllers.RecordsClassesGet)
+	app.Delete("/records/:id", controllers.RecordDelete)
 }
