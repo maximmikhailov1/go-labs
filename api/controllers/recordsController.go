@@ -25,7 +25,7 @@ func RecordCreate(c *fiber.Ctx) error {
 }
 func RecordsGet(c *fiber.Ctx) error {
 	var records []models.Record
-	//TODO: FIX ORDER
+
 	result := initializers.DB.Order("lab_date ASC").Find(&records)
 	if result.Error != nil {
 		return c.Status(404).JSON(fiber.Map{"status": "error", "message": "No records present", "data": nil})
@@ -33,7 +33,7 @@ func RecordsGet(c *fiber.Ctx) error {
 	return c.Status(http.StatusAccepted).JSON(records)
 }
 func RecordDelete(c *fiber.Ctx) error {
-	//TODO: TEST DELETE
+
 	id := c.Params("id")
 	result := initializers.DB.Delete(&models.Record{}, id)
 	if result.Error != nil {
