@@ -13,7 +13,7 @@ th, td {
     border-bottom: 1px solid #ddd;
 }
 th {
-    background-color: #f2f2f2;
+    background-color: #4CAF50;
 }
 form {
     margin-top: 20px;
@@ -34,6 +34,19 @@ input[type="submit"] {
     padding: 10px 20px;
     border: none;
     cursor: pointer;
+}
+.button.delete {
+  background-color: #fe880b; /*  Красный цвет */
+  color: #fff;
+  padding: 12px 20px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: background-color 0.3s ease;
+}
+.button.delete:hover{
+  background-color: #ff0000;
 }
 
 body {
@@ -83,19 +96,4 @@ textarea {
 textarea {
   height: 100px;
   resize: vertical;
-}
-
-button {
-  background-color: #fe880b; /*  Красный цвет */
-  color: #fff;
-  padding: 12px 20px;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-  font-size: 16px;
-  transition: background-color 0.3s ease;
-}
-
-button:hover {
-  background-color: #ff0000;
 }

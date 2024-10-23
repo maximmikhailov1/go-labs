@@ -4,9 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Записи на лабораторные работы</title>
-    <link href="static/style.css" rel="stylesheet" />
+    <link rel="stylesheet" href="static/styleRecords.css"/>
+    <link rel="stylesheet" href="static/styleNav.css" />
 </head>
 <body>
+    {{template "partials/nav" .}}
     <h1>Записи на лабораторные работы</h1>
 
     <form id="lab-form">
@@ -31,7 +33,7 @@
                 <th>Номер пары</th>
                 <th>Номер аудитории</th>
                 <th>Преподаватель</th>
-                <th>ID студентов</th>
+                <th>Подробнее</th>
                 <th>Удаление</th>
             </tr>
         </thead>

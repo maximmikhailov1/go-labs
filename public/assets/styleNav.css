@@ -1,0 +1,31 @@
+.navbar {
+    position: fixed; /* Fixes the navbar at the top */
+    top: 0; /* Aligns it to the top */
+    left: 0; /* Aligns it to the left */
+    z-index: 9999; /* Ensures it stays above other content */
+    width: 100%; /* Full width */
+    height: 50px; /* Height of the navbar */
+    background-color: #4CAF50; /* Green background */
+}
+
+.nav-links {
+    list-style-type: none; /* Remove bullet points */
+    margin: 0;
+    padding: 0;
+}
+
+.nav-links li {
+    float: left; /* Align items horizontally */ 
+}
+
+.nav-links li a {
+    display: block;
+    color: white; /* White text */
+    text-align: center;
+    padding: 14px 16px; /* Padding around links */
+    text-decoration: none; /* Remove underline */
+}
+
+.nav-links li a:hover {
+    background-color: #45a049; /* Darker green on hover */
+}

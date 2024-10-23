@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"fmt"
 	"net/http"
 	"time"
 
@@ -26,33 +27,73 @@ func RecordCreate(c *fiber.Ctx) error {
 func RecordsGet(c *fiber.Ctx) error {
 	var records []models.Record
 
-	result := initializers.DB.Order("lab_date ASC").Find(&records)
+	result := initializers.DB.Order("lab_date ASC").
+		Order("class_number ASC").
+		Find(&records)
 	if result.Error != nil {
-		return c.Status(404).JSON(fiber.Map{"status": "error", "message": "No records present", "data": nil})
+		return c.Status(404).JSON(
+			fiber.Map{
+				"status":  "error",
+				"message": "No records present",
+				"data":    nil,
+			})
 	}
 	return c.Status(http.StatusAccepted).JSON(records)
+}
+func RecordIndexRedirect(c *fiber.Ctx) error {
+	id := c.Params("id")
+	url := fmt.Sprintf("/records/%s", id)
+	return c.Redirect(url)
+}
+func RecordIndex(c *fiber.Ctx) error {
+	id := c.Params("id")
+	var record = &models.Record{}
+	result := initializers.DB.First(record, id)
+	if result.Error != nil {
+		return c.Status(404).JSON(
+			fiber.Map{
+				"status":  "error",
+				"message": "No record present",
+				"data":    nil,
+			})
+	}
+	return c.Status(http.StatusAccepted).JSON(record)
 }
 func RecordDelete(c *fiber.Ctx) error {
 
 	id := c.Params("id")
 	result := initializers.DB.Delete(&models.Record{}, id)
 	if result.Error != nil {
-		return c.Status(http.StatusBadRequest).JSON(fiber.Map{"status": "error", "message": "No record with given id"})
+		return c.Status(http.StatusBadRequest).JSON(
+			fiber.Map{
+				"status":  "error",
+				"message": "No record with given id",
+			})
 	}
-	return c.Status(http.StatusAccepted).JSON(fiber.Map{"status": "success", "message": "deleted successfully"})
+	return c.Status(http.StatusAccepted).JSON(
+		fiber.Map{
+			"status":  "success",
+			"message": "deleted successfully",
+		})
 }
 func RecordsDatesGet(c *fiber.Ctx) error {
 	var recordsDate []models.Record
-	initializers.DB.Model(&recordsDate).Distinct().Pluck("lab_date", &recordsDate)
+	initializers.DB.Model(&recordsDate).
+		Distinct().
+		Pluck("lab_date", &recordsDate)
 	dates := make([]string, len(recordsDate))
 
 	for i, record := range recordsDate {
 		date, err := record.LabDate.Value()
-		dateA := date.(time.Time)
+		dateT := date.(time.Time)
 		if err != nil {
-			return c.Status(http.StatusBadRequest).JSON(fiber.Map{"status": "error", "message": "Wrong date"})
+			return c.Status(http.StatusBadRequest).JSON(
+				fiber.Map{
+					"status":  "error",
+					"message": "Wrong date",
+				})
 		}
-		dates[i] = dateA.Format("2006-01-02")
+		dates[i] = dateT.Format("2006-01-02")
 
 	}
 
@@ -64,7 +105,10 @@ func RecordsClassesGet(c *fiber.Ctx) error {
 
 	// Запрос к базе данных для получения времен для выбранной даты
 	var recordClasses []models.Record // или другая модель, хранящая времена
-	initializers.DB.Model(&recordClasses).Where("lab_date = ?", dateStr).Order("class_number ASC").Pluck("class_number", &recordClasses)
+	initializers.DB.Model(&recordClasses).
+		Where("lab_date = ?", dateStr).
+		Order("class_number ASC").
+		Pluck("class_number", &recordClasses)
 	times := make([]int, len(recordClasses))
 	for i, time := range recordClasses {
 		times[i] = time.ClassNumber

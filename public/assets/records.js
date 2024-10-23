@@ -49,15 +49,14 @@ function updateLabTable() {
         for (let i = 0; i< records.length; i++){
             const row = tableBody.insertRow();
             record = records[i]
-            recordId = record.ID
             const LabDateUnFormatted = new Date(record.LabDate);
             const LabDateFormatted = new Intl.DateTimeFormat(['ban', 'id']).format(LabDateUnFormatted);
             row.insertCell().textContent = LabDateFormatted;
             row.insertCell().textContent = record.ClassNumber;
             row.insertCell().textContent = record.AudienceNumber;
             row.insertCell().textContent = record.Tutor;
-            row.insertCell().textContent = record.Student_IDs;
-            row.insertCell().innerHTML=`<input class="button delete" type="button" id="button${recordId}" value="Удалить" onclick="deleteRow(this,${recordId})">`
+            row.insertCell().innerHTML = `<input class="button more" type="button" id="button${record.ID}" value="Подробнее" onclick="recordMore(${record.ID})">`
+            row.insertCell().innerHTML = `<input class="button delete" type="button" id="button${record.ID}" value="Удалить" onclick="recordDelete(this,${record.ID})">`
         }
         })
     .catch(error => {
@@ -65,7 +64,7 @@ function updateLabTable() {
     });
 }
 // Функция для удаления строки в таблице
-function deleteRow(obj, id){
+function recordDelete(obj, id){
     var row = obj.parentNode.parentNode;
     row.parentNode.removeChild(row)
     fetch(`api/records/${id}`, {
@@ -74,6 +73,10 @@ function deleteRow(obj, id){
             'Content-Type': 'application/json'
         },
     })
+}
+// Функция для отображения подробной информации о записи
+function recordMore(id){
+    window.location.href=`/records/${record.ID}`
 }
 // Инициализация таблицы
 updateLabTable();
