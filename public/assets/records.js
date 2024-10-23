@@ -13,7 +13,7 @@ labForm.addEventListener('submit', (event) => {
     const tutor = document.getElementById('tutor').value;
     console.log(labDate,classNumber,audienceNumber,tutor)
     // Отправка данных на бекэнд (например, с помощью fetch API)
-    fetch('/add-record', {
+    fetch('api/records', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
@@ -40,7 +40,7 @@ labForm.addEventListener('submit', (event) => {
 });
 // Функция для обновления таблицы с данными из бекэнда
 function updateLabTable() {
-    fetch('/get-records')
+    fetch('api/records')
     .then(response => {
         return response.json();
     })
@@ -70,7 +70,7 @@ function updateLabTable() {
 function deleteRow(obj, id){
     var row = obj.parentNode.parentNode;
     row.parentNode.removeChild(row)
-    fetch(`/delete-record/${id}`, {
+    fetch(`api/records/${id}`, {
         method: 'DELETE',
         headers: {
             'Content-Type': 'application/json'

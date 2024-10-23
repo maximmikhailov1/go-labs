@@ -4,7 +4,7 @@ const timeSelect = document.getElementById('class-number');
 // Функция для получения дат с сервера
 async function getDates() {
   try {
-    const response = await fetch('/get-records/dates');
+    const response = await fetch('api/records/dates');
     const dates = await response.json();
 
     dates.forEach(date => {
@@ -21,7 +21,7 @@ async function getDates() {
 // Функция для получения времен для выбранной даты
 async function getTimes(date) {
   try {
-    const response = await fetch(`/get-records/times/${date}`);
+    const response = await fetch(`api/records/times/${date}`);
     const times = await response.json();
 
     timeSelect.innerHTML = '';
