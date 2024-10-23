@@ -28,7 +28,6 @@ labForm.addEventListener('submit', (event) => {
     .then(response => {
         // Обработка ответа от бекэнда
         if (response.ok) {
-            labForm.reset();
             updateLabTable();
         } else {
             console.error('Ошибка отправки данных на бекэнд.');
@@ -53,7 +52,6 @@ function updateLabTable() {
             recordId = record.ID
             const LabDateUnFormatted = new Date(record.LabDate);
             const LabDateFormatted = new Intl.DateTimeFormat(['ban', 'id']).format(LabDateUnFormatted);
-            console.log(LabDateFormatted);
             row.insertCell().textContent = LabDateFormatted;
             row.insertCell().textContent = record.ClassNumber;
             row.insertCell().textContent = record.AudienceNumber;

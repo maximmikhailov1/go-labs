@@ -64,7 +64,7 @@ func RecordsClassesGet(c *fiber.Ctx) error {
 
 	// Запрос к базе данных для получения времен для выбранной даты
 	var recordClasses []models.Record // или другая модель, хранящая времена
-	initializers.DB.Model(&recordClasses).Where("lab_date = ?", dateStr).Pluck("class_number", &recordClasses)
+	initializers.DB.Model(&recordClasses).Where("lab_date = ?", dateStr).Order("class_number ASC").Pluck("class_number", &recordClasses)
 	times := make([]int, len(recordClasses))
 	for i, time := range recordClasses {
 		times[i] = time.ClassNumber

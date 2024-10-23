@@ -1,8 +1,11 @@
 
 table {
+  display: table;
   width: 95%;
   margin: 10px;
   border-collapse: collapse;
+  height: 20px;
+  overflow-y: auto;
 }
 th, td {
     padding: 8px;
@@ -55,7 +58,6 @@ body {
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
   width: 400px;
 }
-
 .form-group {
   margin-bottom: 20px;
 }
