@@ -1,6 +1,11 @@
 const dateSelect = document.getElementById('lab-date');
 const timeSelect = document.getElementById('class-number');
-
+const registrationForm = document.getElementById('registration-form')
+registrationForm.addEventListener('submit',(event)=>{
+  event.preventDefault()
+  console.log()  
+}
+)
 // Функция для получения дат с сервера
 async function getDates() {
   try {

@@ -10,7 +10,7 @@
 <body>
 {{template "partials/nav" .}}
   <main>
-    <section class="registration-form">
+    <section id="registration-form" class="registration-form">
       <div class="form-group">
         <label for="discipline">Дисциплина:</label>
         <select id="discipline" name="discipline">
@@ -35,6 +35,18 @@
         <select id="class-number" name="class-number">
           <option value="class-number">Пара:</option>
         </select>
+      </div>
+      <div class="form-group">
+        <label for="student-surname">Фамилия:</label>
+        <input type="text" class="student-surname" />
+      </div>
+      <div class="form-group">
+        <label for="student-name">Имя:</label>
+        <input type="text" class="student-name" />
+      </div>
+      <div class="form-group">
+        <label for="student-group">Группа:</label>
+        <input type="text" class="student-group" />
       </div>
       <!-- <div class="form-group">
         <label for="learning-center">Учебный центр:</label>

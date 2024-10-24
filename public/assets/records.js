@@ -13,7 +13,7 @@ labForm.addEventListener('submit', (event) => {
     const tutor = document.getElementById('tutor').value;
     console.log(labDate,classNumber,audienceNumber,tutor)
     // Отправка данных на бекэнд (например, с помощью fetch API)
-    fetch('api/records', {
+    fetch('../api/records', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
@@ -76,7 +76,7 @@ function recordDelete(obj, id){
 }
 // Функция для отображения подробной информации о записи
 function recordMore(id){
-    window.location.href=`/records/${record.ID}`
+    window.location.href=`../records/${record.ID}`
 }
 // Инициализация таблицы
 updateLabTable();

@@ -38,6 +38,7 @@ textarea {
   background-color: #383838;
   color: #fff;
   font-size: 16px;
+  box-sizing: border-box;
 }
 
 textarea {

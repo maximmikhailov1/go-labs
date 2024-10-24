@@ -43,7 +43,7 @@ func RecordsGet(c *fiber.Ctx) error {
 func RecordIndexRedirect(c *fiber.Ctx) error {
 	id := c.Params("id")
 	url := fmt.Sprintf("/records/%s", id)
-	return c.Redirect(url)
+	return c.Redirect(url, 302)
 }
 func RecordIndex(c *fiber.Ctx) error {
 	id := c.Params("id")
