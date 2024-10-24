@@ -1,12 +1,31 @@
 const dateSelect = document.getElementById('lab-date');
+const labSelect = document.getElementById('lab-number');
 const timeSelect = document.getElementById('class-number');
 const registrationForm = document.getElementById('registration-form')
+
+
 registrationForm.addEventListener('submit',(event)=>{
   event.preventDefault()
-  console.log()  
+  console.log("zzz")  
 }
+
 )
 // Функция для получения дат с сервера
+async function getLabs() {
+  try {
+    const response = await fetch('../api/labs/numbers');
+    const labNumbers = await response.json();
+
+    labNumbers.forEach(labNumber => {
+      const option = document.createElement('option');
+      option.value = labNumber;
+      option.text = labNumber;
+      labSelect.appendChild(option);
+    });
+  } catch (error) {
+    console.error('Ошибка при получении лаб:', error);
+  }
+}
 async function getDates() {
   try {
     const response = await fetch('../api/records/dates/');
@@ -49,3 +68,4 @@ dateSelect.addEventListener('change', () => {
 
 // Вызов функции при загрузке страницы
 getDates();
+getLabs();

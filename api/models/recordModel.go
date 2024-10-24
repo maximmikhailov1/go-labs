@@ -11,5 +11,5 @@ type Record struct {
 	ClassNumber    int            //Номер пары
 	AudienceNumber int            // Номер аудитории
 	Tutor          string         // ФИО преподавателя
-	Students       []Student      `gorm:"foreignKey:StudentID"`
+	Students       []Student      `gorm:"foreignKey:ID"`
 }

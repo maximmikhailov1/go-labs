@@ -39,7 +39,7 @@ labForm.addEventListener('submit', (event) => {
 });
 // Функция для обновления таблицы с данными из бекэнда
 function updateLabTable() {
-    fetch('api/records')
+    fetch('../api/records')
     .then(response => {
         return response.json();
     })
@@ -67,7 +67,7 @@ function updateLabTable() {
 function recordDelete(obj, id){
     var row = obj.parentNode.parentNode;
     row.parentNode.removeChild(row)
-    fetch(`api/records/${id}`, {
+    fetch(`api/labs/${id}`, {
         method: 'DELETE',
         headers: {
             'Content-Type': 'application/json'

@@ -4,13 +4,13 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Запись на лабораторные работы</title>
-  <link rel="stylesheet" href="/static/styleIndex.css" />
-  <link rel="stylesheet" href="/static/styleNav.css" />
+  <link rel="stylesheet" href="../static/css/styleIndex.css" />
+  <link rel="stylesheet" href="../static/css/styleNav.css" />
 </head>
 <body>
 {{template "partials/nav" .}}
   <main>
-    <section id="registration-form" class="registration-form">
+    <form id="registration-form" class="registration-form">
       <div class="form-group">
         <label for="discipline">Дисциплина:</label>
         <select id="discipline" name="discipline">
@@ -19,10 +19,10 @@
           </select>
       </div>
       <div class="form-group">
-        <label for="lab-work">Лабораторная работа:</label>
-        <select id="lab-work" name="lab-work">
-          <option value="1.10.2">1.10.2</option>
-          </select>
+        <label for="lab-number">Лабораторная работа:</label>
+        <select id="lab-number" name="lab-number">
+          <option value="lab-number">Лабораторная работа</option>
+        </select>
       </div>
       <div class="form-group">
         <label for="lab-date">Дата:</label>
@@ -38,15 +38,15 @@
       </div>
       <div class="form-group">
         <label for="student-surname">Фамилия:</label>
-        <input type="text" class="student-surname" />
+        <input type="text" id="student-surname" />
       </div>
       <div class="form-group">
         <label for="student-name">Имя:</label>
-        <input type="text" class="student-name" />
+        <input type="text" id="student-name" />
       </div>
       <div class="form-group">
         <label for="student-group">Группа:</label>
-        <input type="text" class="student-group" />
+        <input type="text" id="student-group" />
       </div>
       <!-- <div class="form-group">
         <label for="learning-center">Учебный центр:</label>
@@ -65,8 +65,8 @@
         <textarea id="description" name="description"></textarea>
       </div>
       <button type="submit">Записаться</button>
-    </section>
+    </form>
   </main>
-  <script src="/static/app.js"></script>
+  <script src="../static/js/app.js"></script>
 </body>
 </html>
