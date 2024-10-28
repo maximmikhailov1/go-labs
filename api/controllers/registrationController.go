@@ -37,7 +37,7 @@ func Register(c *fiber.Ctx) error {
 	student := models.Student{}
 	lab := models.Lab{}
 	record := models.Record{}
-
+	//tut delayu
 	result := initializers.DB.Model(&models.Student{}).Preload("LabsAppointed").Where("second_name = ? AND first_name = ?", data.StudentSurname, data.StudentName).
 		First(&student)
 	if result.Error != nil {
