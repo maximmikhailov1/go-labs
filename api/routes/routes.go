@@ -35,4 +35,6 @@ func SetupRoutes(app *fiber.App) {
 	app.Get("/api/labs", controllers.LabsGet)
 	app.Delete("/api/labs/:id", controllers.LabDelete)
 	app.Get("/api/labs/numbers", controllers.LabsNumbersGet)
+	//REGISTRATION
+	app.Post("/api/registration", controllers.Register)
 }

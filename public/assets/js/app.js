@@ -6,7 +6,43 @@ const registrationForm = document.getElementById('registration-form')
 
 registrationForm.addEventListener('submit',(event)=>{
   event.preventDefault()
-  console.log("zzz")  
+  console.log("zzz") 
+  const discipline = document.getElementById("discipline").value
+  const labNumber = document.getElementById("lab-number").value
+  const labDate = new Date(document.getElementById("lab-date").value)
+  const classNumber = parseInt(document.getElementById("class-number").value)
+  const studentSurname = document.getElementById("student-surname").value
+  const studentName = document.getElementById("student-name").value
+  const studentGroup = document.getElementById("student-group").value
+  const description = document.getElementById("description").value
+
+  fetch('../api/registration', {
+    method: 'POST',
+    headers: {
+        'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+        Discipline: discipline,
+        LabNumber : labNumber,
+        LabDate: labDate,
+        ClassNumber: classNumber,
+        StudentSurname: studentSurname,
+        StudentName: studentName,
+        StudentGroup: studentGroup,
+        Description: description
+    })
+  })
+  .then(response => {
+      // Обработка ответа от бекэнда
+      if (response.ok) {
+          console.log(response.json)
+      } else {
+          console.error('Ошибка отправки данных на бекэнд.');
+      }
+  })
+  .catch(error => {
+      console.error('Ошибка сети:', error);
+  }); 
 }
 
 )
