@@ -47,8 +47,8 @@ func RecordIndexRedirect(c *fiber.Ctx) error {
 }
 func RecordIndex(c *fiber.Ctx) error {
 	id := c.Params("id")
-	var record = &models.Record{}
-	result := initializers.DB.First(record, id)
+	var record = models.Record{}
+	result := initializers.DB.First(&record, id)
 	if result.Error != nil {
 		return c.Status(404).JSON(
 			fiber.Map{

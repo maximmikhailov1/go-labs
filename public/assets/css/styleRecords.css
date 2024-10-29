@@ -97,3 +97,33 @@ textarea {
   height: 100px;
   resize: vertical;
 }
+
+.record-details {
+  padding: 20px;
+  background-color: #282828;
+  border-radius: 10px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  width: 80%;
+  margin: 0 auto;
+}
+
+.record-info {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+.info-item {
+  flex: 1;
+}
+
+.info-item label {
+  display: block;
+  font-weight: bold;
+  margin-bottom: 5px;
+}
+
+.info-item span {
+  display: block;
+  font-size: 16px;
+}

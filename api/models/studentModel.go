@@ -6,6 +6,5 @@ type Student struct {
 	Second_name   string
 	Patronymic    string
 	Group         string
-	LabsAppointed []Lab `gorm:"many2many:student_labs;foreignKey:Refer"`
-	Refer         uint  `gorm:"index:,unique"`
+	LabsAppointed []Lab `gorm:"many2many:student_labs"`
 }

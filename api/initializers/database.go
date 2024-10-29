@@ -17,6 +17,7 @@ func ConnectToDB() {
 		TranslateError:         true,
 		SkipDefaultTransaction: false, //Speeds up operations if set to true, but doesnt write an operation in log
 	})
+	DB.Session(&gorm.Session{FullSaveAssociations: true})
 	if err != nil {
 		log.Fatal("Failed to connect to database")
 	}

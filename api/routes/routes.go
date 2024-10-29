@@ -28,7 +28,7 @@ func SetupRoutes(app *fiber.App) {
 	app.Get("/api/records", controllers.RecordsGet)
 	app.Get("/api/records/dates", controllers.RecordsDatesGet)
 	app.Get("/api/records/times/:date", controllers.RecordsClassesGet)
-	app.Get("/api/records/:id", controllers.RecordIndexRedirect)
+	app.Get("/api/records/:id", controllers.RecordIndex)
 	app.Delete("/api/records/:id", controllers.RecordDelete)
 	//LABS
 	app.Post("/api/labs", controllers.LabCreate)

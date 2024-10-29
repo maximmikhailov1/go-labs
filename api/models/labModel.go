@@ -9,5 +9,4 @@ type Lab struct {
 	Description      string
 	RoutersRequired  int
 	SwitchesRequired int
-	StudentRefer     uint `gorm:"index:,unique"`
 }
