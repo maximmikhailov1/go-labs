@@ -2,6 +2,7 @@ package routes
 
 import (
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/monitor"
 	"github.com/maximmikhailov1/go-labs/api/controllers"
 )
 
@@ -23,6 +24,7 @@ func SetupRoutes(app *fiber.App) {
 	})
 
 	//API Routes
+	app.Get("/metrics", monitor.New()) //default fiber metrics
 	//RECORDS
 	app.Post("/api/records", controllers.RecordCreate)
 	app.Get("/api/records", controllers.RecordsGet)
