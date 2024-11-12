@@ -67,7 +67,7 @@ function updateLabTable() {
 function recordDelete(obj, id){
     var row = obj.parentNode.parentNode;
     row.parentNode.removeChild(row)
-    fetch(`api/labs/${id}`, {
+    fetch(`api/records/${id}`, {
         method: 'DELETE',
         headers: {
             'Content-Type': 'application/json'
