@@ -21,7 +21,7 @@ type Form struct {
 	Description    string
 }
 
-func Register(c *fiber.Ctx) error {
+func RegisterAppointment(c *fiber.Ctx) error {
 	data := new(Form)
 	if err := c.BodyParser(data); err != nil {
 		log.Info(err, '\n')

@@ -15,14 +15,19 @@
 }
 
 .nav-links li {
-    float: left; /* Align items horizontally */ 
-}
-
-.nav-links li a {
     display: block;
     color: white; /* White text */
     text-align: center;
-    padding: 14px 16px; /* Padding around links */
+    padding: 14px 16px; 
+    float: left; /* Align items horizontally */ 
+}
+.nav-links > li:last-child{
+    right:0;
+    position: absolute;
+}
+
+.nav-links li a {
+    color: white; /* Padding around links */
     text-decoration: none; /* Remove underline */
 }
 
