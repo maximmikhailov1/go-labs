@@ -22,8 +22,8 @@ registerSwitch.addEventListener('click', () => {
 loginForm.addEventListener('submit', async (event) => {
   event.preventDefault();
 
-  const username = document.getElementById('username').value;
-  const password = document.getElementById('password').value;
+  const username = document.getElementById('lusername').value;
+  const password = document.getElementById('lpassword').value;
 
   try {
     const response = await fetch('/api/login', {
@@ -50,8 +50,8 @@ loginForm.addEventListener('submit', async (event) => {
 registerForm.addEventListener('submit', async (event) => {
   event.preventDefault();
 
-  const username = document.getElementById('username').value;
-  const password = document.getElementById('password').value;
+  const username = document.getElementById('susername').value;
+  const password = document.getElementById('spassword').value;
 
   try {
     const response = await fetch('/api/register', {

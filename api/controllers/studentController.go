@@ -1,6 +1,8 @@
 package controllers
 
 import (
+	"net/http"
+
 	"github.com/gofiber/fiber/v2"
 	"github.com/maximmikhailov1/go-labs/api/initializers"
 	"github.com/maximmikhailov1/go-labs/api/models"
@@ -8,11 +10,16 @@ import (
 
 func StudentGetRecords(c *fiber.Ctx) error {
 	id := c.Params("id")
-	record := models.Record{}
+	records := []models.Record{}
 	student := models.Student{}
-	initializers.DB.First(&student, id).Association("Record").Find(&record)
+	res := initializers.DB.First(&student, id)
+	if res.Error != nil {
+		return c.Status(http.StatusBadRequest).JSON(fiber.Map{"message": "no such student"})
+	}
+	initializers.DB.Model(&student).Association("Records").Find(&records)
 
+	// return c.Status(http.StatusAccepted).JSON(fiber.Map{"records": records})
 	return c.Render("studentInfo", fiber.Map{
-		"records": record,
+		"Records": records,
 	})
 }

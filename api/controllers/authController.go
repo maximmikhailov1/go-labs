@@ -3,6 +3,7 @@ package controllers
 import (
 	"net/http"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -39,10 +40,9 @@ func SingIn(c *fiber.Ctx) error {
 				"message": "invalid username or password",
 			})
 	}
-
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"subcriber":  student.ID,
-		"expiration": time.Now().Add(time.Hour * 24 * 30).Unix(),
+		"sub": strconv.Itoa(int(student.ID)),
+		"exp": time.Now().Add(time.Hour * 24 * 30).Unix(),
 	})
 	tokenString, err := token.SignedString([]byte(os.Getenv("SECRET")))
 	if err != nil {

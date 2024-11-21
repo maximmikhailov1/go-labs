@@ -47,19 +47,24 @@ func RecordIndexRedirect(c *fiber.Ctx) error {
 }
 func RecordIndex(c *fiber.Ctx) error {
 	id := c.Params("id")
-	var record = models.Record{}
-	// var students []models.Student
-	// Association("Students").Find(&students)
+	var record models.Record
+	var students []models.Student
+
 	result := initializers.DB.First(&record, id)
-	if result != nil {
+	if result.Error != nil {
 		return c.Status(404).JSON(
 			fiber.Map{
 				"status":  "error",
 				"message": "No record present",
 				"data":    nil,
+				"err":     result.Error,
 			})
 	}
-	return c.Status(http.StatusAccepted).JSON(record)
+
+	//Находим студентов в этой записи
+	initializers.DB.Model(&record).Association("Students").Find(&students)
+
+	return c.Status(http.StatusAccepted).JSON(fiber.Map{"Students": students, "Record": record})
 }
 func RecordRender(c *fiber.Ctx) error {
 	id := c.Params("id")
@@ -92,7 +97,6 @@ func RecordRender(c *fiber.Ctx) error {
 		"LabDate":     date,
 		"ClassNumber": record.ClassNumber,
 		"Tutor":       record.Tutor,
-		// "students": students,
 	})
 }
 func RecordDelete(c *fiber.Ctx) error {

@@ -9,4 +9,5 @@ type Lab struct {
 	Description      string
 	RoutersRequired  int
 	SwitchesRequired int
+	Students         *[]Student `gorm:"many2many:student_labs"`
 }

@@ -7,6 +7,7 @@ import (
 	"github.com/gofiber/fiber/v2/log"
 	"github.com/maximmikhailov1/go-labs/api/initializers"
 	"github.com/maximmikhailov1/go-labs/api/models"
+	"github.com/maximmikhailov1/go-labs/api/utils"
 	"gorm.io/datatypes"
 )
 
@@ -82,6 +83,9 @@ func RegisterAppointment(c *fiber.Ctx) error {
 			"true_error": ferr,
 		})
 	}
+	//
+
+	//
 	var students []models.Student
 	err = initializers.DB.Model(&models.Student{}).Preload("Records").Find(&students).Error
 	if err != nil {
@@ -91,8 +95,20 @@ func RegisterAppointment(c *fiber.Ctx) error {
 			"true_error": ferr,
 		})
 	}
+	var id int = 0
+	jwtToken := c.Cookies("auth")
+	if jwtToken != "" {
+		id, err = utils.ParseJWT(jwtToken)
+		if err != nil {
+			return c.Status(http.StatusBadRequest).JSON(fiber.Map{
+				"err": err.Error(),
+			})
+		}
+	}
+
 	return c.Status(http.StatusAccepted).JSON(fiber.Map{
 		"data":     record,
 		"students": students,
+		"id":       id,
 	})
 }
