@@ -48,8 +48,10 @@ func RecordIndexRedirect(c *fiber.Ctx) error {
 func RecordIndex(c *fiber.Ctx) error {
 	id := c.Params("id")
 	var record = models.Record{}
+	// var students []models.Student
+	// Association("Students").Find(&students)
 	result := initializers.DB.First(&record, id)
-	if result.Error != nil {
+	if result != nil {
 		return c.Status(404).JSON(
 			fiber.Map{
 				"status":  "error",
@@ -58,6 +60,40 @@ func RecordIndex(c *fiber.Ctx) error {
 			})
 	}
 	return c.Status(http.StatusAccepted).JSON(record)
+}
+func RecordRender(c *fiber.Ctx) error {
+	id := c.Params("id")
+	var record models.Record
+	// var students []models.Student
+	result := initializers.DB.Model(&record).First(&record, id)
+	if result.Error != nil {
+		return c.Status(http.StatusNotFound).JSON(
+			fiber.Map{
+				"status":   "error",
+				"message":  "No record present",
+				"data":     nil,
+				"true:err": result.Error,
+			})
+	}
+	date, err := record.LabDate.Value()
+
+	if err != nil {
+		return c.Status(http.StatusBadRequest).JSON(
+			fiber.Map{
+				"status":   "error",
+				"message":  "Error when converting date",
+				"data":     nil,
+				"true:err": err,
+			})
+	}
+	date = date.(time.Time).Format("2006-01-02")
+
+	return c.Render("recordInfo", fiber.Map{
+		"LabDate":     date,
+		"ClassNumber": record.ClassNumber,
+		"Tutor":       record.Tutor,
+		// "students": students,
+	})
 }
 func RecordDelete(c *fiber.Ctx) error {
 

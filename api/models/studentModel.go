@@ -8,5 +8,6 @@ type Student struct {
 	SecondName     string
 	Patronymic     string
 	Group          string
-	LabsAppointed  []Lab `gorm:"many2many:student_labs"`
+	LabsAppointed  []Lab     `gorm:"many2many:student_labs"`
+	Records        []*Record `gorm:"many2many:student_records"`
 }

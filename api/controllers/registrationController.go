@@ -38,8 +38,7 @@ func RegisterAppointment(c *fiber.Ctx) error {
 	lab := models.Lab{}
 	record := models.Record{}
 	//searching student
-	result := initializers.DB.Model(&models.Student{}).
-		Where("second_name = ? AND first_name = ?", data.StudentSurname, data.StudentName).
+	result := initializers.DB.Where("second_name = ? AND first_name = ?", data.StudentSurname, data.StudentName).
 		First(&student)
 	if result.Error != nil {
 		return c.Status(http.StatusBadRequest).JSON(fiber.Map{
@@ -73,16 +72,27 @@ func RegisterAppointment(c *fiber.Ctx) error {
 			"true_error": result.Error,
 		})
 	}
-	log.Info(record, '\n')
+
 	err = initializers.DB.Model(&record).Association("Students").Append(&student)
+	log.Info(student, '\n')
 	if err != nil {
 		ferr := err.Error()
 		return c.Status(http.StatusBadRequest).JSON(fiber.Map{
-			"message":    "error in saving record",
+			"message":    "error in adding record to student lk",
+			"true_error": ferr,
+		})
+	}
+	var students []models.Student
+	err = initializers.DB.Model(&models.Student{}).Preload("Records").Find(&students).Error
+	if err != nil {
+		ferr := err.Error()
+		return c.Status(http.StatusBadRequest).JSON(fiber.Map{
+			"message":    "error in adding record to student lk",
 			"true_error": ferr,
 		})
 	}
 	return c.Status(http.StatusAccepted).JSON(fiber.Map{
-		"data": record,
+		"data":     record,
+		"students": students,
 	})
 }

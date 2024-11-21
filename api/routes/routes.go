@@ -22,6 +22,7 @@ func SetupRoutes(app *fiber.App) {
 	app.Get("/auth", func(c *fiber.Ctx) error {
 		return c.Render("auth", fiber.Map{})
 	})
+	app.Get("/student/:id", controllers.StudentGetRecords)
 
 	//API Routes
 	app.Post("/api/login", controllers.SingIn)
@@ -29,6 +30,7 @@ func SetupRoutes(app *fiber.App) {
 	app.Get("/api/validate", controllers.Validate)
 	app.Get("/metrics", monitor.New()) //default fiber metrics
 	//RECORDS
+	app.Get("/records/:id", controllers.RecordRender)
 	app.Post("/api/records", controllers.RecordCreate)
 	app.Get("/api/records", controllers.RecordsGet)
 	app.Get("/api/records/dates", controllers.RecordsDatesGet)
