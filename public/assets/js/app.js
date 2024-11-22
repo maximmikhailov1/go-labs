@@ -5,8 +5,7 @@ const registrationForm = document.getElementById('registration-form')
 
 
 registrationForm.addEventListener('submit',(event)=>{
-  event.preventDefault()
-  console.log("zzz") 
+  event.preventDefault() 
   const discipline = document.getElementById("discipline").value
   const labNumber = document.getElementById("lab-number").value
   const labDate = new Date(document.getElementById("lab-date").value)
