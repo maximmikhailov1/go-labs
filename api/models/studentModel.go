@@ -4,6 +4,7 @@ type Student struct {
 	ID             uint `gorm:"primarykey"`
 	Username       string
 	HashedPassword string
+	Role           string
 	FirstName      string
 	SecondName     string
 	Patronymic     string

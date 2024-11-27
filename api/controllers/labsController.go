@@ -57,5 +57,5 @@ func LabsNumbersGet(c *fiber.Ctx) error {
 		number := labNumber.Number
 		numbers[i] = number
 	}
-	return c.JSON(numbers)
+	return c.Status(http.StatusOK).JSON(numbers)
 }

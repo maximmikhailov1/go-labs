@@ -7,7 +7,6 @@ import (
 	"github.com/gofiber/fiber/v2/log"
 	"github.com/maximmikhailov1/go-labs/api/initializers"
 	"github.com/maximmikhailov1/go-labs/api/models"
-	"github.com/maximmikhailov1/go-labs/api/utils"
 	"gorm.io/datatypes"
 )
 
@@ -38,6 +37,8 @@ func RegisterAppointment(c *fiber.Ctx) error {
 	student := models.Student{}
 	lab := models.Lab{}
 	record := models.Record{}
+	//searching id in cookies
+
 	//searching student
 	result := initializers.DB.Where("second_name = ? AND first_name = ?", data.StudentSurname, data.StudentName).
 		First(&student)
@@ -57,7 +58,7 @@ func RegisterAppointment(c *fiber.Ctx) error {
 	}
 	//inserting lab into student
 	err := initializers.DB.Model(&student).Association("LabsAppointed").Append(&lab)
-	log.Info(student, '\n')
+
 	if err != nil {
 		ferr := err.Error()
 		return c.Status(http.StatusBadRequest).JSON(fiber.Map{
@@ -75,7 +76,7 @@ func RegisterAppointment(c *fiber.Ctx) error {
 	}
 
 	err = initializers.DB.Model(&record).Association("Students").Append(&student)
-	log.Info(student, '\n')
+
 	if err != nil {
 		ferr := err.Error()
 		return c.Status(http.StatusBadRequest).JSON(fiber.Map{
@@ -95,20 +96,10 @@ func RegisterAppointment(c *fiber.Ctx) error {
 			"true_error": ferr,
 		})
 	}
-	var id int = 0
-	jwtToken := c.Cookies("auth")
-	if jwtToken != "" {
-		id, err = utils.ParseJWT(jwtToken)
-		if err != nil {
-			return c.Status(http.StatusBadRequest).JSON(fiber.Map{
-				"err": err.Error(),
-			})
-		}
-	}
 
 	return c.Status(http.StatusAccepted).JSON(fiber.Map{
 		"data":     record,
 		"students": students,
-		"id":       id,
+		"id":       student.ID,
 	})
 }

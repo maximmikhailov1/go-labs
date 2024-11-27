@@ -26,7 +26,7 @@ loginForm.addEventListener('submit', async (event) => {
   const password = document.getElementById('lpassword').value;
 
   try {
-    const response = await fetch('/api/login', {
+    const response = await fetch('/api/signin', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -52,14 +52,18 @@ registerForm.addEventListener('submit', async (event) => {
 
   const username = document.getElementById('susername').value;
   const password = document.getElementById('spassword').value;
+  const firstName = document.getElementById('first-name').value;
+  const secondName = document.getElementById('second-name').value;
+  const patronymic = document.getElementById('patronymic').value;
+  const group = document.getElementById('group').value;
 
   try {
-    const response = await fetch('/api/register', {
+    const response = await fetch('/api/signup', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ username, password })
+      body: JSON.stringify({ username, password, firstName, secondName, patronymic, group })
     });
 
     if (response.ok) {

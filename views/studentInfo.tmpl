@@ -3,9 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <link rel="stylesheet" href="../static/css/style.css">
+    <link rel="stylesheet" href="../static/css/styleNav.css" />
+    <title>Записи</title>
 </head>
 <body>
-    {{.Records}}
+    {{template "partials/nav" .}}
+    <main>
+    <table class="scrollable" id="records-table">
+        <thead>
+            <tr>
+                <th>Дата занятия</th>
+                <th>Номер пары</th>
+                <th>Номер аудитории</th>
+                <th>Преподаватель</th>
+                <th>Удаление</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Здесь будет динамически добавляться информация о записях -->
+        </tbody>
+    </table>
+</main>
+<script src="../static/js/studentInfo.js"></script>
 </body>
 </html>

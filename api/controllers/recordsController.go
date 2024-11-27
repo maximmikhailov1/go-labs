@@ -137,7 +137,7 @@ func RecordsDatesGet(c *fiber.Ctx) error {
 
 	}
 
-	return c.JSON(dates)
+	return c.Status(http.StatusOK).JSON(dates)
 }
 
 func RecordsClassesGet(c *fiber.Ctx) error {
@@ -154,5 +154,5 @@ func RecordsClassesGet(c *fiber.Ctx) error {
 		times[i] = time.ClassNumber
 	}
 
-	return c.JSON(times)
+	return c.Status(http.StatusOK).JSON(times)
 }

@@ -18,8 +18,11 @@ func StudentGetRecords(c *fiber.Ctx) error {
 	}
 	initializers.DB.Model(&student).Association("Records").Find(&records)
 
+	return c.Status(http.StatusOK).JSON(fiber.Map{"Records": records})
 	// return c.Status(http.StatusAccepted).JSON(fiber.Map{"records": records})
-	return c.Render("studentInfo", fiber.Map{
-		"Records": records,
-	})
+
+}
+func StudentRender(c *fiber.Ctx) error {
+
+	return c.Render("studentInfo", c.Locals("student").(fiber.Map))
 }
