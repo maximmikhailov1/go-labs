@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"net/http"
+	"strconv"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/maximmikhailov1/go-labs/api/initializers"
@@ -9,7 +10,17 @@ import (
 )
 
 func StudentGetRecords(c *fiber.Ctx) error {
-	id := c.Params("id")
+	id, err := strconv.Atoi((c.Params("id")))
+	if err != nil {
+		return c.Status(http.StatusNotFound).JSON(
+			fiber.Map{
+				"status":   "error",
+				"true:err": err,
+			})
+	}
+	if c.Locals("student") == nil || int((c.Locals("student").(fiber.Map)["Id"]).(uint)) != id {
+		return c.Status(http.StatusUnauthorized).JSON(fiber.Map{"message": "unauthorized"})
+	}
 	records := []models.Record{}
 	student := models.Student{}
 	res := initializers.DB.First(&student, id)
@@ -19,10 +30,8 @@ func StudentGetRecords(c *fiber.Ctx) error {
 	initializers.DB.Model(&student).Association("Records").Find(&records)
 
 	return c.Status(http.StatusOK).JSON(fiber.Map{"Records": records})
-	// return c.Status(http.StatusAccepted).JSON(fiber.Map{"records": records})
 
 }
 func StudentRender(c *fiber.Ctx) error {
-
-	return c.Render("studentInfo", c.Locals("student").(fiber.Map))
+	return c.Status(http.StatusOK).Render("studentInfo", fiber.Map{})
 }
