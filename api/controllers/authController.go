@@ -49,7 +49,9 @@ func SingIn(c *fiber.Ctx) error {
 	now := time.Now()
 	claims := tokenByte.Claims.(jwt.MapClaims)
 
-	claims["sub"] = student.ID
+	claims["id"] = student.ID
+	claims["firstname"] = student.FirstName
+	claims["secondname"] = student.SecondName
 	claims["exp"] = now.Add(time.Hour * 24 * 30).Unix()
 	claims["iat"] = now.Unix()
 	claims["nbf"] = now.Unix()
@@ -67,23 +69,6 @@ func SingIn(c *fiber.Ctx) error {
 		Expires: now.Add(time.Hour * 24 * 30),
 		Secure:  false,
 	})
-	// token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-	// 	"sub": strconv.Itoa(int(student.ID)),
-	// 	"exp": time.Now().Add(time.Hour * 24 * 30).Unix(),
-	// })
-	// tokenString, err := token.SignedString([]byte(os.Getenv("SECRET")))
-	// if err != nil {
-	// 	return c.Status(http.StatusBadRequest).JSON(
-	// 		fiber.Map{
-	// 			"message": "failed to create a token",
-	// 			"error":   err.Error(),
-	// 		})
-	// }
-	// cookie := new(fiber.Cookie)
-	// cookie.Name = "auth"
-	// cookie.Value = tokenString
-	// cookie.Expires = time.Now().Add(time.Hour * 24 * 30)
-	// c.Cookie(cookie)
 
 	return c.Status(http.StatusOK).JSON(fiber.Map{"message": "Logged in"})
 }
@@ -95,13 +80,16 @@ func SignUp(c *fiber.Ctx) error {
 		FirstName  string
 		SecondName string
 		Patronymic string
-		Group      string
+		GroupCode  string
 	}
 	if err := c.BodyParser(&body); err != nil {
 		log.Info(err)
 		return err
 	}
-	hash, err := bcrypt.GenerateFromPassword([]byte(body.Password), 16)
+	var group models.Group
+	initializers.DB.First(&group).Where("group_code = ?", body.GroupCode)
+	// cost is lower than usual to prevent 5sec loading time though lowering the security
+	hash, err := bcrypt.GenerateFromPassword([]byte(body.Password), 5)
 	if err != nil {
 		return c.Status(http.StatusBadRequest).JSON(fiber.Map{
 			"message": "failed to hash the password",
@@ -113,7 +101,7 @@ func SignUp(c *fiber.Ctx) error {
 		FirstName:      body.FirstName,
 		SecondName:     body.SecondName,
 		Patronymic:     body.Patronymic,
-		Group:          body.Group,
+		Group:          &group.Name,
 	}
 	result := initializers.DB.Create(&student)
 	if result.Error != nil {
