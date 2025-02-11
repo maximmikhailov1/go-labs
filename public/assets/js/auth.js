@@ -55,7 +55,7 @@ registerForm.addEventListener('submit', async (event) => {
   const firstName = document.getElementById('first-name').value;
   const secondName = document.getElementById('second-name').value;
   const patronymic = document.getElementById('patronymic').value;
-  const group = document.getElementById('group').value;
+  const signUpCode = document.getElementById('sign-up-code').value;
 
   try {
     const response = await fetch('/api/signup', {
@@ -63,7 +63,7 @@ registerForm.addEventListener('submit', async (event) => {
       headers: {
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ username, password, firstName, secondName, patronymic, group })
+      body: JSON.stringify({ username, password, firstName, secondName, patronymic, signUpCode })
     });
 
     if (response.ok) {

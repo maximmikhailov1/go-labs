@@ -48,7 +48,7 @@ func RecordIndexRedirect(c *fiber.Ctx) error {
 func RecordIndex(c *fiber.Ctx) error {
 	id := c.Params("id")
 	var record models.Record
-	var students []models.Student
+	var students []models.User
 
 	result := initializers.DB.First(&record, id)
 	if result.Error != nil {

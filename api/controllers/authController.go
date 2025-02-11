@@ -16,19 +16,15 @@ import (
 
 func SingIn(c *fiber.Ctx) error {
 	var body struct {
-		Username   string
-		Password   string
-		FirstName  string
-		SecondName string
-		Patronymic string
-		Group      string
+		Username string
+		Password string
 	}
 	if err := c.BodyParser(&body); err != nil {
 		log.Info(err)
 		return err
 	}
-	var student = models.Student{}
-	result := initializers.DB.First(&student, "username = ?", body.Username)
+	var user = models.User{}
+	result := initializers.DB.First(&user, "username = ?", body.Username)
 
 	if result.Error != nil {
 		return c.Status(http.StatusBadRequest).JSON(
@@ -37,7 +33,7 @@ func SingIn(c *fiber.Ctx) error {
 			})
 	}
 
-	err := bcrypt.CompareHashAndPassword([]byte(student.HashedPassword), []byte(body.Password))
+	err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHashed), []byte(body.Password))
 	if err != nil {
 		return c.Status(http.StatusBadRequest).JSON(
 			fiber.Map{
@@ -49,9 +45,11 @@ func SingIn(c *fiber.Ctx) error {
 	now := time.Now()
 	claims := tokenByte.Claims.(jwt.MapClaims)
 
-	claims["id"] = student.ID
-	claims["firstname"] = student.FirstName
-	claims["secondname"] = student.SecondName
+	claims["id"] = user.ID
+	claims["firstname"] = user.FirstName
+	claims["secondname"] = user.SecondName
+	claims["group"] = user.Group
+	claims["role"] = user.Role
 	claims["exp"] = now.Add(time.Hour * 24 * 30).Unix()
 	claims["iat"] = now.Unix()
 	claims["nbf"] = now.Unix()
@@ -74,20 +72,34 @@ func SingIn(c *fiber.Ctx) error {
 }
 
 func SignUp(c *fiber.Ctx) error {
+
 	var body struct {
-		Username   string
-		Password   string
-		FirstName  string
-		SecondName string
-		Patronymic string
-		GroupCode  string
+		Username   string `json:"username"`
+		Password   string `json:"password"`
+		FirstName  string `json:"firstName"`
+		SecondName string `json:"secondName"`
+		Patronymic string `json:"patronymic"`
+		SingUpCode string `json:"signUpCode"`
 	}
 	if err := c.BodyParser(&body); err != nil {
 		log.Info(err)
 		return err
 	}
+	var role string
 	var group models.Group
-	initializers.DB.First(&group).Where("group_code = ?", body.GroupCode)
+	log.Info(body)
+
+	log.Info(group)
+	log.Info(body.SingUpCode)
+	secretSignUpCode := os.Getenv("TUTOR_SECRET")
+	log.Info(secretSignUpCode)
+	if body.SingUpCode == secretSignUpCode {
+		role = "tutor"
+	} else {
+		role = "student"
+		initializers.DB.Where("code = ?", body.SingUpCode).First(&group)
+	}
+
 	// cost is lower than usual to prevent 5sec loading time though lowering the security
 	hash, err := bcrypt.GenerateFromPassword([]byte(body.Password), 5)
 	if err != nil {
@@ -95,13 +107,16 @@ func SignUp(c *fiber.Ctx) error {
 			"message": "failed to hash the password",
 		})
 	}
-	student := models.Student{
+	student := models.User{
 		Username:       body.Username,
-		HashedPassword: string(hash),
+		PasswordHashed: string(hash),
 		FirstName:      body.FirstName,
 		SecondName:     body.SecondName,
 		Patronymic:     body.Patronymic,
-		Group:          &group.Name,
+		Role:           role,
+	}
+	if student.Role == "student" {
+		student.Group = &group.Name
 	}
 	result := initializers.DB.Create(&student)
 	if result.Error != nil {

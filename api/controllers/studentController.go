@@ -22,7 +22,7 @@ func StudentGetRecords(c *fiber.Ctx) error {
 		return c.Status(http.StatusUnauthorized).JSON(fiber.Map{"message": "unauthorized"})
 	}
 	records := []models.Record{}
-	student := models.Student{}
+	student := models.User{}
 	res := initializers.DB.First(&student, id)
 	if res.Error != nil {
 		return c.Status(http.StatusBadRequest).JSON(fiber.Map{"message": "no such student"})

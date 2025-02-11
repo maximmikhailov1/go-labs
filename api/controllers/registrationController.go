@@ -34,7 +34,7 @@ func RegisterAppointment(c *fiber.Ctx) error {
 	// // if result.Error != nil {
 	// // return c.Status(400).JSON(result.Error)
 	// }
-	student := models.Student{}
+	student := models.User{}
 	lab := models.Lab{}
 	record := models.Record{}
 	//searching id in cookies
@@ -87,8 +87,8 @@ func RegisterAppointment(c *fiber.Ctx) error {
 	//
 
 	//
-	var students []models.Student
-	err = initializers.DB.Model(&models.Student{}).Preload("Records").Find(&students).Error
+	var students []models.User
+	err = initializers.DB.Model(&models.User{}).Preload("Records").Find(&students).Error
 	if err != nil {
 		ferr := err.Error()
 		return c.Status(http.StatusBadRequest).JSON(fiber.Map{
