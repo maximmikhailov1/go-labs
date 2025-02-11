@@ -25,6 +25,8 @@ func SetupRoutes(app *fiber.App) {
 	})
 	app.Get("/records/:id", controllers.RecordRender)
 
+	app.Get("/demo/users", controllers.UsersIndex)
+
 	//API Routes
 	app.Post("/api/signin", controllers.SingIn)
 	app.Post("/api/signup", controllers.SignUp)
