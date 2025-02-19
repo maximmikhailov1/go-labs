@@ -134,5 +134,5 @@ func Logout(c *fiber.Ctx) error {
 		Value:   "",
 		Expires: expired,
 	})
-	return c.Redirect("/")
+	return c.SendStatus(http.StatusOK)
 }

@@ -24,13 +24,15 @@ func SetupRoutes(app *fiber.App) {
 		return c.Render("auth", fiber.Map{})
 	})
 	app.Get("/records/:id", controllers.RecordRender)
-
+	//new
+	app.Get("api/schedule", controllers.ScheduleWeek)
 	app.Get("/demo/users", controllers.UsersIndex)
-
+	app.Post("api/enroll", controllers.EnrollLab)
+	//*new
 	//API Routes
 	app.Post("/api/signin", controllers.SingIn)
 	app.Post("/api/signup", controllers.SignUp)
-	app.Get("/api/logout", controllers.Logout)
+	app.Post("/api/logout", controllers.Logout)
 	app.Get("/metrics", monitor.New()) //default fiber metrics
 	//RECORDS
 	app.Post("/api/records", controllers.RecordCreate)

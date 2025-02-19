@@ -1,54 +1,14 @@
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
+"use client"
+import Schedule from "@/components/Schedule"
 
-
-interface User{
-  ID:number,   
-	Username:string, 
-	PasswordHashed:string, 
-  Name:string,
-  SecondName:string, 
-  Patronymic:string,
-  Role:string,
-	Group: string,
-}
-
-async function getUsers(): Promise<User[]>{
-  const result = await fetch('http://127.0.0.1:3222/demo/users')
-  return result.json()
-}
-
-export default async function Home() {
-  const users = await getUsers()
+export default function Home() {
   return (
-    <main>
-      <div className="grid grid-cols-3 gap-8">
-        {users.map(user => (
-          <Card key={user.ID} className="flex flex-col justify-between">
-            <CardHeader className="flex-row gap-4 items-center">
-              <div>
-                <CardTitle>
-                  {user.Username}
-                </CardTitle>
-                <CardDescription>{user.Name} зовут</CardDescription>
-                <CardContent>
-                  <p>{user.Name} {user.SecondName} {user.Patronymic}</p>
-                </CardContent>
-                <CardFooter className="flex justify-between">
-                  <button>Посмотреть статистику</button>
-                  {true && <p>Реально жестко</p>}
-                </CardFooter>
-              </div>
-            </CardHeader>
-          </Card>
-        ))}
-      </div>
-    </main>
-  );
+    <div className="min-h-screen bg-gray-50">
+      <main className="container mx-auto p-4">
+        <h1 className="text-2xl font-bold mb-4">Расписание на неделю</h1>
+        <Schedule />
+      </main>
+    </div>
+  )
 }
+
