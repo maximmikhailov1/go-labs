@@ -3,7 +3,6 @@
 import type React from "react"
 
 import { useState } from "react"
-import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -11,8 +10,11 @@ import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { signIn, signUp } from "@/app/actions/auth"
 
-export function TabsDemo() {
-  const router = useRouter()
+interface TabsDemoProps {
+  onLogin: () => void
+}
+
+export const TabsDemo: React.FC<TabsDemoProps> = ({ onLogin }) => {
   const [loginData, setLoginData] = useState({ username: "", password: "" })
   const [registerData, setRegisterData] = useState({
     username: "",
@@ -30,10 +32,9 @@ export function TabsDemo() {
     formData.append("password", loginData.password)
     const result = await signIn(formData)
     if (result.success) {
-      router.push("/")
+      onLogin()
     } else {
       console.error("Ошибка входа:", result.error)
-      // Здесь можно добавить обратную связь для пользователя
     }
   }
 
@@ -45,10 +46,9 @@ export function TabsDemo() {
     })
     const result = await signUp(formData)
     if (result.success) {
-      router.push("/")
+      onLogin()
     } else {
       console.error("Ошибка регистрации:", result.error)
-      // Здесь можно добавить обратную связь для пользователя
     }
   }
 
@@ -59,8 +59,6 @@ export function TabsDemo() {
         <TabsTrigger value="register">Регистрация</TabsTrigger>
       </TabsList>
       <div className="mt-4 h-[500px]">
-        {" "}
-        {/* Увеличенная высота контейнера */}
         <TabsContent value="login">
           <Card className="h-full">
             <form onSubmit={handleLoginSubmit} className="h-full flex flex-col">

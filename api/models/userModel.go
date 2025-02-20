@@ -11,4 +11,5 @@ type User struct {
 	Group          *string
 	LabsAppointed  []*Lab    `gorm:"many2many:student_labs"`
 	Records        []*Record `gorm:"many2many:student_records"`
+	Teams          []*Team   `gorm:"many2many:users_teams"`
 }

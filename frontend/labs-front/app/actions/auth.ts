@@ -75,25 +75,25 @@ export async function logout() {
 }
 
 export async function enrollInClass(date: string, slotNumber: number) {
-    try {
-      const response = await fetch("/api/enroll", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ date, slotNumber }),
-        credentials: "include",
-      })
-  
-      if (response.ok) {
-        return { success: true }
-      } else {
-        const errorData = await response.json()
-        return { error: errorData.message || "Ошибка при записи на занятие" }
-      }
-    } catch (error) {
-      console.error("Error during class enrollment:", error)
-      return { error: "Произошла ошибка при записи на занятие" }
+  try {
+    const response = await fetch("/api/enroll", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ date, slotNumber }),
+      credentials: "include",
+    })
+
+    if (response.ok) {
+      return { success: true }
+    } else {
+      const errorData = await response.json()
+      return { error: errorData.message || "Ошибка при записи на занятие" }
     }
+  } catch (error) {
+    console.error("Error during class enrollment:", error)
+    return { error: "Произошла ошибка при записи на занятие" }
   }
-  
+}
+

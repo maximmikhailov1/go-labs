@@ -97,7 +97,10 @@ func SignUp(c *fiber.Ctx) error {
 		role = "tutor"
 	} else {
 		role = "student"
-		initializers.DB.Where("code = ?", body.SingUpCode).First(&group)
+		result := initializers.DB.Where("code = ?", body.SingUpCode).First(&group)
+		if result.Error != nil {
+			return c.Status(http.StatusBadRequest).JSON("no groups under that code")
+		}
 	}
 
 	// cost is lower than usual to prevent 5sec loading time though lowering the security

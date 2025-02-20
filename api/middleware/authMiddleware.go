@@ -4,8 +4,10 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"reflect"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/log"
 	"github.com/golang-jwt/jwt/v5"
 )
 
@@ -19,15 +21,31 @@ func Authorized(c *fiber.Ctx) error {
 			return []byte(os.Getenv("SECRET")), nil
 		})
 		if err != nil {
-			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"status": "fail", "message": fmt.Sprintf("invalidate token: %v", err)})
+			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"status": "fail", "message": fmt.Sprintf("invalid token: %v", err)})
 		}
 
 		claims := tokenByte.Claims.(jwt.MapClaims)
+
+		var trID uint
+		rtest := reflect.ValueOf(claims["id"])
+		log.Info(rtest)
+		switch rtest.Kind() {
+		case reflect.Float64:
+			trID = uint(claims["id"].(float64))
+		case reflect.Int:
+			trID = claims["id"].(uint)
+		}
+		//SOMETHING WRONG WITH TYPE OF ID inside claims something with uint float64 shenanigans
+		log.Info(trID, reflect.TypeOf(trID), reflect.ValueOf(trID))
+		log.Info(claims["firstname"], reflect.TypeOf(claims["firstname"]))
+		log.Info(claims["secondname"], reflect.TypeOf(claims["secondname"]))
+		log.Info(claims["group"], reflect.TypeOf(claims["group"]))
 		studentData := fiber.Map{
-			"Id":         claims["id"],
+			"Id":         trID,
 			"FirstName":  claims["firstname"],
 			"SecondName": claims["secondname"],
 			"Group":      claims["group"],
+			"Role":       claims["role"],
 		}
 		c.Locals("student", studentData)
 	}

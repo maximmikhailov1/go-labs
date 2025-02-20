@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import { enrollInClass } from "@/app/actions/auth"
+
 type ScheduleItem = {
   ID: number
   LabDate: string
@@ -24,13 +25,14 @@ const TIME_SLOTS = [
   "15:55-17:20", 
   "17:30-19:00"]
 
+
   const Schedule = () => {
     const [currentWeekIndex, setCurrentWeekIndex] = useState(0)
     const [scheduleData, setScheduleData] = useState<WeekSchedule[]>([])
   
     useEffect(() => {
       fetchScheduleData()
-    }, []) // Removed unnecessary dependency: currentWeekIndex
+    }, [])
   
     const fetchScheduleData = async () => {
       try {
@@ -46,33 +48,6 @@ const TIME_SLOTS = [
       }
     }
   
-    const renderTimeSlots = (date: string) => {
-      return TIME_SLOTS.map((slot, index) => {
-        const scheduleItem = scheduleData[currentWeekIndex]?.find(
-          (item) => item.LabDate.split("T")[0] === date && item.ClassNumber === index + 1,
-        )
-        const isScheduled = !!scheduleItem
-  
-        return (
-          <div
-          key={index}
-          className={`border p-2 h-48 ${isScheduled ? "bg-green-100" : ""}`} // Увеличена высота с h-24 до h-32
-        >
-            <div className="text-black time-slot">{slot}</div>
-            {isScheduled && (
-              <div className="text-green-600 text-sm">
-                <div>{scheduleItem.AudienceNumber}</div>
-                <div>{scheduleItem.Tutor}</div>
-                <div>К: {scheduleItem.SwitchesRemaining} М: {scheduleItem.RoutersRemaining}</div>
-                <Button onClick={() => handleEnroll(date, index + 1)} className="mt-12 w-full" size="sm">
-                Записаться
-              </Button>
-              </div>
-            )}
-          </div>
-        )
-      })
-    }
     const handleEnroll = async (date: string, slotNumber: number) => {
       try {
         const result = await enrollInClass(date, slotNumber)
@@ -86,6 +61,44 @@ const TIME_SLOTS = [
         console.error("Ошибка при отправке запроса на запись:", error)
       }
     }
+  
+    const renderTimeSlots = (date: string) => {
+      return TIME_SLOTS.map((slot, index) => {
+        let scheduleItem
+        try {
+          scheduleItem = scheduleData[currentWeekIndex]?.find((item) => {
+            if (!item || !item.LabDate) {
+              console.warn(`Invalid item found for date ${date}, slot ${index + 1}:`, item)
+              return false
+            }
+            return item.LabDate.split("T")[0] === date && item.ClassNumber === index + 1
+          })
+        } catch (error) {
+          console.error(`Error processing schedule data for date ${date}, slot ${index + 1}:`, error)
+        }
+  
+        const isScheduled = !!scheduleItem
+  
+        return (
+          <div key={index} className={`border p-2 h-32 ${isScheduled ? "bg-green-100" : ""}`}>
+            <div className="text-black time-slot">{slot}</div>
+            {isScheduled && scheduleItem && (
+              <div className="text-green-600 text-sm">
+                <div className="font-bold">Занятие</div>
+                <div>Аудитория: {scheduleItem.AudienceNumber}</div>
+                <div>Преподаватель: {scheduleItem.Tutor}</div>
+                <div>Свитчи: {scheduleItem.SwitchesRemaining}</div>
+                <div>Роутеры: {scheduleItem.RoutersRemaining}</div>
+                <Button onClick={() => handleEnroll(date, index + 1)} className="mt-2 w-full" size="sm">
+                  Записаться
+                </Button>
+              </div>
+            )}
+          </div>
+        )
+      })
+    }
+  
     const getDaysOfWeek = (weekIndex: number) => {
       const today = new Date()
       const startOfWeek = new Date(today.setDate(today.getDate() - today.getDay() + 1 + weekIndex * 7))
@@ -123,5 +136,4 @@ const TIME_SLOTS = [
   }
   
   export default Schedule
-  
   
