@@ -8,10 +8,9 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { signIn, signUp } from "@/app/actions/auth"
 
 interface TabsDemoProps {
-  onLogin: () => void
+  onLogin: (role: "student" | "tutor") => void
 }
 
 export const TabsDemo: React.FC<TabsDemoProps> = ({ onLogin }) => {
@@ -19,10 +18,8 @@ export const TabsDemo: React.FC<TabsDemoProps> = ({ onLogin }) => {
   const [registerData, setRegisterData] = useState({
     username: "",
     password: "",
-    firstName: "",
-    lastName: "",
-    middleName: "",
-    groupCode: "",
+    fullName:"",
+    signUpCode: "",
   })
 
   const handleLoginSubmit = async (e: React.FormEvent) => {
@@ -30,9 +27,32 @@ export const TabsDemo: React.FC<TabsDemoProps> = ({ onLogin }) => {
     const formData = new FormData()
     formData.append("username", loginData.username)
     formData.append("password", loginData.password)
+    // Assuming signIn is defined elsewhere and handles the actual sign-in logic
+    // and returns a promise with a result object.
+    const signIn = async (formData: FormData) => {
+      try {
+        const response = await fetch("/api/signin", {
+          method: "POST",
+          body: formData,
+        })
+
+        if (!response.ok) {
+          const errorData = await response.json()
+          return { success: false, error: errorData.message || "Ошибка входа" }
+        }
+
+        const result = await response.json()
+        return { success: true, role: result.role } // Assuming the server returns { success: true, role: "student" | "tutor" }
+      } catch (error: any) {
+        return { success: false, error: error.message || "Ошибка при отправке данных" }
+      }
+    }
+
     const result = await signIn(formData)
     if (result.success) {
-      onLogin()
+      // Предположим, что роль возвращается с сервера или определяется на клиенте
+      const userRole = result.role || "student" // По умолчанию "student", если роль не определена
+      onLogin(userRole as "student" | "tutor")
     } else {
       console.error("Ошибка входа:", result.error)
     }
@@ -40,15 +60,20 @@ export const TabsDemo: React.FC<TabsDemoProps> = ({ onLogin }) => {
 
   const handleRegisterSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    const formData = new FormData()
-    Object.entries(registerData).forEach(([key, value]) => {
-      formData.append(key, value)
-    })
-    const result = await signUp(formData)
-    if (result.success) {
-      onLogin()
-    } else {
-      console.error("Ошибка регистрации:", result.error)
+    try {
+      const response = await fetch("/api/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(registerData),
+      })
+      if (response.ok) {
+        console.log("Регистрация выполнена успешно")
+        // Здесь можно добавить логику для обработки успешной регистрации
+      } else {
+        console.error("Ошибка регистрации")
+      }
+    } catch (error) {
+      console.error("Ошибка при отправке данных:", error)
     }
   }
 
@@ -58,70 +83,86 @@ export const TabsDemo: React.FC<TabsDemoProps> = ({ onLogin }) => {
         <TabsTrigger value="login">Вход</TabsTrigger>
         <TabsTrigger value="register">Регистрация</TabsTrigger>
       </TabsList>
-      <div className="mt-4 h-[500px]">
-        <TabsContent value="login">
-          <Card className="h-full">
-            <form onSubmit={handleLoginSubmit} className="h-full flex flex-col">
-              <CardHeader>
-                <CardTitle>Вход</CardTitle>
-                <CardDescription>Введите свои учетные данные для входа в систему.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4 flex-grow">
-                <div className="space-y-2">
-                  <Label htmlFor="login-username">Логин</Label>
-                  <Input
-                    id="login-username"
-                    value={loginData.username}
-                    onChange={(e) => setLoginData({ ...loginData, username: e.target.value })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="login-password">Пароль</Label>
-                  <Input
-                    id="login-password"
-                    type="password"
-                    value={loginData.password}
-                    onChange={(e) => setLoginData({ ...loginData, password: e.target.value })}
-                  />
-                </div>
-              </CardContent>
-              <CardFooter>
-                <Button type="submit" className="w-full">
-                  Войти
-                </Button>
-              </CardFooter>
-            </form>
-          </Card>
-        </TabsContent>
-        <TabsContent value="register">
-          <Card className="h-full">
-            <form onSubmit={handleRegisterSubmit} className="h-full flex flex-col">
-              <CardHeader>
-                <CardTitle>Регистрация</CardTitle>
-                <CardDescription>Заполните форму для создания новой учетной записи.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4 flex-grow overflow-y-auto">
-                {Object.entries(registerData).map(([key, value]) => (
-                  <div key={key} className="space-y-2">
-                    <Label htmlFor={`register-${key}`}>{key}</Label>
-                    <Input
-                      id={`register-${key}`}
-                      type={key === "password" ? "password" : "text"}
-                      value={value}
-                      onChange={(e) => setRegisterData({ ...registerData, [key]: e.target.value })}
-                    />
-                  </div>
-                ))}
-              </CardContent>
-              <CardFooter>
-                <Button type="submit" className="w-full">
-                  Зарегистрироваться
-                </Button>
-              </CardFooter>
-            </form>
-          </Card>
-        </TabsContent>
-      </div>
+      <TabsContent value="login">
+        <Card>
+          <form onSubmit={handleLoginSubmit}>
+            <CardHeader>
+              <CardTitle>Вход</CardTitle>
+              <CardDescription>Введите свои учетные данные для входа в систему.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              <div className="space-y-1">
+                <Label htmlFor="login-username">Логин</Label>
+                <Input
+                  id="login-username"
+                  value={loginData.username}
+                  onChange={(e) => setLoginData({ ...loginData, username: e.target.value })}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="login-password">Пароль</Label>
+                <Input
+                  id="login-password"
+                  type="password"
+                  value={loginData.password}
+                  onChange={(e) => setLoginData({ ...loginData, password: e.target.value })}
+                />
+              </div>
+            </CardContent>
+            <CardFooter>
+              <Button type="submit">Войти</Button>
+            </CardFooter>
+          </form>
+        </Card>
+      </TabsContent>
+      <TabsContent value="register">
+        <Card>
+          <form onSubmit={handleRegisterSubmit}>
+            <CardHeader>
+              <CardTitle>Регистрация</CardTitle>
+              <CardDescription>Заполните форму для создания новой учетной записи.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              <div className="space-y-1">
+                <Label htmlFor="register-username">Логин</Label>
+                <Input
+                  id="register-username"
+                  value={registerData.username}
+                  onChange={(e) => setRegisterData({ ...registerData, username: e.target.value })}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="register-password">Пароль</Label>
+                <Input
+                  id="register-password"
+                  type="password"
+                  value={registerData.password}
+                  onChange={(e) => setRegisterData({ ...registerData, password: e.target.value })}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="register-firstname">Имя</Label>
+                <Input
+                  id="register-firstname"
+                  value={registerData.fullName}
+                  onChange={(e) => setRegisterData({ ...registerData, fullName: e.target.value })}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="register-groupcode">Код Группы</Label>
+                <Input
+                  id="register-groupcode"
+                  value={registerData.signUpCode}
+                  onChange={(e) => setRegisterData({ ...registerData, signUpCode: e.target.value })}
+                />
+              </div>
+            </CardContent>
+            <CardFooter>
+              <Button type="submit">Зарегистрироваться</Button>
+            </CardFooter>
+          </form>
+        </Card>
+      </TabsContent>
     </Tabs>
   )
 }

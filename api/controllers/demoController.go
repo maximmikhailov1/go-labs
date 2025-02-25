@@ -3,14 +3,17 @@ package controllers
 import (
 	"fmt"
 	"net/http"
+	"os"
 	"strconv"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/log"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/maximmikhailov1/go-labs/api/initializers"
 	"github.com/maximmikhailov1/go-labs/api/models"
 	"github.com/maximmikhailov1/go-labs/api/utils"
+	"gorm.io/gorm"
 )
 
 func UsersIndex(c *fiber.Ctx) error {
@@ -23,26 +26,47 @@ func UsersIndex(c *fiber.Ctx) error {
 	return c.Status(http.StatusAccepted).JSON(users)
 }
 
-// TODO: переделать этот метод чтобы тут можно было реально создать команду,
-// а то что тут перенести в хук на создание нового пользователя
-func CreateTeam(c *fiber.Ctx) error {
-	utils.GenerateRandomCode(6)
-	if c.Locals("student") == nil {
+func UserFirst(c *fiber.Ctx) error {
+
+	if c.Locals("user") == nil {
 		return c.Status(http.StatusUnauthorized).JSON(fiber.Map{"message": "unauthorized"})
 	}
-	studentCred := c.Locals("student").(fiber.Map)
-	studentID := int((studentCred["Id"]).(uint))
-	studentSecondName := studentCred["SecondName"].(string)
-	studentInitTeamCode, err := utils.GenerateRandomCode(6)
-	if err != nil {
+	userCredentials := c.Locals("user").(fiber.Map)
+	fio := userCredentials["FullName"].(string)
+	groupName := userCredentials["Group"].(string)
+	var resp struct {
+		FullName  string
+		GroupName string
+	}
+	resp.FullName = fio
+	resp.GroupName = groupName
+	log.Info(resp)
+	return c.Status(http.StatusOK).JSON(resp)
+}
+
+func CreateTeam(c *fiber.Ctx) error {
+	utils.GenerateRandomCode(6)
+	if c.Locals("user") == nil {
+		return c.Status(http.StatusUnauthorized).JSON(fiber.Map{"message": "unauthorized"})
+	}
+	var body struct {
+		Name string
+	}
+	if err := c.BodyParser(&body); err != nil {
 		return err
 	}
+	studentCred := c.Locals("user").(fiber.Map)
+	studentID := int((studentCred["Id"]).(uint))
+	studentTeamCode, err := utils.GenerateRandomCode(6)
+	if err != nil {
+		return c.Status(http.StatusBadRequest).JSON(err)
+	}
 	var team = models.Team{
-		Code: studentInitTeamCode,
-		Name: fmt.Sprintf("Команда %s", studentSecondName),
+		Code: studentTeamCode,
+		Name: body.Name,
 	}
 	var student models.User
-	result := initializers.DB.Where("id = ?", studentID).First(&student)
+	result := initializers.DB.First(&student, studentID)
 	if result.Error != nil {
 		return result.Error
 	}
@@ -50,7 +74,7 @@ func CreateTeam(c *fiber.Ctx) error {
 	if result.Error != nil {
 		return result.Error
 	}
-	appRes := initializers.DB.Model(&team).Association("Students").Append(&student)
+	appRes := initializers.DB.Model(&team).Association("Members").Append(&student)
 	if appRes != nil {
 		return appRes
 	}
@@ -60,27 +84,51 @@ func CreateTeam(c *fiber.Ctx) error {
 	})
 }
 
+// Покинуть команду, достаём из контекста айди пользователя
+// Получаем код команды через query, которую хотим покинуть и отвязываем ассоциацию
+func LeaveTeam(c *fiber.Ctx) error {
+	studentCred := c.Locals("user").(fiber.Map)
+	studentID := (studentCred["Id"]).(uint)
+	teamCode := c.Query("code")
+	if teamCode == "" {
+		return c.Status(http.StatusBadRequest).JSON("provide a group code")
+	}
+	var user = models.User{
+		ID: studentID,
+	}
+	var team models.Team
+	err := initializers.DB.Find(&team, "code = ?", teamCode).Error
+	if err != nil {
+		return c.Status(http.StatusBadRequest).JSON("team not found")
+	}
+	err = initializers.DB.Model(&user).Association("Teams").Delete(&team)
+	if err != nil {
+		return c.Status(http.StatusBadRequest).JSON("error while leaving team")
+	}
+	return c.SendStatus(http.StatusOK)
+}
+
 func EnterTeam(c *fiber.Ctx) error {
-	if c.Locals("student") == nil {
+	if c.Locals("user") == nil {
 		return c.Status(http.StatusUnauthorized).JSON(fiber.Map{"message": "unauthorized"})
 	}
 	teamCode := c.Query("code")
 	if teamCode == "" {
 		return c.Status(http.StatusBadRequest).JSON("provide a group code")
 	}
-	studentCred := c.Locals("student").(fiber.Map)
+	studentCred := c.Locals("user").(fiber.Map)
 	studentID := int((studentCred["Id"]).(uint))
 	var student models.User
-	result := initializers.DB.Where("id = ?", studentID).First(&student)
+	result := initializers.DB.First(&student, studentID)
 	if result.Error != nil {
-		return result.Error
+		return c.SendStatus(http.StatusBadRequest)
 	}
 	var teamWanted models.Team
 	result = initializers.DB.Where("code = ?", teamCode).First(&teamWanted)
 	if result.Error != nil {
-		return result.Error
+		return c.Status(http.StatusBadRequest).JSON("no teams under this code")
 	}
-	err := initializers.DB.Model(&teamWanted).Association("Students").Append(&student)
+	err := initializers.DB.Model(&teamWanted).Association("Members").Append(&student)
 	if err != nil {
 		return err
 	}
@@ -88,18 +136,25 @@ func EnterTeam(c *fiber.Ctx) error {
 }
 
 func ChangeTeamName(c *fiber.Ctx) error {
-	if c.Locals("student") == nil {
+	if c.Locals("user") == nil {
 		return c.Status(http.StatusUnauthorized).JSON(fiber.Map{"message": "unauthorized"})
 	}
 	teamCode := c.Query("code")
-	teamNewName := c.Query("new_name")
+
+	var body struct {
+		NewName string `json:"name"`
+	}
+	if err := c.BodyParser(&body); err != nil {
+		return err
+	}
+	teamNewName := body.NewName
 	if teamCode == "" {
 		return c.Status(http.StatusBadRequest).JSON("provide a group code")
 	}
 	if teamNewName == "" {
 		return c.Status(http.StatusBadRequest).JSON("provide a new name")
 	}
-	studentCred := c.Locals("student").(fiber.Map)
+	studentCred := c.Locals("user").(fiber.Map)
 	studentID := ((studentCred["Id"]).(uint))
 	var student models.User
 	student.ID = (studentID)
@@ -113,32 +168,45 @@ func ChangeTeamName(c *fiber.Ctx) error {
 	return c.Status(http.StatusOK).JSON("successful")
 }
 
+func CheckAuth(c *fiber.Ctx) error {
+	jwtTokenString := c.Cookies("token")
+	if jwtTokenString != "" {
+		_, err := jwt.Parse(jwtTokenString, func(jwtToken *jwt.Token) (interface{}, error) {
+			if _, ok := jwtToken.Method.(*jwt.SigningMethodHMAC); !ok {
+				return nil, fmt.Errorf("unexpected signing method: %s", jwtToken.Header["alg"])
+			}
+			return []byte(os.Getenv("SECRET")), nil
+		})
+		if err != nil {
+			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"status": "fail", "message": fmt.Sprintf("invalid token: %v", err)})
+		}
+		return c.SendStatus(http.StatusOK)
+	}
+	return c.SendStatus(http.StatusUnauthorized)
+}
+
 func ViewTeams(c *fiber.Ctx) error {
 	// var teams []models.Team
 	// var students []models.User
-	if c.Locals("student") == nil {
+	if c.Locals("user") == nil {
 		return c.Status(http.StatusUnauthorized).JSON(fiber.Map{"message": "unauthorized"})
 	}
 	var student models.User
-	studentCred := c.Locals("student").(fiber.Map)
+	studentCred := c.Locals("user").(fiber.Map)
 	studentID, ok := ((studentCred["Id"]).(uint))
 	if !ok {
 		return c.Status(http.StatusBadRequest).JSON("bad credentials")
 	}
 
-	result := initializers.DB.First(&student, studentID)
+	result := initializers.DB.Preload("Teams.Members", func(db *gorm.DB) *gorm.DB {
+		return db.Select("id, full_name") // Загружаем только ID и имя участников
+	}).First(&student, studentID)
 
 	if result.Error != nil {
 		return c.Status(http.StatusUnauthorized).JSON("not authorized")
 	}
 
-	result = initializers.DB.Preload("Teams.Students").Find(&student)
-	// initializers.DB.Debug().Preload("Students").Find(&teams)
-	// initializers.DB.Debug().Preload("Teams.Students").Find(&student)
-	if result.Error != nil {
-		return c.Status(http.StatusBadRequest).JSON(result.Error)
-	}
-	return c.Status(http.StatusOK).JSON(student.Teams) //TODO: Сделать чтобы лишней информации не слать
+	return c.Status(http.StatusOK).JSON(&student.Teams)
 }
 
 func EnrollLab(c *fiber.Ctx) error {

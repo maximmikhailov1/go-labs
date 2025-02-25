@@ -25,6 +25,7 @@ const TIME_SLOTS = [
   "15:55-17:20", 
   "17:30-19:00"]
 
+  const WEEKDAYS = ["Понедельник", "Вторник", "Среда", "Четверг", "Пятница"]
 
   const Schedule = () => {
     const [currentWeekIndex, setCurrentWeekIndex] = useState(0)
@@ -53,7 +54,7 @@ const TIME_SLOTS = [
         const result = await enrollInClass(date, slotNumber)
         if (result.success) {
           console.log("Успешно записались на занятие")
-          // Здесь можно добавить обновление UI или перезагрузку данных
+          fetchScheduleData() // Обновляем данные после успешной записи
         } else {
           console.error("Ошибка при записи на занятие:", result.error)
         }
@@ -80,11 +81,11 @@ const TIME_SLOTS = [
         const isScheduled = !!scheduleItem
   
         return (
-          <div key={index} className={`border p-2 h-32 ${isScheduled ? "bg-green-100" : ""}`}>
+          <div key={index} className={`border p-4 min-h-[160px] ${isScheduled ? "bg-green-100" : ""}`}>
             <div className="text-black time-slot">{slot}</div>
             {isScheduled && scheduleItem && (
-              <div className="text-green-600 text-sm">
-                <div className="font-bold">Занятие</div>
+              <div className="text-green-600 text-sm mt-2 space-y-1">
+                <div className="font-bold text-base">Занятие</div>
                 <div>Аудитория: {scheduleItem.AudienceNumber}</div>
                 <div>Преподаватель: {scheduleItem.Tutor}</div>
                 <div>Свитчи: {scheduleItem.SwitchesRemaining}</div>
@@ -102,7 +103,7 @@ const TIME_SLOTS = [
     const getDaysOfWeek = (weekIndex: number) => {
       const today = new Date()
       const startOfWeek = new Date(today.setDate(today.getDate() - today.getDay() + 1 + weekIndex * 7))
-      return Array(7)
+      return Array(5)
         .fill(null)
         .map((_, i) => {
           const day = new Date(startOfWeek)
@@ -112,21 +113,34 @@ const TIME_SLOTS = [
     }
   
     return (
-      <div className="mt-4">
+      <div className="mt-4 w-full max-w-[2000px] mx-auto px-4">
         <div className="flex justify-between mb-4">
-          <Button onClick={() => setCurrentWeekIndex((prev) => Math.max(prev - 1, 0))} disabled={currentWeekIndex === 0}>
-            <ChevronLeft className="h-4 w-4 mr-2" />
+        <Button
+          onClick={() => setCurrentWeekIndex((prev) => Math.max(prev - 1, 0))}
+          disabled={currentWeekIndex === 0}
+          size="lg"
+          className="text-base"
+        >
+          <ChevronLeft className="h-5 w-5 mr-2" />
             Предыдущая неделя
           </Button>
-          <Button onClick={() => setCurrentWeekIndex((prev) => prev + 1)} disabled={currentWeekIndex === 2}>
-            Следующая неделя
-            <ChevronRight className="h-4 w-4 ml-2" />
+          <Button
+          onClick={() => setCurrentWeekIndex((prev) => prev + 1)}
+          disabled={currentWeekIndex === 2}
+          size="lg"
+          className="text-base"
+        >            
+        Следующая неделя
+            <ChevronRight className="h-5 w-5 ml-2" />
           </Button>
         </div>
-        <div className="grid grid-cols-7 gap-2">
+        <div className="grid grid-cols-5 gap-4">
           {getDaysOfWeek(currentWeekIndex).map((date, index) => (
-            <div key={index} className="border">
-              <div className="bg-gray-100 p-2 font-bold">{date}</div>
+          <div key={index} className="border rounded-lg overflow-hidden">
+          <div className="bg-gray-100 p-4 text-center border-b">
+            <div className="font-bold text-lg mb-1">{WEEKDAYS[index]}</div>
+            <div className="text-gray-600">{date}</div>
+          </div>
               {renderTimeSlots(date)}
             </div>
           ))}
@@ -136,4 +150,5 @@ const TIME_SLOTS = [
   }
   
   export default Schedule
+  
   

@@ -29,10 +29,8 @@ export async function signIn(formData: FormData) {
 export async function signUp(formData: FormData) {
   const username = formData.get("username")
   const password = formData.get("password")
-  const firstName = formData.get("firstName")
-  const lastName = formData.get("lastName")
-  const middleName = formData.get("middleName")
-  const groupCode = formData.get("groupCode")
+  const fullName = formData.get("fullName") 
+  const signUpCode = formData.get("signUpCode")
 
   try {
     const response = await fetch("/api/signup", {
@@ -40,7 +38,7 @@ export async function signUp(formData: FormData) {
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ username, password, firstName, lastName, middleName, groupCode }),
+      body: JSON.stringify({ username, password, fullName, signUpCode }),
       credentials: "include",
     })
 
@@ -96,4 +94,21 @@ export async function enrollInClass(date: string, slotNumber: number) {
     return { error: "Произошла ошибка при записи на занятие" }
   }
 }
-
+export async function getUser(){
+  try{
+    const response = await fetch("/api/user",{
+      method: "GET",
+      credentials:"include"
+    })
+    if (response.ok){
+      const data = await response.json()
+      return {success: true, user: data}
+    } else {
+      const errorData = await response.json()
+      return {error: errorData.message || "ошибка при получении данных пользователя"}
+    }
+  } catch (error){
+    console.error("error fetching user:", error)
+    return { error: "Произошла ошибка при получении пользователя"}
+  }
+}

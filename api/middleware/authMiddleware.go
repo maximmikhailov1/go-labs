@@ -37,20 +37,18 @@ func Authorized(c *fiber.Ctx) error {
 		}
 		//SOMETHING WRONG WITH TYPE OF ID inside claims something with uint float64 shenanigans
 		log.Info(trID, reflect.TypeOf(trID), reflect.ValueOf(trID))
-		log.Info(claims["firstname"], reflect.TypeOf(claims["firstname"]))
-		log.Info(claims["secondname"], reflect.TypeOf(claims["secondname"]))
+		log.Info(claims["fio"])
 		log.Info(claims["group"], reflect.TypeOf(claims["group"]))
-		studentData := fiber.Map{
-			"Id":         trID,
-			"FirstName":  claims["firstname"],
-			"SecondName": claims["secondname"],
-			"Group":      claims["group"],
-			"Role":       claims["role"],
+		userData := fiber.Map{
+			"Id":       trID,
+			"FullName": claims["fio"],
+			"Group":    claims["group"],
+			"Role":     claims["role"],
 		}
-		c.Locals("student", studentData)
+		c.Locals("user", userData)
 	}
-	if c.Locals("student") != nil {
-		err := c.Bind(c.Locals("student").(fiber.Map))
+	if c.Locals("user") != nil {
+		err := c.Bind(c.Locals("user").(fiber.Map))
 		if err != nil {
 			return c.Status(http.StatusBadRequest).JSON(fiber.Map{
 				"message": "failed to bind",

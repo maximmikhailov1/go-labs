@@ -7,5 +7,5 @@ import (
 )
 
 func IndexRender(c *fiber.Ctx) error {
-	return c.Status(http.StatusOK).Render("index", c.Locals("student"))
+	return c.Status(http.StatusOK).Render("index", c.Locals("user"))
 }

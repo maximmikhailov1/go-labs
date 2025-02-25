@@ -1,42 +1,100 @@
 "use client"
 
 import type React from "react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Navigation from "./Navigation"
-import { TabsDemo } from "./tabs-demo"
-import Schedule from "./Schedule"
+import Home from "./Home"
+import { ProfilePage } from "./profile/profile-page"
+import AuthPage from "./AuthPage"
+import SubjectManagement from "./teacher/SubjectManagement"
+import LabScheduling from "./teacher/LabScheduling"
+import GroupSubjectAssignment from "./teacher/GroupSubjectAssignment"
+import AllTeachersSchedule from "./teacher/AllTeachersSchedule"
 
 const Layout: React.FC = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [currentPage, setCurrentPage] = useState("home")
+  const [isLoading, setIsLoading] = useState(true)
+  const [userRole, setUserRole] = useState<"student" | "tutor" | null>(null)
 
-  const handleLogin = () => {
+  useEffect(() => {
+    const loggedInStatus = localStorage.getItem("isLoggedIn")
+    const storedUserRole = localStorage.getItem("userRole") as "student" | "tutor" | null
+
+    if (loggedInStatus === "true") {
+      setIsLoggedIn(true)
+      setUserRole(storedUserRole)
+    }
+
+    const path = window.location.pathname
+    if (path === "/profile") {
+      setCurrentPage("profile")
+    } else if (path === "/auth" && loggedInStatus !== "true") {
+      setCurrentPage("auth")
+    } else {
+      setCurrentPage("home")
+    }
+
+    setIsLoading(false)
+  }, [])
+
+  const handleLogin = (role: "student" | "tutor") => {
     setIsLoggedIn(true)
+    setUserRole(role)
     setCurrentPage("home")
+    localStorage.setItem("isLoggedIn", "true")
+    localStorage.setItem("userRole", role)
+    window.history.pushState(null, "", "/")
   }
 
   const handleLogout = () => {
     setIsLoggedIn(false)
+    setUserRole(null)
     setCurrentPage("auth")
+    localStorage.removeItem("isLoggedIn")
+    localStorage.removeItem("userRole")
+    window.history.pushState(null, "", "/auth")
+  }
+
+  const handlePageChange = (page: string) => {
+    setCurrentPage(page)
+    if (page === "profile") {
+      window.history.pushState(null, "", "/profile")
+    } else if (page === "home") {
+      window.history.pushState(null, "", "/")
+    } else {
+      window.history.pushState(null, "", `/${page}`)
+    }
+  }
+
+  if (isLoading) {
+    return <div>Загрузка...</div>
   }
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navigation isLoggedIn={isLoggedIn} onLogout={handleLogout} setCurrentPage={setCurrentPage} />
-      <main className="container mx-auto p-4">
+      <Navigation
+        isLoggedIn={isLoggedIn}
+        onLogout={handleLogout}
+        setCurrentPage={handlePageChange}
+        userRole={userRole}
+      />
+      <main className="w-full max-w-full p-4">
         {isLoggedIn ? (
-          currentPage === "home" ? (
-            <>
-              <h1 className="text-2xl font-bold mb-4">Расписание на неделю</h1>
-              <Schedule />
-            </>
-          ) : (
-            <p>Другие страницы можно добавить здесь</p>
-          )
+          <>
+            {currentPage === "home" && <Home />}
+            {currentPage === "profile" && <ProfilePage />}
+            {userRole === "tutor" && (
+              <>
+                {currentPage === "subject-management" && <SubjectManagement />}
+                {currentPage === "lab-scheduling" && <LabScheduling />}
+                {currentPage === "group-subject-assignment" && <GroupSubjectAssignment />}
+                {currentPage === "all-teachers-schedule" && <AllTeachersSchedule />}
+              </>
+            )}
+          </>
         ) : (
-          <div className="flex justify-center items-center min-h-[calc(100vh-80px)]">
-            <TabsDemo onLogin={handleLogin} />
-          </div>
+          <AuthPage onLogin={handleLogin} />
         )}
       </main>
     </div>

@@ -40,15 +40,23 @@ func SingIn(c *fiber.Ctx) error {
 				"message": "invalid username or password",
 			})
 	}
+
+	var group models.Group
+	result = initializers.DB.Model(&group).Where("id = ?", user.GroupID).Find(&group)
+	if result.Error != nil {
+		return c.Status(http.StatusBadRequest).JSON(
+			fiber.Map{
+				"message": "invalid no group",
+			})
+	}
 	tokenByte := jwt.New(jwt.SigningMethodHS256)
 
 	now := time.Now()
 	claims := tokenByte.Claims.(jwt.MapClaims)
 
 	claims["id"] = user.ID
-	claims["firstname"] = user.FirstName
-	claims["secondname"] = user.SecondName
-	claims["group"] = user.Group
+	claims["fio"] = user.FullName
+	claims["group"] = group.Name
 	claims["role"] = user.Role
 	claims["exp"] = now.Add(time.Hour * 24 * 30).Unix()
 	claims["iat"] = now.Unix()
@@ -68,7 +76,7 @@ func SingIn(c *fiber.Ctx) error {
 		Secure:  false,
 	})
 
-	return c.Status(http.StatusOK).JSON(fiber.Map{"message": "Logged in"})
+	return c.Status(http.StatusOK).JSON(fiber.Map{"message": "Logged in", "role": user.Role})
 }
 
 func SignUp(c *fiber.Ctx) error {
@@ -76,10 +84,8 @@ func SignUp(c *fiber.Ctx) error {
 	var body struct {
 		Username   string `json:"username"`
 		Password   string `json:"password"`
-		FirstName  string `json:"firstName"`
-		SecondName string `json:"secondName"`
-		Patronymic string `json:"patronymic"`
-		SingUpCode string `json:"signUpCode"`
+		FullName   string `json:"fullName"`
+		SignUpCode string `json:"signUpCode"`
 	}
 	if err := c.BodyParser(&body); err != nil {
 		log.Info(err)
@@ -89,15 +95,14 @@ func SignUp(c *fiber.Ctx) error {
 	var group models.Group
 	log.Info(body)
 
-	log.Info(group)
-	log.Info(body.SingUpCode)
+	log.Info(body.SignUpCode)
 	secretSignUpCode := os.Getenv("TUTOR_SECRET")
 	log.Info(secretSignUpCode)
-	if body.SingUpCode == secretSignUpCode {
+	if body.SignUpCode == secretSignUpCode {
 		role = "tutor"
 	} else {
 		role = "student"
-		result := initializers.DB.Where("code = ?", body.SingUpCode).First(&group)
+		result := initializers.DB.Where("code = ?", body.SignUpCode).First(&group)
 		if result.Error != nil {
 			return c.Status(http.StatusBadRequest).JSON("no groups under that code")
 		}
@@ -110,18 +115,13 @@ func SignUp(c *fiber.Ctx) error {
 			"message": "failed to hash the password",
 		})
 	}
-	student := models.User{
+	user := models.User{
 		Username:       body.Username,
 		PasswordHashed: string(hash),
-		FirstName:      body.FirstName,
-		SecondName:     body.SecondName,
-		Patronymic:     body.Patronymic,
+		FullName:       body.FullName,
 		Role:           role,
 	}
-	if student.Role == "student" {
-		student.Group = &group.Name
-	}
-	result := initializers.DB.Create(&student)
+	result := initializers.DB.Create(&user)
 	if result.Error != nil {
 		return c.Status(http.StatusBadRequest).JSON(fiber.Map{
 			"message": "failed to create a user",

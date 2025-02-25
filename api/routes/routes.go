@@ -25,6 +25,8 @@ func SetupRoutes(app *fiber.App) {
 	})
 	app.Get("/records/:id", controllers.RecordRender)
 	//new
+	app.Delete("api/team", controllers.LeaveTeam)
+	app.Get("api/user", controllers.UserFirst)
 	app.Get("api/schedule", controllers.ScheduleWeek)
 	app.Get("/demo/users", controllers.UsersIndex)
 	app.Post("api/enroll", controllers.EnrollLab)
@@ -32,6 +34,8 @@ func SetupRoutes(app *fiber.App) {
 	app.Patch("/api/team", controllers.ChangeTeamName) // предполагается query с кодом
 	app.Put("/api/team", controllers.EnterTeam)        // предполагается query с кодом
 	app.Get("/api/team", controllers.ViewTeams)
+	app.Get("/api/check-auth", controllers.CheckAuth)
+
 	//*new
 	//API Routes
 	app.Post("/api/signin", controllers.SingIn)

@@ -12,10 +12,15 @@ func init() {
 
 func main() {
 	initializers.DB.AutoMigrate(
+		&models.Subject{},
 		&models.Lab{},
-		&models.Record{},
-		&models.User{},
 		&models.Group{},
+
+		&models.User{},
 		&models.Team{},
+
+		&models.Record{},
+
+		&models.Entry{},
 	)
 }

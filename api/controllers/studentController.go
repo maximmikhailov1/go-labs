@@ -18,7 +18,7 @@ func StudentGetRecords(c *fiber.Ctx) error {
 				"true:err": err,
 			})
 	}
-	if c.Locals("student") == nil || int((c.Locals("student").(fiber.Map)["Id"]).(uint)) != id {
+	if c.Locals("user") == nil || int((c.Locals("user").(fiber.Map)["Id"]).(uint)) != id {
 		return c.Status(http.StatusUnauthorized).JSON(fiber.Map{"message": "unauthorized"})
 	}
 	records := []models.Record{}
