@@ -3,6 +3,7 @@ package models
 import "gorm.io/gorm"
 
 type Team struct {
+	ID uint `gorm:"primaryKey"`
 	gorm.Model
 	Code        string `gorm:"unique;index"`
 	Name        string

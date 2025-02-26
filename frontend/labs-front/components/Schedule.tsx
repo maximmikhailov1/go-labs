@@ -32,6 +32,8 @@ const TIME_SLOTS = [
     const [scheduleData, setScheduleData] = useState<WeekSchedule[]>([])
   
     useEffect(() => {
+      console.log('Запрос данных профиля');
+
       fetchScheduleData()
     }, [])
   
@@ -81,16 +83,43 @@ const TIME_SLOTS = [
         const isScheduled = !!scheduleItem
   
         return (
-          <div key={index} className={`border p-4 min-h-[160px] ${isScheduled ? "bg-green-100" : ""}`}>
-            <div className="text-black time-slot">{slot}</div>
+          <div 
+            key={index} 
+            className={`
+              p-4 min-h-[160px] border-b border-gray-200 last:border-b-0
+              ${isScheduled ? "bg-green-50 hover:bg-green-100" : "bg-white hover:bg-gray-50"}
+              transition-colors duration-150
+            `}
+          >
+            <div className="text-gray-600 font-medium text-sm mb-2">{slot}</div>
             {isScheduled && scheduleItem && (
-              <div className="text-green-600 text-sm mt-2 space-y-1">
-                <div className="font-bold text-base">Занятие</div>
-                <div>Аудитория: {scheduleItem.AudienceNumber}</div>
-                <div>Преподаватель: {scheduleItem.Tutor}</div>
-                <div>Свитчи: {scheduleItem.SwitchesRemaining}</div>
-                <div>Роутеры: {scheduleItem.RoutersRemaining}</div>
-                <Button onClick={() => handleEnroll(date, index + 1)} className="mt-2 w-full" size="sm">
+              <div className="text-gray-800 space-y-2">
+                <div className="font-semibold text-base text-green-700">Доступное занятие</div>
+                <div className="flex items-center text-sm">
+                  <span className="w-24 text-gray-500">Аудитория:</span>
+                  <span className="font-medium">{scheduleItem.AudienceNumber}</span>
+                </div>
+                <div className="flex items-center text-sm">
+                  <span className="w-24 text-gray-500">Преподаватель:</span>
+                  <span className="font-medium truncate">{scheduleItem.Tutor}</span>
+                </div>
+                <div className="flex items-center text-sm">
+                  <span className="w-24 text-gray-500">Свитчи:</span>
+                  <span className={`font-medium ${scheduleItem.SwitchesRemaining < 3 ? "text-red-600" : "text-green-600"}`}>
+                    {scheduleItem.SwitchesRemaining}
+                  </span>
+                </div>
+                <div className="flex items-center text-sm">
+                  <span className="w-24 text-gray-500">Роутеры:</span>
+                  <span className={`font-medium ${scheduleItem.RoutersRemaining < 3 ? "text-red-600" : "text-green-600"}`}>
+                    {scheduleItem.RoutersRemaining}
+                  </span>
+                </div>
+                <Button 
+                  onClick={() => handleEnroll(date, index + 1)} 
+                  className="mt-3 w-full bg-green-600 hover:bg-green-700 text-white"
+                  size="sm"
+                >
                   Записаться
                 </Button>
               </div>
@@ -112,41 +141,51 @@ const TIME_SLOTS = [
         })
     }
   
+
     return (
-      <div className="mt-4 w-full max-w-[2000px] mx-auto px-4">
-        <div className="flex justify-between mb-4">
-        <Button
+      <div className="w-full max-w-[2000px] mx-auto px-4">
+        <div className="flex justify-between mb-6 gap-4">
+          <Button
           onClick={() => setCurrentWeekIndex((prev) => Math.max(prev - 1, 0))}
           disabled={currentWeekIndex === 0}
           size="lg"
-          className="text-base"
+          className="text-base bg-white text-gray-700 hover:bg-gray-100 border border-gray-300 shadow-sm"
         >
           <ChevronLeft className="h-5 w-5 mr-2" />
-            Предыдущая неделя
-          </Button>
-          <Button
+          Предыдущая неделя
+        </Button>
+        <Button
           onClick={() => setCurrentWeekIndex((prev) => prev + 1)}
           disabled={currentWeekIndex === 2}
           size="lg"
-          className="text-base"
+          className="text-base bg-white text-gray-700 hover:bg-gray-100 border border-gray-300 shadow-sm"
         >            
         Следующая неделя
             <ChevronRight className="h-5 w-5 ml-2" />
           </Button>
         </div>
-        <div className="grid grid-cols-5 gap-4">
-          {getDaysOfWeek(currentWeekIndex).map((date, index) => (
-          <div key={index} className="border rounded-lg overflow-hidden">
-          <div className="bg-gray-100 p-4 text-center border-b">
-            <div className="font-bold text-lg mb-1">{WEEKDAYS[index]}</div>
-            <div className="text-gray-600">{date}</div>
-          </div>
-              {renderTimeSlots(date)}
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+        {getDaysOfWeek(currentWeekIndex).map((date, index) => (
+          <div 
+            key={index} 
+            className="border rounded-lg bg-white shadow-sm hover:shadow-md transition-shadow duration-200"
+          >
+            <div className="bg-gray-50 p-4 border-b border-gray-200">
+              <div className="font-bold text-gray-800 text-lg mb-1">{WEEKDAYS[index]}</div>
+              <div className="text-gray-500 text-sm font-medium">
+                {new Date(date).toLocaleDateString('ru-RU', {
+                  day: 'numeric',
+                  month: 'long',
+                  year: 'numeric'
+                })}
+              </div>
             </div>
-          ))}
-        </div>
+            {renderTimeSlots(date)}
+          </div>
+        ))}
       </div>
-    )
+    </div>
+  )
   }
   
   export default Schedule

@@ -2,7 +2,7 @@
 
 import type React from "react"
 import { Button } from "@/components/ui/button"
-import { User, Book, Calendar, Users, Clock } from "lucide-react"
+import { User, Book, Calendar, Users, Clock, HomeIcon } from "lucide-react"
 
 interface NavigationProps {
   isLoggedIn: boolean
@@ -13,45 +13,92 @@ interface NavigationProps {
 
 const Navigation: React.FC<NavigationProps> = ({ isLoggedIn, onLogout, setCurrentPage, userRole }) => {
   return (
-    <nav className="flex w-full max-w-full px-24 justify-between items-center p-4 bg-gray-100">
-      <Button variant="link" className="text-xl font-bold p-0" onClick={() => setCurrentPage("home")}>
-        Расписание
-      </Button>
-      {isLoggedIn && (
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" onClick={() => setCurrentPage("home")}>
-            Главная
-          </Button>
-          <Button variant="ghost" onClick={() => setCurrentPage("profile")}>
-            <User className="h-4 w-4 mr-2" />
-            Профиль
-          </Button>
-          {userRole === "tutor" && (
-            <>
-              <Button variant="ghost" onClick={() => setCurrentPage("subject-management")}>
-                <Book className="h-4 w-4 mr-2" />
-                Управление предметами
+<nav className="w-full mt-0 pt-4 transition-all duration-300">
+      <div className="container mx-auto px-4">
+        <div className="flex justify-center items-center h-14">
+          <div className="flex items-center gap-1 bg-gray-100 rounded-full p-1 shadow-inner">
+            {isLoggedIn ? (
+              <>
+                <Button 
+                  variant="ghost"
+                  className="rounded-full h-10 w-10 p-0 hover:bg-white"
+                  onClick={() => setCurrentPage("home")}
+                  title="Главная"
+                >
+                  <HomeIcon className="h-5 w-5" />
+                </Button>
+
+                <Button 
+                  variant="ghost"
+                  className="rounded-full h-10 w-10 p-0 hover:bg-white"
+                  onClick={() => setCurrentPage("profile")}
+                  title="Профиль"
+                >
+                  <User className="h-5 w-5" />
+                </Button>
+
+                {userRole === "tutor" && (
+                  <>
+                    <Button 
+                      variant="ghost"
+                      className="rounded-full h-10 w-10 p-0 hover:bg-white"
+                      onClick={() => setCurrentPage("subject-management")}
+                      title="Управление предметами"
+                    >
+                      <Book className="h-5 w-5" />
+                    </Button>
+
+                    <Button 
+                      variant="ghost"
+                      className="rounded-full h-10 w-10 p-0 hover:bg-white"
+                      onClick={() => setCurrentPage("lab-scheduling")}
+                      title="Планирование занятий"
+                    >
+                      <Calendar className="h-5 w-5" />
+                    </Button>
+
+                    <Button 
+                      variant="ghost"
+                      className="rounded-full h-10 w-10 p-0 hover:bg-white"
+                      onClick={() => setCurrentPage("group-subject-assignment")}
+                      title="Назначение предметов"
+                    >
+                      <Users className="h-5 w-5" />
+                    </Button>
+
+                    <Button 
+                      variant="ghost"
+                      className="rounded-full h-10 w-10 p-0 hover:bg-white"
+                      onClick={() => setCurrentPage("all-teachers-schedule")}
+                      title="Расписание преподавателей"
+                    >
+                      <Clock className="h-5 w-5" />
+                    </Button>
+                  </>
+                )}
+
+                <Button 
+                  onClick={onLogout}
+                  className="rounded-full h-10 bg-red-100 hover:bg-red-200 text-red-600"
+                  title="Выйти"
+                >
+                  <span className="hidden sm:inline">Выйти</span>
+                  <span className="inline sm:hidden">🚪</span>
+                </Button>
+              </>
+            ) : (
+              <Button 
+                onClick={() => setCurrentPage("auth")}
+                className="rounded-full h-10 bg-blue-600 hover:bg-blue-700 text-white"
+              >
+                Войти
               </Button>
-              <Button variant="ghost" onClick={() => setCurrentPage("lab-scheduling")}>
-                <Calendar className="h-4 w-4 mr-2" />
-                Планирование занятий
-              </Button>
-              <Button variant="ghost" onClick={() => setCurrentPage("group-subject-assignment")}>
-                <Users className="h-4 w-4 mr-2" />
-                Назначение предметов
-              </Button>
-              <Button variant="ghost" onClick={() => setCurrentPage("all-teachers-schedule")}>
-                <Clock className="h-4 w-4 mr-2" />
-                Расписание преподавателей
-              </Button>
-            </>
-          )}
-          <Button onClick={onLogout}>Выйти</Button>
+            )}
+          </div>
         </div>
-      )}
+      </div>
     </nav>
   )
 }
 
 export default Navigation
-

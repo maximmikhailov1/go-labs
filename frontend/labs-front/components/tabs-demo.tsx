@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Lock, User, PencilLine, Users, Bookmark } from "lucide-react"
 
 interface TabsDemoProps {
   onLogin: (role: "student" | "tutor") => void
@@ -18,7 +19,7 @@ export const TabsDemo: React.FC<TabsDemoProps> = ({ onLogin }) => {
   const [registerData, setRegisterData] = useState({
     username: "",
     password: "",
-    fullName:"",
+    fullName: "",
     signUpCode: "",
   })
 
@@ -78,92 +79,139 @@ export const TabsDemo: React.FC<TabsDemoProps> = ({ onLogin }) => {
   }
 
   return (
-    <Tabs defaultValue="login" className="w-[400px]">
-      <TabsList className="grid w-full grid-cols-2">
-        <TabsTrigger value="login">Вход</TabsTrigger>
-        <TabsTrigger value="register">Регистрация</TabsTrigger>
-      </TabsList>
-      <TabsContent value="login">
-        <Card>
-          <form onSubmit={handleLoginSubmit}>
-            <CardHeader>
-              <CardTitle>Вход</CardTitle>
-              <CardDescription>Введите свои учетные данные для входа в систему.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <div className="space-y-1">
-                <Label htmlFor="login-username">Логин</Label>
-                <Input
-                  id="login-username"
-                  value={loginData.username}
-                  onChange={(e) => setLoginData({ ...loginData, username: e.target.value })}
-                />
-              </div>
-              <div className="space-y-1">
-                <Label htmlFor="login-password">Пароль</Label>
-                <Input
-                  id="login-password"
-                  type="password"
-                  value={loginData.password}
-                  onChange={(e) => setLoginData({ ...loginData, password: e.target.value })}
-                />
-              </div>
-            </CardContent>
-            <CardFooter>
-              <Button type="submit">Войти</Button>
-            </CardFooter>
-          </form>
-        </Card>
-      </TabsContent>
-      <TabsContent value="register">
-        <Card>
-          <form onSubmit={handleRegisterSubmit}>
-            <CardHeader>
-              <CardTitle>Регистрация</CardTitle>
-              <CardDescription>Заполните форму для создания новой учетной записи.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <div className="space-y-1">
-                <Label htmlFor="register-username">Логин</Label>
-                <Input
-                  id="register-username"
-                  value={registerData.username}
-                  onChange={(e) => setRegisterData({ ...registerData, username: e.target.value })}
-                />
-              </div>
-              <div className="space-y-1">
-                <Label htmlFor="register-password">Пароль</Label>
-                <Input
-                  id="register-password"
-                  type="password"
-                  value={registerData.password}
-                  onChange={(e) => setRegisterData({ ...registerData, password: e.target.value })}
-                />
-              </div>
-              <div className="space-y-1">
-                <Label htmlFor="register-firstname">Имя</Label>
-                <Input
-                  id="register-firstname"
-                  value={registerData.fullName}
-                  onChange={(e) => setRegisterData({ ...registerData, fullName: e.target.value })}
-                />
-              </div>
-              <div className="space-y-1">
-                <Label htmlFor="register-groupcode">Код Группы</Label>
-                <Input
-                  id="register-groupcode"
-                  value={registerData.signUpCode}
-                  onChange={(e) => setRegisterData({ ...registerData, signUpCode: e.target.value })}
-                />
-              </div>
-            </CardContent>
-            <CardFooter>
-              <Button type="submit">Зарегистрироваться</Button>
-            </CardFooter>
-          </form>
-        </Card>
-      </TabsContent>
-    </Tabs>
+    <div className="bg-gray-50 flex items-center justify-center p-4">
+      <Tabs defaultValue="login" className="w-full">
+        <TabsList className="grid grid-cols-2 h-12 rounded-xl bg-gray-100 p-1">
+          <TabsTrigger 
+            value="login" 
+            className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm"
+          >
+            <Lock className="h-4 w-4 mr-2" />
+            Вход
+          </TabsTrigger>
+          <TabsTrigger 
+            value="register" 
+            className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm"
+          >
+            <PencilLine className="h-4 w-4 mr-2" />
+            Регистрация
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="login">
+          <Card className="border-0 shadow-sm rounded-xl">
+            <form onSubmit={handleLoginSubmit}>
+              <CardHeader className="space-y-1">
+                <CardTitle className="text-2xl font-semibold text-gray-800 flex items-center gap-2">
+                  <Lock className="h-6 w-6 text-blue-600" />
+                  Добро пожаловать
+                </CardTitle>
+                <CardDescription className="text-gray-500">
+                  Введите свои учетные данные для входа
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="login-username" className="text-gray-600">Логин</Label>
+                  <Input
+                    id="login-username"
+                    value={loginData.username}
+                    onChange={(e) => setLoginData({ ...loginData, username: e.target.value })}
+                    className="rounded-lg focus:ring-2 focus:ring-blue-500 border-gray-300"
+                    placeholder="Введите ваш логин"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="login-password" className="text-gray-600">Пароль</Label>
+                  <Input
+                    id="login-password"
+                    type="password"
+                    value={loginData.password}
+                    onChange={(e) => setLoginData({ ...loginData, password: e.target.value })}
+                    className="rounded-lg focus:ring-2 focus:ring-blue-500 border-gray-300"
+                    placeholder="••••••••"
+                  />
+                </div>
+              </CardContent>
+              <CardFooter>
+                <Button 
+                  type="submit" 
+                  className="w-full rounded-lg bg-blue-600 hover:bg-blue-700 h-12 text-lg shadow-sm"
+                >
+                  Войти
+                </Button>
+              </CardFooter>
+            </form>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="register">
+          <Card className="border-0 shadow-sm rounded-xl">
+            <form onSubmit={handleRegisterSubmit}>
+              <CardHeader className="space-y-1">
+                <CardTitle className="text-2xl font-semibold text-gray-800 flex items-center gap-2">
+                  <Users className="h-6 w-6 text-blue-600" />
+                  Создать аккаунт
+                </CardTitle>
+                <CardDescription className="text-gray-500">
+                  Заполните форму для регистрации
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="register-username" className="text-gray-600">Логин</Label>
+                  <Input
+                    id="register-username"
+                    value={registerData.username}
+                    onChange={(e) => setRegisterData({ ...registerData, username: e.target.value })}
+                    className="rounded-lg focus:ring-2 focus:ring-blue-500 border-gray-300"
+                    placeholder="Придумайте логин"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="register-password" className="text-gray-600">Пароль</Label>
+                  <Input
+                    id="register-password"
+                    type="password"
+                    value={registerData.password}
+                    onChange={(e) => setRegisterData({ ...registerData, password: e.target.value })}
+                    className="rounded-lg focus:ring-2 focus:ring-blue-500 border-gray-300"
+                    placeholder="••••••••"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="register-firstname" className="text-gray-600">ФИО</Label>
+                  <Input
+                    id="register-firstname"
+                    value={registerData.fullName}
+                    onChange={(e) => setRegisterData({ ...registerData, fullName: e.target.value })}
+                    className="rounded-lg focus:ring-2 focus:ring-blue-500 border-gray-300"
+                    placeholder="Иванов Иван Иванович"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="register-groupcode" className="text-gray-600">Код группы</Label>
+                  <Input
+                    id="register-groupcode"
+                    value={registerData.signUpCode}
+                    onChange={(e) => setRegisterData({ ...registerData, signUpCode: e.target.value })}
+                    className="rounded-lg focus:ring-2 focus:ring-blue-500 border-gray-300"
+                    placeholder="Введите код группы"
+                  />
+                </div>
+              </CardContent>
+              <CardFooter>
+                <Button 
+                  type="submit" 
+                  className="w-full rounded-lg bg-blue-600 hover:bg-blue-700 h-12 text-lg shadow-sm"
+                >
+                  Зарегистрироваться
+                </Button>
+              </CardFooter>
+            </form>
+          </Card>
+        </TabsContent>
+      </Tabs>
+    </div>
   )
 }
-

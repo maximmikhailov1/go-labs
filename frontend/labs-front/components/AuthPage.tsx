@@ -7,11 +7,12 @@ interface AuthPageProps {
 
 const AuthPage: React.FC<AuthPageProps> = ({ onLogin }) => {
   return (
-    <div className="flex justify-center items-center min-h-[calc(100vh-80px)]">
-      <TabsDemo onLogin={onLogin} />
+    <div className="flex justify-center items-center h-full">
+      <div className="w-full max-w-md p-4">
+        <TabsDemo onLogin={onLogin} />
+      </div>
     </div>
   )
 }
 
 export default AuthPage
-

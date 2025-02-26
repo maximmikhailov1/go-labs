@@ -72,6 +72,10 @@ export async function logout() {
   }
 }
 
+export function deleteCookie(name:string){
+  document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
+};
+
 export async function enrollInClass(date: string, slotNumber: number) {
   try {
     const response = await fetch("/api/enroll", {

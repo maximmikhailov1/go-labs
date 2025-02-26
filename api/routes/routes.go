@@ -25,15 +25,18 @@ func SetupRoutes(app *fiber.App) {
 	})
 	app.Get("/records/:id", controllers.RecordRender)
 	//new
-	app.Delete("api/team", controllers.LeaveTeam)
-	app.Get("api/user", controllers.UserFirst)
-	app.Get("api/schedule", controllers.ScheduleWeek)
+	app.Get("/api/subject", controllers.SubjectIndex)
+	app.Post("/api/subject", controllers.SubjectCreate)
+	app.Post("/api/records", controllers.RecordCreate)
+	app.Get("/api/user", controllers.UserFirst)
+	app.Get("/api/schedule", controllers.ScheduleWeek)
 	app.Get("/demo/users", controllers.UsersIndex)
-	app.Post("api/enroll", controllers.EnrollLab)
+	app.Post("/api/enroll", controllers.EnrollLab)
 	app.Post("/api/team", controllers.CreateTeam)
 	app.Patch("/api/team", controllers.ChangeTeamName) // предполагается query с кодом
 	app.Put("/api/team", controllers.EnterTeam)        // предполагается query с кодом
 	app.Get("/api/team", controllers.ViewTeams)
+	app.Delete("api/team", controllers.LeaveTeam)
 	app.Get("/api/check-auth", controllers.CheckAuth)
 
 	//*new
@@ -43,7 +46,6 @@ func SetupRoutes(app *fiber.App) {
 	app.Post("/api/logout", controllers.Logout)
 	app.Get("/metrics", monitor.New()) //default fiber metrics
 	//RECORDS
-	app.Post("/api/records", controllers.RecordCreate)
 	app.Get("/api/records", controllers.RecordsGet)
 	app.Get("/api/records/dates", controllers.RecordsDatesGet)
 	app.Get("/api/records/times/:date", controllers.RecordsClassesGet)

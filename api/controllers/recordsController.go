@@ -12,14 +12,14 @@ import (
 )
 
 func RecordCreate(c *fiber.Ctx) error {
-	record := new(models.Record)
-	if err := c.BodyParser(record); err != nil {
+	var record models.Record
+	if err := c.BodyParser(&record); err != nil {
 		log.Info(err)
 		return err
 	}
-	result := initializers.DB.Create(record)
+	result := initializers.DB.Create(&record)
 	if result.Error != nil {
-		return c.Status(400).JSON(result.Error)
+		return c.Status(http.StatusBadRequest).JSON(result.Error)
 	}
 
 	return c.JSON(record)

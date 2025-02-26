@@ -35,13 +35,42 @@ func UserFirst(c *fiber.Ctx) error {
 	fio := userCredentials["FullName"].(string)
 	groupName := userCredentials["Group"].(string)
 	var resp struct {
-		FullName  string
-		GroupName string
+		FullName  string `json:"fullName"`
+		GroupName string `json:"groupName"`
 	}
 	resp.FullName = fio
 	resp.GroupName = groupName
 	log.Info(resp)
 	return c.Status(http.StatusOK).JSON(resp)
+}
+
+func SubjectCreate(c *fiber.Ctx) error {
+	var subject models.Subject
+
+	if err := c.BodyParser(&subject); err != nil {
+		return c.Status(http.StatusBadRequest).JSON("failed to parse body to subject")
+	}
+
+	err := initializers.DB.Create(&subject).Error
+	if err != nil {
+		return c.Status(http.StatusBadRequest).JSON("failed to create a subject")
+	}
+
+	return c.SendStatus(http.StatusOK)
+}
+func SubjectIndex(c *fiber.Ctx) error {
+	var subjects []models.Subject
+
+	err := initializers.DB.Preload("Groups", func(db *gorm.DB) *gorm.DB {
+		return db.Select("id, name") // Загружаем только ID название группы
+	}).First(&subjects).Error
+
+	if err != nil {
+		return c.Status(http.StatusBadRequest).JSON("failed to retrieve subjects")
+	}
+
+	return c.Status(http.StatusOK).JSON(subjects)
+
 }
 
 func CreateTeam(c *fiber.Ctx) error {

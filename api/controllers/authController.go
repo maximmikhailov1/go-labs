@@ -121,12 +121,17 @@ func SignUp(c *fiber.Ctx) error {
 		FullName:       body.FullName,
 		Role:           role,
 	}
-	result := initializers.DB.Create(&user)
+	if user.Role == "student" {
+		user.GroupID = &group.ID
+	}
+
+	result := initializers.DB.Debug().Create(&user)
 	if result.Error != nil {
 		return c.Status(http.StatusBadRequest).JSON(fiber.Map{
 			"message": "failed to create a user",
 		})
 	}
+
 	return c.Status(http.StatusOK).JSON(fiber.Map{"message": "created user successfully"})
 }
 

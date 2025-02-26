@@ -16,6 +16,19 @@ export default {
   				DEFAULT: 'hsl(var(--card))',
   				foreground: 'hsl(var(--card-foreground))'
   			},
+			blue: {
+			50: '#eff6ff',
+			100: '#dbeafe',
+			600: '#2563eb',
+			700: '#1d4ed8',
+			},
+			green: {
+			600: '#16a34a',
+			},
+			yellow: {
+			100: '#fef9c3',
+			800: '#854d0e',
+			},
   			popover: {
   				DEFAULT: 'hsl(var(--popover))',
   				foreground: 'hsl(var(--popover-foreground))'
@@ -54,8 +67,18 @@ export default {
   		borderRadius: {
   			lg: 'var(--radius)',
   			md: 'calc(var(--radius) - 2px)',
-  			sm: 'calc(var(--radius) - 4px)'
-  		}
+  			sm: 'calc(var(--radius) - 4px)',
+			full:'9999px',
+  		},
+		animation: {
+			spin: "spin 1s linear infinite"
+		},
+		keyframes: {
+			spin: {
+			"0%": { transform: "rotate(0deg)" },
+			"100%": { transform: "rotate(360deg)" }
+			}
+		}
   	}
   },
   plugins: [require("tailwindcss-animate")],
