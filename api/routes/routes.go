@@ -12,32 +12,28 @@ func SetupRoutes(app *fiber.App) {
 	app.Static("/static", "./public/assets")
 	//MIDDLEWARE
 	app.Use(middleware.Authorized)
-	//Renders config
-	app.Get("/", controllers.IndexRender)
-	app.Get("/records", func(c *fiber.Ctx) error {
-		return c.Render("records", fiber.Map{})
-	})
-	app.Get("/labs", func(c *fiber.Ctx) error {
-		return c.Render("labs", fiber.Map{})
-	})
-	app.Get("/auth", func(c *fiber.Ctx) error {
-		return c.Render("auth", fiber.Map{})
-	})
-	app.Get("/records/:id", controllers.RecordRender)
 	//new
-	app.Get("/api/subject", controllers.SubjectIndex)
-	app.Post("/api/subject", controllers.SubjectCreate)
+	app.Get("/api/subjects", controllers.SubjectIndex) //возвращает список предметов
+	app.Post("/api/subjects", controllers.SubjectCreate)
+	app.Get("/api/labs/", controllers.LabsFirstBySubject)
 	app.Post("/api/records", controllers.RecordCreate)
 	app.Get("/api/user", controllers.UserFirst)
+	app.Get("/api/user/teams", controllers.UserTeamsIndex)
+	app.Post("/api/user/teams", controllers.TeamCreate)
+	app.Get("/api/user/labs", controllers.UserLabsIndex)
+	app.Get("/api/tutors", controllers.TutorsIndex)
 	app.Get("/api/schedule", controllers.ScheduleWeek)
+	app.Post("/api/schedule", controllers.ScheduleCreate)
 	app.Get("/demo/users", controllers.UsersIndex)
-	app.Post("/api/enroll", controllers.EnrollLab)
-	app.Post("/api/team", controllers.CreateTeam)
-	app.Patch("/api/team", controllers.ChangeTeamName) // предполагается query с кодом
-	app.Put("/api/team", controllers.EnterTeam)        // предполагается query с кодом
-	app.Get("/api/team", controllers.ViewTeams)
-	app.Delete("api/team", controllers.LeaveTeam)
+	app.Post("/api/enroll", controllers.Enroll)
+	app.Patch("/api/user/teams", controllers.TeamChangeName) // предполагается query с кодом
+	app.Put("/api/user/teams", controllers.TeamEnter)        // предполагается query с кодом
+	app.Delete("api/user/teams", controllers.TeamLeave)
 	app.Get("/api/check-auth", controllers.CheckAuth)
+	app.Post("/api/labs", controllers.LabCreate)
+	app.Post("/api/groups", controllers.GroupCreate) //создает новую группу
+	app.Get("/api/groups", controllers.GroupsIndex)  //возвращает список групп с Subject
+	app.Patch("/api/groups", controllers.GroupUpdateSubject)
 
 	//*new
 	//API Routes
@@ -52,8 +48,8 @@ func SetupRoutes(app *fiber.App) {
 	app.Get("/api/records/:id", controllers.RecordIndex)
 	app.Delete("/api/records/:id", controllers.RecordDelete)
 	//LABS
-	app.Post("/api/labs", controllers.LabCreate)
-	app.Get("/api/labs", controllers.LabsGet)
+
+	// app.Get("/api/labs", controllers.LabsGet)
 	app.Delete("/api/labs/:id", controllers.LabDelete)
 	app.Get("/api/labs/numbers", controllers.LabsNumbersGet)
 	//STUDENTS

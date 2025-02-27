@@ -1,10 +1,10 @@
 "use client"
 
 import type React from "react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import {ru} from "date-fns/locale"
+import { ru } from "date-fns/locale"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { Calendar } from "@/components/ui/calendar"
@@ -12,17 +12,90 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { CalendarIcon, Clock, Users, User } from "lucide-react"
 import { format } from "date-fns"
 import { cn } from "@/lib/utils"
+import { Skeleton } from "@/components/ui/skeleton"
+
+interface Tutor {
+  ID: string
+  fullName: string
+}
 
 const LabScheduling: React.FC = () => {
   const [date, setDate] = useState<Date>()
   const [classNumber, setClassNumber] = useState("")
   const [audienceNumber, setAudienceNumber] = useState("")
-  const [selectedTutor, setSelectedTutor] = useState("")
+  const [selectedTutorId, setSelectedTutorId] = useState("")
+  const [tutors, setTutors] = useState<Tutor[]>([])
+  const [isLoadingTutors, setIsLoadingTutors] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({})
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    console.log("Lab scheduled:", { date, classNumber, audienceNumber, selectedTutor })
+  // Загрузка преподавателей
+  useEffect(() => {
+    const fetchTutors = async () => {
+      try {
+        const response = await fetch('/api/tutors')
+        if (!response.ok) {
+          throw new Error('Ошибка загрузки преподавателей')
+        }
+        setTutors(await response.json())
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Неизвестная ошибка')
+      } finally {
+        setIsLoadingTutors(false)
+      }
+    }
+
+    fetchTutors()
+  }, [])
+
+  const validateForm = () => {
+    const errors: Record<string, string> = {}
+
+    if (!date) errors.date = "Выберите дату"
+    if (!classNumber) errors.classNumber = "Выберите номер пары"
+    if (!audienceNumber) errors.audienceNumber = "Введите номер аудитории"
+    if (!selectedTutorId) errors.tutor = "Выберите преподавателя"
+
+    setFormErrors(errors)
+    return Object.keys(errors).length === 0
   }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+
+    if (!validateForm()) return
+
+    try {
+      const response = await fetch('/api/schedule', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          "LabDate":date,
+          "ClassNumber":Number(classNumber),
+          "AudienceNumber":Number(audienceNumber),
+          "TutorID":Number(selectedTutorId)
+        })
+      })
+
+      if (!response.ok) {
+        throw new Error('Ошибка при создании занятия')
+      }
+
+      // Очистка формы после успешной отправки
+      setDate(undefined)
+      setClassNumber("")
+      setAudienceNumber("")
+      setSelectedTutorId("")
+      setFormErrors({})
+
+      console.log("Занятие успешно запланировано")
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Неизвестная ошибка')
+    }
+  }
+
 
   return (
     <div className="max-w-2xl mx-auto p-4">
@@ -36,11 +109,18 @@ const LabScheduling: React.FC = () => {
           </div>
         </CardHeader>
         <CardContent className="pt-6 space-y-6">
+          {error && (
+            <div className="text-red-600 bg-red-50 p-3 rounded-lg mb-4">
+              {error}
+            </div>
+          )}
+
           <form onSubmit={handleSubmit} className="space-y-5">
+            {/* Поле даты */}
             <div className="space-y-2">
               <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
                 <CalendarIcon className="h-4 w-4" />
-                Дата проведения
+                Дата проведения *
               </label>
               <Popover>
                 <PopoverTrigger asChild>
@@ -53,7 +133,7 @@ const LabScheduling: React.FC = () => {
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
                     {date ? format(date, "PPP", { locale: ru }) : <span>Выберите дату</span>}
-                    </Button>
+                  </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0">
                   <Calendar
@@ -65,14 +145,21 @@ const LabScheduling: React.FC = () => {
                   />
                 </PopoverContent>
               </Popover>
+              {formErrors.date && (
+                <p className="text-sm text-red-500">{formErrors.date}</p>
+              )}
             </div>
 
+            {/* Поле номера пары */}
             <div className="space-y-2">
               <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
                 <Clock className="h-4 w-4" />
-                Номер пары
+                Номер пары *
               </label>
-              <Select onValueChange={setClassNumber} value={classNumber}>
+              <Select 
+                onValueChange={setClassNumber} 
+                value={classNumber}
+              >
                 <SelectTrigger className="rounded-lg border-gray-300 focus:ring-2 focus:ring-blue-500 h-12">
                   <SelectValue placeholder="Выберите номер пары" />
                 </SelectTrigger>
@@ -88,12 +175,16 @@ const LabScheduling: React.FC = () => {
                   ))}
                 </SelectContent>
               </Select>
+              {formErrors.classNumber && (
+                <p className="text-sm text-red-500">{formErrors.classNumber}</p>
+              )}
             </div>
 
+            {/* Поле аудитории */}
             <div className="space-y-2">
               <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
                 <Users className="h-4 w-4" />
-                Номер аудитории
+                Номер аудитории *
               </label>
               <Input
                 type="number"
@@ -102,26 +193,43 @@ const LabScheduling: React.FC = () => {
                 onChange={(e) => setAudienceNumber(e.target.value)}
                 className="rounded-lg focus:ring-2 focus:ring-blue-500 border-gray-300 h-12"
               />
+              {formErrors.audienceNumber && (
+                <p className="text-sm text-red-500">{formErrors.audienceNumber}</p>
+              )}
             </div>
 
+            {/* Поле преподавателя */}
             <div className="space-y-2">
               <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
                 <User className="h-4 w-4" />
-                Преподаватель
+                Преподаватель *
               </label>
-              <Select onValueChange={setSelectedTutor} value={selectedTutor}>
-                <SelectTrigger className="rounded-lg border-gray-300 focus:ring-2 focus:ring-blue-500 h-12">
-                  <SelectValue placeholder="Выберите преподавателя" />
-                </SelectTrigger>
-                <SelectContent className="rounded-lg shadow-lg border border-gray-200">
-                  <SelectItem value="tutor1" className="hover:bg-gray-50">
-                    Преподаватель 1
-                  </SelectItem>
-                  <SelectItem value="tutor2" className="hover:bg-gray-50">
-                    Преподаватель 2
-                  </SelectItem>
-                </SelectContent>
-              </Select>
+              {isLoadingTutors ? (
+                <Skeleton className="h-12 w-full rounded-lg" />
+              ) : (
+                <Select 
+                  onValueChange={setSelectedTutorId} 
+                  value={selectedTutorId}
+                >
+                  <SelectTrigger className="rounded-lg border-gray-300 focus:ring-2 focus:ring-blue-500 h-12">
+                    <SelectValue placeholder="Выберите преподавателя">                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent className="rounded-lg shadow-lg border border-gray-200">
+                    {tutors.map((tutor) => (
+                      <SelectItem 
+                        key={tutor.ID} 
+                        value={tutor.ID}
+                        className="hover:bg-gray-50"
+                      >
+                        {tutor.fullName}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+              {formErrors.tutor && (
+                <p className="text-sm text-red-500">{formErrors.tutor}</p>
+              )}
             </div>
 
             <Button 

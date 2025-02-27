@@ -76,14 +76,14 @@ export function deleteCookie(name:string){
   document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
 };
 
-export async function enrollInClass(date: string, slotNumber: number) {
+export async function enrollInClass(date: string, slotNumber: number, audienceNumber: number) {
   try {
     const response = await fetch("/api/enroll", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ date, slotNumber }),
+      body: JSON.stringify({ date, slotNumber, audienceNumber }),
       credentials: "include",
     })
 

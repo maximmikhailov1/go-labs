@@ -9,6 +9,7 @@ import { format } from "date-fns"
 import { ru } from "date-fns/locale"
 import { Skeleton } from "@/components/ui/skeleton"
 
+
 const AllTeachersSchedule: React.FC = () => {
   const [scheduleData, setScheduleData] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(true)

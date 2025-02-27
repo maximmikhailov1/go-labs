@@ -84,7 +84,7 @@ export function ProfilePage() {
     const teamName = formData.get("teamName")
   
     try {
-      const response = await fetch("/api/team", {
+      const response = await fetch("/api/user/teams", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -150,7 +150,7 @@ export function ProfilePage() {
   
   async function getUserTeams() {
     try {
-      const response = await fetch("/api/team", {
+      const response = await fetch("/api/user/teams", {
         credentials: "include",
       })
   
