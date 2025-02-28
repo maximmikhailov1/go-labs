@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Lock, User, PencilLine, Users, Bookmark } from "lucide-react"
+import { Lock, PencilLine, Users } from "lucide-react"
 
 interface TabsDemoProps {
   onLogin: (role: "student" | "tutor") => void
@@ -44,8 +44,8 @@ export const TabsDemo: React.FC<TabsDemoProps> = ({ onLogin }) => {
 
         const result = await response.json()
         return { success: true, role: result.role } // Assuming the server returns { success: true, role: "student" | "tutor" }
-      } catch (error: any) {
-        return { success: false, error: error.message || "Ошибка при отправке данных" }
+      } finally{
+        
       }
     }
 

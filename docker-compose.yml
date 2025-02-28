@@ -1,0 +1,32 @@
+services:
+  backend:
+    build: ./backend
+    environment:
+      - DB_URL=postgres://user:password@postgres:5432/dbname
+    depends_on:
+      - postgres
+    ports:
+      - "3222:3222"
+
+  frontend:
+    build: 
+      context: ./frontend/labs-front
+      dockerfile: Dockerfile
+    environment:
+      - NEXT_PUBLIC_API_URL=http://backend:3222
+    ports:
+      - "3001:3000"
+    depends_on:
+      - backend
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: dbname
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:

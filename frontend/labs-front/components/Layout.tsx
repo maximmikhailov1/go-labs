@@ -2,7 +2,7 @@
 
 import type React from "react"
 import { useState, useEffect } from "react"
-import { useRouter, usePathname, useSearchParams } from "next/navigation"
+import { useRouter, usePathname} from "next/navigation"
 import Navigation from "./Navigation"
 import Home from "./Home"
 import {getUser} from "@/app/actions/auth"
@@ -15,26 +15,65 @@ import AllTeachersSchedule from "./teacher/AllTeachersSchedule"
 import Spinner from "./Spinner"
 
 
-const Layout: React.FC = () => {
+interface LayoutProps {
+  searchParams?: string;
+}
+
+
+const Layout: React.FC<LayoutProps> = ({ searchParams }) => {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [currentPage, setCurrentPage] = useState("home")
   const [isLoading, setIsLoading] = useState(true)
   const [userRole, setUserRole] = useState<"student" | "tutor" | null>(null)
+  
   const router = useRouter()
   const pathname = usePathname()
-  const searchParams = useSearchParams()
+
+  useEffect(() => {
+    const initialize = async () => {
+      const loggedInStatus = localStorage.getItem("isLoggedIn")
+      const storedUserRole = localStorage.getItem("userRole") as "student" | "tutor" | null
+      const lastPage = localStorage.getItem("lastPage")
+  
+      if (loggedInStatus === "true" && storedUserRole) {
+        setIsLoggedIn(true)
+        setUserRole(storedUserRole)
+  
+        if (pathname === "/auth") {
+          const params = new URLSearchParams(searchParams)
+          const callbackUrl = params.get("callbackUrl")
+          router.replace(callbackUrl || lastPage || "/")
+        }
+      } else {
+        if (pathname !== "/auth") {
+          localStorage.setItem("lastPage", pathname)
+          router.replace("/auth")
+        }
+        setIsLoggedIn(false)
+        setUserRole(null)
+      }
+  
+      // Устанавливаем текущую страницу
+      const page = pathname === "/" ? "home" : pathname.slice(1)
+      setCurrentPage(page)
+      setIsLoading(false)
+    }
+  
+    initialize()
+  }, [pathname, router, searchParams])
 
   useEffect(() => {
     const loggedInStatus = localStorage.getItem("isLoggedIn")
     const storedUserRole = localStorage.getItem("userRole") as "student" | "tutor" | null
     const lastPage = localStorage.getItem("lastPage")
-
+  
     if (loggedInStatus === "true" && storedUserRole) {
       setIsLoggedIn(true)
       setUserRole(storedUserRole)
-
+  
       if (pathname === "/auth") {
-        const callbackUrl = searchParams?.get("callbackUrl")
+        const params = new URLSearchParams(searchParams)
+        const callbackUrl = params.get("callbackUrl")
         router.replace(callbackUrl || lastPage || "/")
       }
     } else {
@@ -45,22 +84,22 @@ const Layout: React.FC = () => {
       setIsLoggedIn(false)
       setUserRole(null)
     }
-
-    // Устанавливаем текущую страницу на основе pathname
-    if (pathname === "/") {
-      setCurrentPage("home")
-    } else {
-      setCurrentPage(pathname.slice(1))
-    }
-
+  
     setIsLoading(false)
-  }, [pathname, router, searchParams])
-
-  const handleLogin = async (role: "student" | "tutor") => {
-    setIsLoggedIn(true)
-    setUserRole(role)
-    localStorage.setItem("isLoggedIn", "true")
-    localStorage.setItem("userRole", role)
+  }, [pathname, router, searchParams]) // Добавляем searchParams в зависимости
+    useEffect(() => {
+      // Синхронизируем currentPage с pathname
+      const pageFromPath = pathname === "/" ? "home" : pathname.slice(1)
+      if (pageFromPath !== currentPage) {
+        setCurrentPage(pageFromPath)
+      }
+    }, [pathname]) // Добавляем pathname в зависимости
+    const handleLogin = async (role: "student" | "tutor") => {
+      setIsLoggedIn(true)
+      setUserRole(role)
+      localStorage.setItem("isLoggedIn", "true")
+      localStorage.setItem("userRole", role)
+    
     try {
       const result = await getUser();
       if (result.success && result.user) {
@@ -69,8 +108,11 @@ const Layout: React.FC = () => {
     } catch (error) {
       console.error("Ошибка загрузки данных пользователя:", error);
     }
+  
+    const params = new URLSearchParams(searchParams)
+    const callbackUrl = params.get("callbackUrl")
     const lastPage = localStorage.getItem("lastPage")
-    const callbackUrl = searchParams?.get("callbackUrl")
+    
     router.replace(callbackUrl || lastPage || "/")
     setCurrentPage(callbackUrl?.slice(1) || lastPage?.slice(1) || "home")
   }
@@ -89,14 +131,17 @@ const Layout: React.FC = () => {
   const handlePageChange = (page: string) => {
     if (!isLoggedIn && page !== "auth") {
       localStorage.setItem("lastPage", `/${page}`)
-      router.replace("/auth",{scroll:false})
+      router.replace("/auth", { scroll: false })
       return
     }
-
+  
+    // Сначала обновляем состояние
     setCurrentPage(page)
+    
+    // Затем выполняем навигацию
     const path = page === "home" ? "/" : `/${page}`
     localStorage.setItem("lastPage", path)
-    router.replace(path,{scroll:false})
+    router.replace(path, { scroll: false })
   }
 
   const renderContent = () => {
@@ -131,12 +176,13 @@ const Layout: React.FC = () => {
       ) : (
         <div className="space-y-8 h-full mx-auto p-0">
              <div className=" bg-gray-50 min-h-full">
-      <Navigation
-        isLoggedIn={isLoggedIn}
-        onLogout={handleLogout}
-        setCurrentPage={handlePageChange}
-        userRole={userRole}
-      />
+             <Navigation
+            isLoggedIn={isLoggedIn}
+            onLogout={handleLogout}
+            setCurrentPage={handlePageChange}
+            userRole={userRole}
+            currentPage={currentPage} // Добавляем новый пропс
+/>
 
 <main 
   className={`

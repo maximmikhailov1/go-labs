@@ -1,5 +1,5 @@
-import Layout from "@/components/Layout"
+import { WrappedLayout } from "@/components/layout/search-params-wrapper"
 
 export default function CatchAllPage() {
-  return <Layout />
+  return <WrappedLayout />
 }

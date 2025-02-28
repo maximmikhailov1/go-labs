@@ -1,4 +1,4 @@
-module github.com/maximmikhailov1/go-labs
+module github.com/maximmikhailov1/go-labs/backend
 
 go 1.23.2
 

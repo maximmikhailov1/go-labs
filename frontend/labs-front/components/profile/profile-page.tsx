@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Plus } from "lucide-react"
 import { parseISO } from "date-fns/parseISO"
@@ -50,7 +49,6 @@ export function ProfilePage() {
     const savedUser = typeof window !== 'undefined' ? localStorage.getItem('userProfile') : null;
     return savedUser ? JSON.parse(savedUser) : { fullName: "", groupName: "" };
   });
-  const [isLoadingTeams, setIsLoadingTeams] = useState(false);
 
   useEffect(() => {
     const loadData = async () => {
@@ -79,14 +77,12 @@ export function ProfilePage() {
   }
 
   const fetchTeams = async () => {
-    setIsLoadingTeams(true);
     try {
       const result = await getUserTeams();
       if (result.success && result.teams) {
         setTeams(result.teams);
       }
     } finally {
-      setIsLoadingTeams(false);
     }
   };
   

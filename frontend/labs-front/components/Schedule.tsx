@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { ChevronLeft, ChevronRight } from "lucide-react"
-import { enrollInClass } from "@/app/actions/auth"
+
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 
 type Lab = {
@@ -67,8 +67,8 @@ const TIME_SLOTS = [
     const [selectedSession, setSelectedSession] = useState<ScheduleItem | null>(null)
     const [userLabs, setUserLabs] = useState<Lab[]>([])
     const [userTeams, setUserTeams] = useState<Team[]>([])
-    const [user, setUser] = useState<any|null>(null)
-    const [selectedLab, setSelectedLab] = useState<any | null>(null)
+    const [user, setUser] = useState<User | null>(null)
+    const [selectedLab, setSelectedLab] = useState<Lab | null>(null)
     
     useEffect(() => {
       const loadData = async () => {
@@ -126,13 +126,6 @@ const TIME_SLOTS = [
       return lab ? lab.MaxStudents - totalUsed : 0
     }
 
-    const calculateNumberOfTeamsInSlot = (labId: number) => {
-      if (!selectedSession) return 0
-      const totalUsed = selectedSession.Entries
-        .filter(e => e.Lab.ID === labId).length
-
-      return totalUsed
-    }
 
     const handleEnroll = async (labId: number, teamId?: number) => {
       if (!selectedSession) return;
@@ -205,7 +198,7 @@ const TIME_SLOTS = [
     }
     //Это нужно будет заменить на бин поиск и доабвить порядок по дате
     const isUserScheduled = (record:ScheduleItem) => {
-      if (record.Entries.filter((entry,index)=>{
+      if (record.Entries.filter((entry)=>{
         return (entry.Team.Members.filter((member)=>member.ID == (user? user.id : 0)).length) > 0
       }))
       return false

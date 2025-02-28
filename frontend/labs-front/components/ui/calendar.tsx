@@ -54,11 +54,23 @@ function Calendar({
         ...classNames,
       }}
       components={{
-        IconLeft: ({ className, ...props }) => (
-          <ChevronLeft className={cn("h-4 w-4", className)} {...props} />
-        ),
-        IconRight: ({ className, ...props }) => (
-          <ChevronRight className={cn("h-4 w-4", className)} {...props} />
+        Nav: ({ className, ...props }) => (
+          <div className={cn("flex items-center", className)}>
+            <button
+              {...props}
+              className="p-2 hover:bg-gray-100 rounded"
+              aria-label="Previous Month"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+            <button
+              {...props}
+              className="p-2 hover:bg-gray-100 rounded"
+              aria-label="Next Month"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </button>
+          </div>
         ),
       }}
       {...props}

@@ -1,6 +1,6 @@
-import Layout from "@/components/Layout"
+import { WrappedLayout } from '@/components/layout/search-params-wrapper'
 
 export default function AuthPage() {
-  return <Layout />
+  return <WrappedLayout />
 }
 

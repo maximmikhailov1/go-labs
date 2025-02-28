@@ -9,9 +9,10 @@ interface NavigationProps {
   onLogout: () => void
   setCurrentPage: (page: string) => void
   userRole: "student" | "tutor" | null
+  currentPage: string
 }
 
-const Navigation: React.FC<NavigationProps> = ({ isLoggedIn, onLogout, setCurrentPage, userRole }) => {
+const Navigation: React.FC<NavigationProps> = ({ isLoggedIn, onLogout, setCurrentPage, userRole,currentPage }) => {
   return (
 <nav className="w-full mt-0 pt-4 transition-all duration-300">
       <div className="container mx-auto px-4">
@@ -19,18 +20,18 @@ const Navigation: React.FC<NavigationProps> = ({ isLoggedIn, onLogout, setCurren
           <div className="flex items-center gap-1 bg-gray-100 rounded-full p-1 shadow-inner">
             {isLoggedIn ? (
               <>
-                <Button 
-                  variant="ghost"
-                  className="rounded-full h-10 w-10 p-0 hover:bg-white"
-                  onClick={() => setCurrentPage("home")}
-                  title="Главная"
-                >
-                  <HomeIcon className="h-5 w-5" />
+              <Button 
+                variant={currentPage === "home" ? "default" : "ghost"}
+                className={`rounded-full h-10 w-10 p-0 ${currentPage === "home" ? "bg-white shadow-sm" : "hover:bg-white"}`}
+                onClick={() => setCurrentPage("home")}
+                title="Главная"
+              >
+                <HomeIcon className="h-5 w-5" />
                 </Button>
 
                 <Button 
                   variant="ghost"
-                  className="rounded-full h-10 w-10 p-0 hover:bg-white"
+                  className={`rounded-full h-10 w-10 p-0 ${currentPage === "profile" ? "bg-white shadow-sm" : "hover:bg-white"}`}
                   onClick={() => setCurrentPage("profile")}
                   title="Профиль"
                 >
@@ -41,7 +42,7 @@ const Navigation: React.FC<NavigationProps> = ({ isLoggedIn, onLogout, setCurren
                   <>
                     <Button 
                       variant="ghost"
-                      className="rounded-full h-10 w-10 p-0 hover:bg-white"
+                      className={`rounded-full h-10 w-10 p-0 ${currentPage === "subject-management" ? "bg-white shadow-sm" : "hover:bg-white"}`}
                       onClick={() => setCurrentPage("subject-management")}
                       title="Управление предметами"
                     >
@@ -50,7 +51,7 @@ const Navigation: React.FC<NavigationProps> = ({ isLoggedIn, onLogout, setCurren
 
                     <Button 
                       variant="ghost"
-                      className="rounded-full h-10 w-10 p-0 hover:bg-white"
+                      className={`rounded-full h-10 w-10 p-0 ${currentPage === "lab-sceduling" ? "bg-white shadow-sm" : "hover:bg-white"}`}
                       onClick={() => setCurrentPage("lab-scheduling")}
                       title="Планирование занятий"
                     >
@@ -59,7 +60,7 @@ const Navigation: React.FC<NavigationProps> = ({ isLoggedIn, onLogout, setCurren
 
                     <Button 
                       variant="ghost"
-                      className="rounded-full h-10 w-10 p-0 hover:bg-white"
+                      className={`rounded-full h-10 w-10 p-0 ${currentPage === "group-subject-assignment" ? "bg-white shadow-sm" : "hover:bg-white"}`}
                       onClick={() => setCurrentPage("group-subject-assignment")}
                       title="Назначение предметов"
                     >
@@ -68,7 +69,7 @@ const Navigation: React.FC<NavigationProps> = ({ isLoggedIn, onLogout, setCurren
 
                     <Button 
                       variant="ghost"
-                      className="rounded-full h-10 w-10 p-0 hover:bg-white"
+                      className={`rounded-full h-10 w-10 p-0 ${currentPage === "all-teachers-schedule" ? "bg-white shadow-sm" : "hover:bg-white"}`}
                       onClick={() => setCurrentPage("all-teachers-schedule")}
                       title="Расписание преподавателей"
                     >

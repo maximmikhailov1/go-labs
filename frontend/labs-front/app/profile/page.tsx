@@ -2,7 +2,7 @@
 
 import { useEffect } from "react"
 import { useRouter } from "next/navigation"
-import Layout from "@/components/Layout"
+import { WrappedLayout } from "@/components/layout/search-params-wrapper"
 
 export default function ProfilePage() {
   const router = useRouter()
@@ -15,6 +15,6 @@ export default function ProfilePage() {
     }
   }, [router])
 
-  return <Layout />
+  return <WrappedLayout/>
 }
 

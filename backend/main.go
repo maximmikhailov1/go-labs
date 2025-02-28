@@ -26,7 +26,7 @@ func main() {
 		ZeroEmpty:         true,
 	})
 	routes.SetupRoutes(app)
-	ip := fmt.Sprintf("%s:%s", os.Getenv("IP_LOCAL"), os.Getenv("PORT_LOCAL"))
+	ip := fmt.Sprintf(":%s", os.Getenv("PORT"))
 	app.Listen(ip)
 }
 
