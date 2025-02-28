@@ -1,4 +1,4 @@
-package main
+package migrations
 
 import (
 	"github.com/maximmikhailov1/go-labs/backend/api/initializers"
@@ -10,17 +10,14 @@ func init() {
 	initializers.ConnectToDB()
 }
 
-func main() {
+func Migrate() {
 	initializers.DB.AutoMigrate(
 		&models.Subject{},
 		&models.Lab{},
 		&models.Group{},
-
 		&models.User{},
 		&models.Team{},
-
 		&models.Record{},
-
 		&models.Entry{},
 	)
 }

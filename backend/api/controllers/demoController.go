@@ -315,7 +315,7 @@ func UserLabsIndex(c *fiber.Ctx) error {
 		})
 	}
 
-	if group.SubjectID == 0 {
+	if *group.SubjectID == 0 {
 		return c.JSON(fiber.Map{
 			"labs": []models.Lab{},
 		})

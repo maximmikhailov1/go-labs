@@ -7,6 +7,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/template/html/v2"
 	"github.com/maximmikhailov1/go-labs/backend/api/initializers"
+	"github.com/maximmikhailov1/go-labs/backend/api/migrations"
 	"github.com/maximmikhailov1/go-labs/backend/api/routes"
 	"github.com/maximmikhailov1/go-labs/backend/api/utils"
 )
@@ -27,6 +28,7 @@ func main() {
 	})
 	routes.SetupRoutes(app)
 	ip := fmt.Sprintf(":%s", os.Getenv("PORT"))
+	migrations.Migrate()
 	app.Listen(ip)
 }
 
