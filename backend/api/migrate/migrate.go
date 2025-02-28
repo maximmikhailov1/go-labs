@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/maximmikhailov1/go-labs/api/initializers"
-	"github.com/maximmikhailov1/go-labs/api/models"
+	"github.com/maximmikhailov1/go-labs/backend/api/initializers"
+	"github.com/maximmikhailov1/go-labs/backend/api/models"
 )
 
 func init() {

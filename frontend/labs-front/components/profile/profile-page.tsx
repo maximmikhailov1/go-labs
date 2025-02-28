@@ -10,6 +10,9 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Plus } from "lucide-react"
+import { parseISO } from "date-fns/parseISO"
+import { format } from "date-fns"
+import { ru } from "date-fns/locale"
 
 interface Team {
   ID: string
@@ -22,11 +25,15 @@ interface User {
   groupName:string
 }
 interface Record {
-  date: string
-  slot: number
-  lab: string
-  team: string
-  completed: boolean
+    id:           number
+		lab_name:     string
+		lab_date:     string
+    lab_number:   string
+    class_number: number
+		audience:     number
+		status:       string
+		team_name:    string 
+		team_member:  number
 }
 
 export function ProfilePage() {
@@ -55,9 +62,21 @@ export function ProfilePage() {
       
       // Всегда загружаем свежие данные команд
       await fetchTeams();
+      await fetchRecords();
     };
     loadData();
   }, []);
+
+  const fetchRecords = async () => {
+    try{
+      const result = await getUserRecords()
+      if (result.success && result.records) {
+        setRecords(result.records)
+      }
+    } catch (error){
+      console.log(error)
+    }
+  }
 
   const fetchTeams = async () => {
     setIsLoadingTeams(true);
@@ -166,6 +185,24 @@ export function ProfilePage() {
       return { error: "Произошла ошибка при получении команд" }
     }
   }
+
+  async function getUserRecords(){
+    try {
+      const response = await fetch("/api/user/records", {
+        credentials: "include",
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        return {success:true, records: data}
+      } else {
+        const errorData = await response.json()
+        return {error: errorData.message || "Ошибка при получении записей"}}
+      } catch(error) {
+        console.error("Error fetching records:", error)
+        return { error : "Произошла ошибка при получении записей"}
+      }
+    }
   
   async function getUser(){
     try{
@@ -205,6 +242,7 @@ export function ProfilePage() {
       return { error: "Произошла ошибка при выходе из команды" }
     }
   }
+
 
   const handleCreateTeam = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -250,6 +288,7 @@ export function ProfilePage() {
   }
 
   return (
+    <div>
     <div className="container mx-auto p-4 grid grid-cols-1 lg:grid-cols-2 gap-6">
       {/* Левая колонка */}
       <Card className="border-0 shadow-sm rounded-xl bg-white">
@@ -265,75 +304,10 @@ export function ProfilePage() {
               </div>
             </div>
             <div className="space-y-1">
-              <Label className="text-sm text-gray-500">Группа</Label>
+              <Label className="text-sm text-gray-500">{user.groupName || <span>Должность</span>}</Label>
               <div className="font-medium text-gray-800 text-lg animate-fade-in">
-                {user.groupName || <span className="text-gray-400">Загрузка...</span>}
+                {user.groupName || <span className="text-gray-800">Преподаватель</span>}
               </div>
-            </div>
-          </div>
-
-
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label className="text-sm text-gray-500">Текущая команда</Label>
-              <Select value={selectedTeam} onValueChange={setSelectedTeam}>
-                <SelectTrigger className="rounded-lg border-gray-300 focus:ring-2 focus:ring-blue-500">
-                  <SelectValue placeholder="Выберите команду" />
-                </SelectTrigger>
-                <SelectContent className="rounded-lg shadow-lg border border-gray-200">
-                  <SelectItem value="solo" className="hover:bg-gray-50">
-                    🎯 Соло
-                  </SelectItem>
-                  {teams.map((team) => (
-                    <SelectItem 
-                      key={team.ID} 
-                      value={team.Code}
-                      className="hover:bg-gray-50"
-                    >
-                      <span className="font-medium">{team.Name}</span>
-                      <span className="text-gray-500 ml-2">#{team.Code}</span>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="border rounded-lg overflow-hidden">
-              <Table className="">
-                <TableHeader className="bg-gray-50">
-                  <TableRow>
-                    {["Дата", "Пара", "Лаба", "Команда", "Статус"].map((header) => (
-                      <TableHead key={header} className="text-gray-600 font-medium py-3">
-                        {header}
-                      </TableHead>
-                    ))}
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {records.map((record, index) => (
-                    <TableRow 
-                      key={index} 
-                      className="hover:bg-gray-50 transition-colors border-t border-gray-100"
-                    >
-                      <TableCell className="font-medium text-gray-700">{record.date}</TableCell>
-                      <TableCell className="text-gray-600">{record.slot}</TableCell>
-                      <TableCell className="text-gray-600">{record.lab}</TableCell>
-                      <TableCell className="text-gray-600">{record.team}</TableCell>
-                      <TableCell>
-                        <span 
-                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                            record.completed 
-                              ? "bg-green-100 text-green-800" 
-                              : "bg-yellow-100 text-yellow-800"
-                          }`}
-                        >
-                          {record.completed ? "✅ Выполнено" : "🕒 В процессе"}
-                        </span>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
             </div>
           </div>
         </CardContent>
@@ -480,6 +454,55 @@ export function ProfilePage() {
         </CardContent>
       </Card>
     </div>
+    {user.groupName && <div className="space-y-4">
+      <Card>
+        <CardHeader>
+          <CardTitle></CardTitle>
+        </CardHeader>
+        <CardContent>
+        <div className="border rounded-lg overflow-hidden">
+              <Table className="">
+                <TableHeader className="bg-gray-50">
+                  <TableRow>
+                    {["Дата", "Пара", "Лаба", "Статус"].map((header) => (
+                      <TableHead key={header} className="text-gray-600 font-medium py-3">
+                        {header}
+                      </TableHead>
+                    ))}
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {records.map((record, index) => (
+
+                    <TableRow 
+                      key={index} 
+                      className="hover:bg-gray-50 transition-colors border-t border-gray-100"
+                    >
+                      <TableCell className="font-medium text-gray-700">  {record.lab_date ? format(parseISO(record.lab_date), "d MMMM yyyy", { locale: ru }) : "Дата не указана"}</TableCell>
+                      <TableCell className="text-gray-600">{record.class_number}</TableCell>
+                      <TableCell className="text-gray-600">{record.lab_name}</TableCell>
+                      <TableCell>
+                        <span 
+                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                            record.status 
+                              ? "bg-green-100 text-green-800" 
+                              : "bg-yellow-100 text-yellow-800"
+                          }`}
+                        >
+                          {(record.status == "active") ? "✅ Выполнено" : "🕒 Записан"}
+                        </span>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+        </CardContent>
+        </Card>
+      </div>
+}
+    </div>
+    
+
   )
 }
-

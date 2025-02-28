@@ -6,9 +6,9 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/template/html/v2"
-	"github.com/maximmikhailov1/go-labs/api/initializers"
-	"github.com/maximmikhailov1/go-labs/api/routes"
-	"github.com/maximmikhailov1/go-labs/api/utils"
+	"github.com/maximmikhailov1/go-labs/backend/api/initializers"
+	"github.com/maximmikhailov1/go-labs/backend/api/routes"
+	"github.com/maximmikhailov1/go-labs/backend/api/utils"
 )
 
 func init() {

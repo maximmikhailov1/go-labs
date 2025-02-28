@@ -5,8 +5,8 @@ import (
 	"strconv"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/maximmikhailov1/go-labs/api/initializers"
-	"github.com/maximmikhailov1/go-labs/api/models"
+	"github.com/maximmikhailov1/go-labs/backend/api/initializers"
+	"github.com/maximmikhailov1/go-labs/backend/api/models"
 )
 
 func StudentGetRecords(c *fiber.Ctx) error {

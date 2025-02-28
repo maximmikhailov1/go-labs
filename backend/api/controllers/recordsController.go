@@ -7,8 +7,8 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/log"
-	"github.com/maximmikhailov1/go-labs/api/initializers"
-	"github.com/maximmikhailov1/go-labs/api/models"
+	"github.com/maximmikhailov1/go-labs/backend/api/initializers"
+	"github.com/maximmikhailov1/go-labs/backend/api/models"
 )
 
 func RecordCreate(c *fiber.Ctx) error {

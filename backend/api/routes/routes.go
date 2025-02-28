@@ -3,8 +3,8 @@ package routes
 import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/monitor"
-	"github.com/maximmikhailov1/go-labs/api/controllers"
-	"github.com/maximmikhailov1/go-labs/api/middleware"
+	"github.com/maximmikhailov1/go-labs/backend/api/controllers"
+	"github.com/maximmikhailov1/go-labs/backend/api/middleware"
 )
 
 func SetupRoutes(app *fiber.App) {
@@ -29,6 +29,7 @@ func SetupRoutes(app *fiber.App) {
 	app.Patch("/api/user/teams", controllers.TeamChangeName) // предполагается query с кодом
 	app.Put("/api/user/teams", controllers.TeamEnter)        // предполагается query с кодом
 	app.Delete("api/user/teams", controllers.TeamLeave)
+	app.Get("api/user/records", controllers.UserRecords)
 	app.Get("/api/check-auth", controllers.CheckAuth)
 	app.Post("/api/labs", controllers.LabCreate)
 	app.Post("/api/groups", controllers.GroupCreate) //создает новую группу

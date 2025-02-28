@@ -6,7 +6,23 @@ import { ChevronLeft, ChevronRight } from "lucide-react"
 import { enrollInClass } from "@/app/actions/auth"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 
-
+type Lab = {
+  ID: number
+  Number: string
+  Description: string
+  MaxStudents: number
+  RoutersRequired: number
+  SwitchesRequired: number
+  WirelessRoutersRequired: number
+  HPRoutersRequired: number
+  HPSwitchesRequired: number
+}
+type Team = {
+  ID: number
+  Name: string
+  Members: Array<{ ID: number }>
+}
+type Entries = Array<{Lab:Lab, Team:Team}>
 type ScheduleItem = {
   ID: number
   LabDate: string
@@ -21,25 +37,16 @@ type ScheduleItem = {
   WirelessRoutersRemaining: number
   HPRoutersRemaining: number
   HPSwitchesRemaining: number
-  Entries: Array<{
-    Lab: {
-      ID: number
-      Number: string
-      Description: string
-      MaxStudents: number
-      RoutersRequired: number
-      SwitchesRequired: number
-      WirelessRoutersRequired: number
-      HPRoutersRequired: number
-      HPSwitchesRequired: number
-    }
-    Team: {
-      ID: number
-      Name: string
-      Members: Array<{ ID: number }>
-    }
-  }>
+  Entries: Entries
 }
+
+type User = {
+  fullName:string
+  groupName:string
+  id:number
+}
+
+
 
 type WeekSchedule = ScheduleItem[]
 
@@ -58,24 +65,36 @@ const TIME_SLOTS = [
     const [scheduleData, setScheduleData] = useState<WeekSchedule[]>([])
   
     const [selectedSession, setSelectedSession] = useState<ScheduleItem | null>(null)
-    const [userLabs, setUserLabs] = useState<any[]>([])
-    const [userTeams, setUserTeams] = useState<any[]>([])
+    const [userLabs, setUserLabs] = useState<Lab[]>([])
+    const [userTeams, setUserTeams] = useState<Team[]>([])
+    const [user, setUser] = useState<any|null>(null)
     const [selectedLab, setSelectedLab] = useState<any | null>(null)
     
     useEffect(() => {
       const loadData = async () => {
         try {
-          const [scheduleRes, labsRes, teamsRes] = await Promise.all([
+          const [scheduleRes, labsRes, teamsRes, userRes] = await Promise.all([
             fetch(`/api/schedule?week=${currentWeekIndex}`),
             fetch('/api/user/labs'),
-            fetch('/api/user/teams')
+            fetch('/api/user/teams'),
+            fetch('/api/user')
           ]);
     
           const scheduleData = await scheduleRes.json();
           const userLabsData = await labsRes.json();
           const userTeamsData = await teamsRes.json();
+          const user = await userRes.json()
     
-          // Обновляем состояние
+          // Проверка данных
+          if (!Array.isArray(userLabsData)) {
+            console.error("Ожидался массив лабораторных работ, получено:", userLabsData);
+            return;
+          }
+          if (!Array.isArray(userTeamsData)) {
+            console.error("Ожидался массив команд, получено:", userTeamsData);
+            return;
+          }
+    
           setScheduleData(prev => {
             const newData = [...prev];
             newData[currentWeekIndex] = scheduleData;
@@ -84,6 +103,7 @@ const TIME_SLOTS = [
     
           setUserLabs(userLabsData);
           setUserTeams(userTeamsData);
+          setUser(user)
         } catch (error) {
           console.error("Ошибка загрузки данных:", error);
         }
@@ -94,7 +114,9 @@ const TIME_SLOTS = [
 
     const formatFIO = (n: string | undefined) => n?.split(' ')[0] + ' ' + n?.split(' ').slice(1).map(p => p[0] + '.').join('');
 
-    const calculateAvailableSlots = (labId: number) => {
+
+
+    const calculateAvailableSlotsInTeam = (labId: number) => {
       if (!selectedSession) return 0
       const totalUsed = selectedSession.Entries
         .filter(e => e.Lab.ID === labId)
@@ -113,8 +135,8 @@ const TIME_SLOTS = [
     }
 
     const handleEnroll = async (labId: number, teamId?: number) => {
-      if (!selectedSession) return
-  
+      if (!selectedSession) return;
+
       try {
         const response = await fetch('/api/enroll', {
           method: 'POST',
@@ -122,9 +144,9 @@ const TIME_SLOTS = [
           body: JSON.stringify({
             recordId: selectedSession.ID,
             labId,
-            teamId
+            teamId: teamId || null // Явно указываем null если команда не выбрана
           })
-        })
+        });
   
         if (response.ok) {
           const updated = await fetch(`/api/schedule?week=${currentWeekIndex}`).then(r => r.json())
@@ -155,7 +177,40 @@ const TIME_SLOTS = [
   
       return grouped;
     }
-    
+
+    const calculateIfAnyAvailableSlotsInTeamInRecord = (labId: number, record: ScheduleItem) => {
+      if (!record) return false
+      const totalUsed = record.Entries
+        .filter(e => e.Lab.ID === labId)
+        .reduce((sum, e) => sum + e.Team.Members.length, 0)
+        
+      const lab = userLabs.find(l => l.ID === labId)
+      return lab? lab.MaxStudents - totalUsed > 0:false
+    }
+
+
+    const isRecordAvailable = (record:ScheduleItem) => {
+      return userLabs.filter(lab =>{
+        const hasEnoughEquipment:boolean = (
+          record.HPRoutersRemaining - lab.HPRoutersRequired >= 0 &&
+          record.HPSwitchesRemaining - lab.HPSwitchesRequired >= 0 &&
+          record.WirelessRoutersRemaining - lab.WirelessRoutersRequired >= 0 &&
+          record.SwitchesRemaining - lab.SwitchesRequired >= 0 &&
+          record.RoutersRemaining - lab.RoutersRequired>= 0
+        )
+        const hasAvailableTeams:boolean = calculateIfAnyAvailableSlotsInTeamInRecord(lab.ID, record)
+
+        return hasEnoughEquipment && hasAvailableTeams
+      }).length > 0
+    }
+    //Это нужно будет заменить на бин поиск и доабвить порядок по дате
+    const isUserScheduled = (record:ScheduleItem) => {
+      if (record.Entries.filter((entry,index)=>{
+        return (entry.Team.Members.filter((member)=>member.ID == (user? user.id : 0)).length) > 0
+      }))
+      return false
+    }
+
     const renderTimeSlots = (date: string) => {
       const currentWeekRecords = scheduleData[currentWeekIndex] || [];
       const groupedRecords = groupRecordsByTimeSlot(currentWeekRecords);
@@ -173,12 +228,14 @@ const TIME_SLOTS = [
             <div className="text-gray-600 font-medium text-sm mb-2">{slot} {index + 1} Пара</div>
             
             {records.map(record => {
-              const isAvailable = record.RoutersRemaining > 0 || record.SwitchesRemaining > 0;
+              
+              const isAvailable = isRecordAvailable(record)
+              const isScheduled = isUserScheduled(record) ? false : true
               
               return (
                 <div 
                   key={record.ID} 
-                  className={`mb-2 p-2 rounded-lg ${isAvailable ? 'bg-green-50' : 'bg-gray-100'}`}
+                  className={`mb-2 p-2 rounded-lg ${isAvailable && !isScheduled ? 'bg-green-100' : 'bg-gray-100'}`}
                 >
                   <div className="flex justify-between items-center">
                     <div>
@@ -192,7 +249,7 @@ const TIME_SLOTS = [
                       </div>
                     </div>
                     
-                    {isAvailable && (
+                    {isAvailable && !isScheduled &&
                       <Button 
                         onClick={() => setSelectedSession(record)}
                         size="sm"
@@ -200,9 +257,14 @@ const TIME_SLOTS = [
                       >
                         Записаться
                       </Button>
-                    )}
+                    }
                   </div>
                   
+                  {isScheduled && 
+                    <div className="text-xs text-yellow-600 mt-1">
+                       Записаны
+                       </div>
+                  }
                   {!isAvailable && (
                     <div className="text-xs text-red-500 mt-1">
                       Нет свободного оборудования
@@ -267,87 +329,136 @@ const TIME_SLOTS = [
           </div>
         ))}
       </div>
-      <Dialog open={!!selectedSession} onOpenChange={() => setSelectedSession(null)}>
-        <DialogContent>
-          {!selectedLab ? (
-            <>
+
+      <Dialog open={!!selectedSession} onOpenChange={() => {setSelectedSession(null);setSelectedLab(null)}}>
+      <DialogContent className="max-w-3xl w-[calc(100vw-2rem)] sm:rounded-lg bg-white shadow-xl">
+      {!selectedLab ? (
+
+            <div className="space-y-4 ">
               <DialogHeader>
-                <DialogTitle>Выберите лабораторную работу</DialogTitle>
-                <DialogDescription>
-                  Доступное оборудование: 
-                  Роутеры: {selectedSession?.RoutersRemaining}, 
-                  Коммутаторы: {selectedSession?.SwitchesRemaining},
-                  Аудитория: {selectedSession?.AudienceNumber}<br/>
-                  Преподаватель: {formatFIO(selectedSession?.Tutor.fullName)}
+                <DialogTitle className="text-xl font-semibold text-gray-800">
+                  Выбор лабораторной работы
+                </DialogTitle>
+                <DialogDescription className="text-sm text-gray-600">
+                  <div className="grid grid-cols-2 gap-2 mt-2">
+                    <div>
+                      <span className="font-medium">Аудитория:</span> {selectedSession?.AudienceNumber}
+                    </div>
+                    <div>
+                      <span className="font-medium">Преподаватель:</span> {formatFIO(selectedSession?.Tutor.fullName)}
+                    </div>
+                    <div className="col-span-2">
+                      <span className="font-medium">Оборудование:</span>
+                      <div className=" pl-5 mt-1 grid-cols-1 gap-1">
+                        <div><span>Роутеры: {selectedSession?.RoutersRemaining}</span></div>
+                        <div><span>Коммутаторы: {selectedSession?.SwitchesRemaining}</span></div>
+                        <div><span>Беспроводные роутеры: {selectedSession?.WirelessRoutersRemaining}</span></div>
+                        <div><span>HP Роутеры: {selectedSession?.HPRoutersRemaining}</span></div>
+                        <div><span>HP Коммутаторы: {selectedSession?.HPSwitchesRemaining}</span></div>
+                      </div>
+                    </div>
+                  </div>
                 </DialogDescription>
               </DialogHeader>
+
               
-              <div className="grid gap-2">
-                {(userLabs
-                  .filter(lab => 
-                    lab.RoutersRequired <= (selectedSession?.RoutersRemaining || 0) &&
-                    lab.SwitchesRequired <= (selectedSession?.SwitchesRemaining || 0) &&
-                    lab.WirelessRoutersRequired <= (selectedSession?.WirelessRoutersRemaining || 0) &&
-                    lab.HPRoutersRequired <= (selectedSession?.HPRoutersRemaining || 0) &&
-                    lab.HPSwitchesRequired <= (selectedSession?.HPSwitchesRemaining || 0)
-                  ).length != 0 
-                  &&userLabs
-                  .filter(lab => 
-                    lab.RoutersRequired <= (selectedSession?.RoutersRemaining || 0) &&
-                    lab.SwitchesRequired <= (selectedSession?.SwitchesRemaining || 0) &&
-                    lab.WirelessRoutersRequired <= (selectedSession?.WirelessRoutersRemaining || 0) &&
-                    lab.HPRoutersRequired <= (selectedSession?.HPRoutersRemaining || 0) &&
-                    lab.HPSwitchesRequired <= (selectedSession?.HPSwitchesRemaining || 0)
-                  )) || (userLabs.filter(lab => calculateNumberOfTeamsInSlot(lab.ID))
-                )
-                  .map(lab => (
-                    <Button 
-                      key={lab.ID}
-                      onClick={() => setSelectedLab(lab)}
-                    >
-                      {lab.Number} - {lab.Description}
-                      {(calculateNumberOfTeamsInSlot(lab.ID) != 0)&&`(Свободно мест в записавшейся команде: ${calculateAvailableSlots(lab.ID)})
-                      (Записано команд: ${calculateNumberOfTeamsInSlot(lab.ID)})`}
-                    </Button>
-                  ))}
+              <div className="max-h-[60vh] overflow-y-auto pr-2">
+              {  userLabs
+    .filter(lab => {
+      // Проверка оборудования для создания новой команды
+      const hasEnoughEquipment = 
+        lab.RoutersRequired <= (selectedSession?.RoutersRemaining || 0) &&
+        lab.SwitchesRequired <= (selectedSession?.SwitchesRemaining || 0) &&
+        lab.WirelessRoutersRequired <= (selectedSession?.WirelessRoutersRemaining || 0) &&
+        lab.HPRoutersRequired <= (selectedSession?.HPRoutersRemaining || 0) &&
+        lab.HPSwitchesRequired <= (selectedSession?.HPSwitchesRemaining || 0);
+
+      // Проверка наличия неполных команд
+      const hasAvailableTeams = calculateAvailableSlotsInTeam(lab.ID) > 0;
+
+      // Лабораторная работа отображается, если:
+      // 1. Есть достаточно оборудования для создания новой команды, ИЛИ
+      // 2. Есть неполные команды с доступными местами
+      return hasEnoughEquipment && hasAvailableTeams;
+    })
+    .map(lab => (
+          <Button 
+            key={lab.ID}
+            onClick={() => setSelectedLab(lab)}
+            className="mb-2 w-full text-left justify-start bg-gray-50 hover:bg-gray-100"
+          >
+            <div className="flex-1 min-w-0">
+              <div className="font-medium text-gray-800 truncate">
+                {lab.Number} - {lab.Description}
               </div>
-            </>
+              
+              {calculateAvailableSlotsInTeam(lab.ID) > 0 ? (
+                <div className="text-xs text-gray-500 mt-1">
+                  Свободно мест: {calculateAvailableSlotsInTeam(lab.ID)}
+                </div>
+              ) : (
+                <div className="text-xs text-blue-500 mt-1">
+                  Можно записаться с новой командой
+                </div>
+              )}
+            </div>
+          </Button>
+        ))}
+            </div>
+              </div>
           ) : (
-            <>
+            <div className="space-y-4">
               <DialogHeader>
-                <DialogTitle>Выберите команду</DialogTitle>
-                <DialogDescription>
+                <DialogTitle className="text-xl font-semibold text-gray-800">
+                  Выбор команды
+                </DialogTitle>
+                <DialogDescription className="text-sm text-gray-600">
                   Максимальный размер команды: {selectedLab.MaxStudents}
                 </DialogDescription>
               </DialogHeader>
-              
-              <div className="grid gap-2">
-                {userTeams
-                  .filter(team => 
-                    team.Members.length <= calculateAvailableSlots(selectedLab.ID)
-                  )
-                  .map(team => (
-                    <Button
-                      key={team.ID}
-                      onClick={() => handleEnroll(selectedLab.ID, team.ID)}
-                      
-                    >
-                      {team.Name} ({team.Members.length} участников)
-                    </Button>
-                  ))}
+              <div className="max-h-[60vh] overflow-y-auto pr-2">
+              {userTeams
+              .filter(team => {
+                // Можно ли добавить в команду
+                const canJoinTeam = team.Members.length <= selectedLab.MaxStudents;
                 
-                <Button 
-                  onClick={() => handleEnroll(selectedLab.ID)}
-                  variant="outline"
-                >
-                  Записаться одному
-                </Button>
+                // Есть ли оборудование для этой лабораторной
+                const hasEquipment = 
+                  selectedLab.RoutersRequired <= (selectedSession?.RoutersRemaining || 0) &&
+                  selectedLab.SwitchesRequired <= (selectedSession?.SwitchesRemaining || 0) &&
+                  selectedLab.WirelessRoutersRequired <= (selectedSession?.WirelessRoutersRemaining || 0) &&
+                  selectedLab.HPRoutersRequired <= (selectedSession?.HPRoutersRemaining || 0) &&
+                  selectedLab.HPSwitchesRequired <= (selectedSession?.HPSwitchesRemaining || 0);
+
+                return canJoinTeam || hasEquipment;
+              })
+              .map(team => (
+                  <Button
+                    key={team.ID}
+                    onClick={() => handleEnroll(selectedLab.ID, team.ID)}
+                    className="w-full mb-2 justify-start bg-gray-50 hover:bg-gray-100"
+                  >
+                    <span className="flex-1 text-left text-blue-500">
+                      {team.Name} 
+                      <span className="ml-2 text-gray-500">
+                        ({team.Members.length} участников)
+                      </span>
+                    </span>
+                  </Button>
+                ))}
+              
+              <Button 
+              onClick={() => handleEnroll(selectedLab.ID)}
+              className="w-full mt-4 bg-blue-600 hover:bg-blue-700 text-white"
+            >
+              {selectedLab.MaxStudents > 1 ? "Создать новую команду" : "Записаться индивидуально"}
+            </Button>
+            </div>
               </div>
-            </>
           )}
         </DialogContent>
       </Dialog>
-    </div>
+      </div>
   )
 }
 

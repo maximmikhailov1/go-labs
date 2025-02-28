@@ -10,9 +10,9 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/log"
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/maximmikhailov1/go-labs/api/initializers"
-	"github.com/maximmikhailov1/go-labs/api/models"
-	"github.com/maximmikhailov1/go-labs/api/utils"
+	"github.com/maximmikhailov1/go-labs/backend/api/initializers"
+	"github.com/maximmikhailov1/go-labs/backend/api/models"
+	"github.com/maximmikhailov1/go-labs/backend/api/utils"
 	"gorm.io/gorm"
 )
 
@@ -34,10 +34,13 @@ func UserFirst(c *fiber.Ctx) error {
 	userCredentials := c.Locals("user").(fiber.Map)
 	fio := userCredentials["FullName"].(string)
 	groupName := userCredentials["Group"].(string)
+	id := userCredentials["Id"].(uint)
 	var resp struct {
+		Id        uint   `json:"id"`
 		FullName  string `json:"fullName"`
 		GroupName string `json:"groupName"`
 	}
+	resp.Id = id
 	resp.FullName = fio
 	resp.GroupName = groupName
 	log.Info(resp)
@@ -369,6 +372,81 @@ TODO: создать ручку по которой будут отобража�
 выбираешь пару---выбираешь аудиторию -- выбираешь команду --- выбираешь лабу --которую можно сделать командой- -
 */
 
+func UserRecords(c *fiber.Ctx) error {
+	userCredentials, ok := c.Locals("user").(fiber.Map)
+	if !ok {
+		return c.Status(400).JSON(fiber.Map{"error": "Не удалось получить данные пользователя"})
+	}
+	studentID, ok := userCredentials["Id"].(uint)
+	if !ok {
+		return c.Status(400).JSON(fiber.Map{"error": "Неверный формат ID пользователя"})
+	}
+	userRole, ok := userCredentials["Role"].(string)
+	if !ok {
+		return c.Status(400).JSON(fiber.Map{"error": "Неверный формат роли пользователя"})
+
+	}
+	if userRole == "student" {
+		type UserRecordDTO struct {
+			ID          uint      `json:"id"`
+			LabName     string    `json:"lab_name"`
+			LabDate     time.Time `json:"lab_date"`
+			LabNumber   string    `json:"lab_number"`
+			ClassNumber int       `json:"class_number"`
+			Audience    int       `json:"audience_number"`
+			Status      string    `json:"status"`
+			TeamName    string    `json:"team_name"`
+		}
+
+		var response = []UserRecordDTO{}
+
+		result := initializers.DB.
+			Table("entries").
+			Select(`
+				entries.id,
+				labs.description as lab_name,
+				records.lab_date as lab_date,
+				labs.number as lab_number,
+				records.class_number as class_number,
+				records.audience_number as audience_number,
+				entries.status as status,
+				teams.name as team_name
+
+			`).
+			Joins("JOIN teams ON entries.team_id = teams.id").
+			Joins("JOIN users_teams ON teams.id = users_teams.team_id").
+			Joins("JOIN labs ON entries.lab_id = labs.id").
+			Joins("JOIN records ON entries.record_id = records.id").
+			Where("users_teams.user_id = ?", studentID).
+			Group("entries.id, labs.number, records.lab_date, records.class_number, labs.description,records.audience_number, entries.status, teams.name").
+			Find(&response)
+
+		if result.Error != nil {
+			return c.Status(500).JSON(fiber.Map{"error": "Ошибка получения записей"})
+		}
+		return c.Status(200).JSON(response)
+	} else if userRole == "tutor" {
+
+		var records []models.Record
+		result := initializers.DB.Debug().
+			Preload("Entries.Team.Members.Group").
+			Preload("Entries.Lab").
+			Preload("Tutor").
+			Find(&records)
+
+		if result.Error != nil {
+			return c.Status(http.StatusInternalServerError).JSON(fiber.Map{
+				"error": "Ошибка при получении записей",
+			})
+		}
+
+		return c.Status(200).JSON(records)
+
+	}
+
+	return c.Status(http.StatusBadRequest).JSON("")
+}
+
 func Enroll(c *fiber.Ctx) error {
 	type RequestBody struct {
 		RecordID uint  `json:"recordId"`
@@ -381,33 +459,116 @@ func Enroll(c *fiber.Ctx) error {
 		return c.Status(400).JSON(fiber.Map{"error": "Неверный запрос"})
 	}
 
-	// Получаем запись и лабораторную работу
-	var record models.Record
-	if err := initializers.DB.Preload("Entries.Team").Preload("Entries.Lab").First(&record, req.RecordID).Error; err != nil {
-		return c.Status(404).JSON(fiber.Map{"error": "Запись не найдена"})
+	// Получаем текущего пользователя
+	userCredentials, ok := c.Locals("user").(fiber.Map)
+	if !ok {
+		return c.Status(400).JSON(fiber.Map{"error": "Не удалось получить данные пользователя"})
 	}
-
-	var lab models.Lab
-	if err := initializers.DB.First(&lab, req.LabID).Error; err != nil {
-		return c.Status(404).JSON(fiber.Map{"error": "Лабораторная работа не найдена"})
-	}
-	deltaRouters := record.RoutersRemaining - lab.RoutersRequired // 0+ = good
-	deltaSwitches := record.SwitchesRemaining - lab.SwitchesRequired
-	deltaWireless := record.WirelessRoutersRemaining - lab.WirelessRoutersRequired
-	deltaHPRouters := record.HPRoutersRemaining - lab.HPRoutersRequired
-	deltaHPSwitches := record.HPSwitchesRemaining - lab.HPSwitchesRequired
-	// Проверка оборудования
-	if deltaRouters < 0 ||
-		deltaSwitches < 0 ||
-		deltaWireless < 0 ||
-		deltaHPRouters < 0 ||
-		deltaHPSwitches < 0 {
-		return c.Status(400).JSON(fiber.Map{"error": "Недостаточно оборудования"})
+	studentID, ok := userCredentials["Id"].(uint)
+	if !ok {
+		return c.Status(400).JSON(fiber.Map{"error": "Неверный формат ID пользователя"})
 	}
 
 	tx := initializers.DB.Begin()
 
-	// Обновляем оборудование
+	// Получаем запись и лабораторную работу
+	var record models.Record
+	if err := tx.Preload("Entries.Lab").Preload("Entries.Team.Members").
+		First(&record, req.RecordID).Error; err != nil {
+		return c.Status(404).JSON(fiber.Map{"error": "Запись не найдена"})
+	}
+
+	var lab models.Lab
+	if err := tx.First(&lab, req.LabID).Error; err != nil {
+		tx.Rollback()
+		return c.Status(404).JSON(fiber.Map{"error": "Лабораторная работа не найдена"})
+	}
+
+	// Поиск существующих записей для этой лабораторной работы
+	var existingEntries []models.Entry
+	for _, entry := range record.Entries {
+		if entry.LabID == lab.ID {
+			existingEntries = append(existingEntries, entry)
+		}
+		for _, member := range entry.Team.Members {
+
+			if member.ID == studentID {
+				tx.Rollback()
+				return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": "Пользователь уже записан на эту пару"})
+
+			}
+		}
+	}
+	var premadeTeam models.Team
+	// Попытка добавить в существующую команду
+	if req.TeamID == nil {
+		// Поиск команды с доступными местами
+		for _, entry := range existingEntries {
+			if len(entry.Team.Members) < lab.MaxStudents {
+				// Добавление пользователя в команду
+				var user models.User
+				if err := tx.First(&user, studentID).Error; err != nil {
+					tx.Rollback()
+					return c.Status(404).JSON(fiber.Map{"error": "Пользователь не найден"})
+				}
+
+				if err := tx.Model(&entry.Team).Association("Members").Append(&user); err != nil {
+					tx.Rollback()
+					return c.Status(500).JSON(fiber.Map{"error": "Ошибка добавления в команду"})
+				}
+
+				tx.Commit()
+				return c.JSON(fiber.Map{"success": true, "teamId": entry.TeamID})
+			}
+		}
+	} else {
+		// Проверка указанной команды
+
+		if err := tx.Preload("Members").First(&premadeTeam, *req.TeamID).Error; err != nil {
+			tx.Rollback()
+			return c.Status(404).JSON(fiber.Map{"error": "Команда не найдена"})
+		}
+
+		// Проверка принадлежности пользователя к команде
+		var isMember bool
+		for _, member := range premadeTeam.Members {
+			if member.ID == studentID {
+				isMember = true
+				break
+			}
+		}
+		if !isMember {
+			tx.Rollback()
+			return c.Status(403).JSON(fiber.Map{"error": "Пользователь не состоит в команде"})
+		}
+
+		// Проверка места в команде
+		for _, entry := range existingEntries {
+			if len(entry.Team.Members)+len(premadeTeam.Members) <= lab.MaxStudents {
+				if err := tx.Model(&entry.Team).Association("Members").Append(&premadeTeam.Members); err != nil {
+					tx.Rollback()
+					return c.Status(500).JSON(fiber.Map{"error": "Ошибка добавления в команду"})
+				}
+				tx.Commit()
+				return c.JSON(fiber.Map{"success": true, "teamId": entry.TeamID})
+			}
+		}
+
+	}
+
+	// Если не нашли подходящей команды - создаем новую запись
+	deltaRouters := record.RoutersRemaining - lab.RoutersRequired
+	deltaSwitches := record.SwitchesRemaining - lab.SwitchesRequired
+	deltaWireless := record.WirelessRoutersRemaining - lab.WirelessRoutersRequired
+	deltaHPRouters := record.HPRoutersRemaining - lab.HPRoutersRequired
+	deltaHPSwitches := record.HPSwitchesRemaining - lab.HPSwitchesRequired
+
+	if deltaRouters < 0 || deltaSwitches < 0 || deltaWireless < 0 || deltaHPRouters < 0 || deltaHPSwitches < 0 {
+		tx.Rollback()
+		return c.Status(400).JSON(fiber.Map{"error": "Недостаточно оборудования"})
+	}
+
+	// Обновление оборудования
 	if err := tx.Model(&record).Updates(map[string]interface{}{
 		"routers_remaining":          deltaRouters,
 		"switches_remaining":         deltaSwitches,
@@ -419,44 +580,23 @@ func Enroll(c *fiber.Ctx) error {
 		return c.Status(500).JSON(fiber.Map{"error": "Ошибка обновления оборудования"})
 	}
 
-	// Создаем или обновляем запись
-	if req.TeamID != nil {
-		var team models.Team
-		if err := tx.Preload("Members").First(&team, *req.TeamID).Error; err != nil {
-			tx.Rollback()
-			return c.Status(404).JSON(fiber.Map{"error": "Команда не найдена"})
-		}
-
-		if (len(team.Members)) >= lab.MaxStudents {
-			tx.Rollback()
-			return c.Status(400).JSON(fiber.Map{"error": "Команда заполнена"})
-		}
-	} else {
-		userCredentials, ok := c.Locals("user").(fiber.Map)
-		if !ok {
-			tx.Rollback()
-			return c.Status(400).JSON(fiber.Map{"error": "Не удалось получить данные пользователя"})
-		}
-		studentID, ok := userCredentials["Id"].(uint)
-		if !ok {
-			tx.Rollback()
-
-			return c.Status(400).JSON(fiber.Map{"error": "Не удалось получить данные пользователя"})
-		}
-		var student models.User
-		err := initializers.DB.First(&student, studentID).Error
-		if err != nil {
-			tx.Rollback()
-			return c.Status(400).JSON(fiber.Map{"error": "Не удалось найти пользователя"})
-		}
+	// Создание новой команды если не указана
+	if req.TeamID == nil {
 		codeForEnrollment, err := utils.GenerateRandomCode(16)
 		if err != nil {
 			tx.Rollback()
-			return c.Status(500).JSON(fiber.Map{"error": "Не удалось сгенерировать код для команды, попробуйте ещё раз"})
+			return c.Status(500).JSON(fiber.Map{"error": "Ошибка генерации кода команды"})
 		}
+
+		var student models.User
+		if err := tx.First(&student, studentID).Error; err != nil {
+			tx.Rollback()
+			return c.Status(404).JSON(fiber.Map{"error": "Пользователь не найден"})
+		}
+
 		newTeam := models.Team{
 			Code:    codeForEnrollment,
-			Name:    "Ходим на лабы",
+			Name:    "Команда " + codeForEnrollment,
 			Premade: false,
 			Members: []models.User{student},
 		}
@@ -465,8 +605,27 @@ func Enroll(c *fiber.Ctx) error {
 			return c.Status(500).JSON(fiber.Map{"error": "Ошибка создания команды"})
 		}
 		req.TeamID = &newTeam.ID
+	} else { // Если указана, то всё равно новую создаём
+		codeForEnrollment, err := utils.GenerateRandomCode(16)
+		if err != nil {
+			tx.Rollback()
+			return c.Status(500).JSON(fiber.Map{"error": "Ошибка генерации кода команды"})
+		}
+
+		newTeam := models.Team{
+			Code:    codeForEnrollment,
+			Name:    "Команда " + codeForEnrollment,
+			Premade: false,
+			Members: premadeTeam.Members,
+		}
+		if err := tx.Create(&newTeam).Error; err != nil {
+			tx.Rollback()
+			return c.Status(500).JSON(fiber.Map{"error": "Ошибка создания команды"})
+		}
+		req.TeamID = &newTeam.ID
 	}
 
+	// Создание новой записи
 	entry := models.Entry{
 		RecordID: record.ID,
 		LabID:    lab.ID,
@@ -514,16 +673,15 @@ func ScheduleWeek(c *fiber.Ctx) error {
 	timeToWeekEnd := time.Duration(int(time.Hour) * 24 * (7 - currentWeekdayNumber))
 	weekEnd := offsetTime.Add(timeToWeekEnd)
 
-	result := initializers.DB.Preload("Tutor", func(db *gorm.DB) *gorm.DB {
+	err = initializers.DB.Preload("Tutor", func(db *gorm.DB) *gorm.DB {
 		return db.Select("id, full_name") // Загружаем только ID название группы
 	}).Preload("Entries.Lab").Preload("Entries.Team.Members", func(db *gorm.DB) *gorm.DB {
 		return db.Select("id") // Загружаем только ID название группы
-	}).Where("lab_date BETWEEN ? AND ?", weekStart, weekEnd).Find(&records)
+	}).Where("lab_date BETWEEN ? AND ?", weekStart, weekEnd).Find(&records).Error
 	//initializers.DB.Debug().Where("lab_date BETWEEN ? AND ?", weekStart, weekEnd).Find(&records)
-	if result.Error != nil {
-		return result.Error
-	} //TODO: preload tutuor
-	log.Info(records)
+	if err != nil {
+		return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": "Не удалось загрузить записи"})
+	}
 	return c.Status(http.StatusOK).JSON(records)
 }
 
