@@ -199,13 +199,12 @@ const TIME_SLOTS = [
     //Это нужно будет заменить на бин поиск и доабвить порядок по дате
     const isUserScheduled = (record:ScheduleItem) => {
       if (record.Entries.filter((entry)=>{
-
-        return ((entry.Team.Members.
-          filter(
-            (member)=>member.ID == (user? user.id : 0))
-            .length) > 0) || (entry.Team.Members.length == 0)
-      }
-    ))
+        return (
+          (entry.Team.Members.
+          filter( (member) => member.ID == (user? user.id : 0)).length) > 0) }
+    ).length > 0){
+      return true
+    }
       return false
     }
 
