@@ -227,7 +227,7 @@ const TIME_SLOTS = [
             {records.map(record => {
               
               const isAvailable = isRecordAvailable(record)
-              const isScheduled = isUserScheduled(record) ? false : true
+              const isScheduled = isUserScheduled(record)
               
               return (
                 <div 
