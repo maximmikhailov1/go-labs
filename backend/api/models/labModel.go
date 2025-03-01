@@ -3,6 +3,7 @@ package models
 import "gorm.io/gorm"
 
 type Lab struct {
+	ID uint `gorm:"primarykey"`
 	gorm.Model
 	Subject                 Subject
 	SubjectID               uint // Ссылка на предмет

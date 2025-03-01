@@ -104,7 +104,7 @@ const LabScheduling: React.FC = () => {
           <div className="flex items-center gap-3">
             <CalendarIcon className="h-6 w-6 text-blue-600" />
             <CardTitle className="text-2xl font-semibold text-gray-800">
-              Планирование лабораторного занятия
+              Планирование аудиторного занятия
             </CardTitle>
           </div>
         </CardHeader>

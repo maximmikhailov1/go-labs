@@ -382,7 +382,7 @@ const TIME_SLOTS = [
           <Button 
             key={lab.ID}
             onClick={() => setSelectedLab(lab)}
-            className="mb-2 w-full text-left justify-start bg-gray-50 hover:bg-gray-100"
+            className="mb-2 w-full text-left justify-start bg-blue-200 hover:bg-blue-400"
           >
             <div className="flex-1 min-w-0">
               <div className="font-medium text-gray-800 truncate">
@@ -442,16 +442,18 @@ const TIME_SLOTS = [
                       </span>
                     </span>
                   </Button>
-                ))}
+                ))
+                }
+                
               
               <Button 
               onClick={() => handleEnroll(selectedLab.ID)}
               className="w-full mt-4 bg-blue-600 hover:bg-blue-700 text-white"
             >
-              {selectedLab.MaxStudents > 1 ? "Создать новую команду" : "Записаться индивидуально"}
+              {selectedLab.MaxStudents > 1 ? "Создать новую команду или записаться в существующую" : "Записаться индивидуально"}
             </Button>
             </div>
-              </div>
+            </div>
           )}
         </DialogContent>
       </Dialog>
