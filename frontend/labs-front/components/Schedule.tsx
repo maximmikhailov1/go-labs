@@ -382,19 +382,19 @@ const TIME_SLOTS = [
           <Button 
             key={lab.ID}
             onClick={() => setSelectedLab(lab)}
-            className="mb-2 w-full text-left justify-start bg-blue-200 hover:bg-blue-400"
+            className="mb-2 text-white w-full h-12 max-h-14 text-left justify-start bg-blue-700 hover:bg-blue-800"
           >
-            <div className="flex-1 min-w-0">
-              <div className="font-medium text-gray-800 truncate">
+            <div className="flex-1 p-2 min-w-0">
+              <div className="font-medium text-white truncate">
                 {lab.Number} - {lab.Description}
               </div>
               
               {calculateAvailableSlotsInTeam(lab.ID) > 0 ? (
-                <div className="text-xs text-gray-500 mt-1">
+                <div className="text-xs text-gray-100 mt-1">
                   Свободно мест: {calculateAvailableSlotsInTeam(lab.ID)}
                 </div>
               ) : (
-                <div className="text-xs text-blue-500 mt-1">
+                <div className="text-xs text-gray-100 mt-1">
                   Можно записаться с новой командой
                 </div>
               )}
@@ -402,7 +402,7 @@ const TIME_SLOTS = [
           </Button>
         ))}
             </div>
-              </div>
+          </div>
           ) : (
             <div className="space-y-4">
               <DialogHeader>
