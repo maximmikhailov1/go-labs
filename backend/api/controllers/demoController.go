@@ -297,7 +297,15 @@ func UserLabsIndex(c *fiber.Ctx) error {
 		return c.Status(http.StatusBadRequest).JSON("bad credentials")
 	}
 	if studentRole != "student" {
-		return c.Status(http.StatusUnauthorized).JSON([]models.Lab{})
+		var emptyListForTutors = models.Lab{
+			ID:                      0,
+			SwitchesRequired:        0,
+			RoutersRequired:         0,
+			WirelessRoutersRequired: 0,
+			HPSwitchesRequired:      0,
+			HPRoutersRequired:       0,
+		}
+		return c.Status(http.StatusOK).JSON([]models.Lab{emptyListForTutors})
 	}
 	if studentGroup == "" {
 		return c.Status(http.StatusBadRequest).JSON("user has no group")
@@ -315,7 +323,7 @@ func UserLabsIndex(c *fiber.Ctx) error {
 		})
 	}
 
-	if *group.SubjectID == 0 {
+	if group.SubjectID == nil {
 		return c.JSON(fiber.Map{
 			"labs": []models.Lab{},
 		})

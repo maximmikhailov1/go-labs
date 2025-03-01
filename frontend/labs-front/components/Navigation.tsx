@@ -22,7 +22,7 @@ const Navigation: React.FC<NavigationProps> = ({ isLoggedIn, onLogout, setCurren
               <>
               <Button 
                 variant={currentPage === "home" ? "default" : "ghost"}
-                className={`rounded-full h-10 w-10 p-0 ${currentPage === "home" ? "bg-white shadow-sm" : "hover:bg-white"}`}
+                className={`rounded-full h-10 w-10 p-0 ${currentPage === "home" ? "hover:bg-gray-700" : "bg-white shadow-sm hover:bg-gray-400"}`}
                 onClick={() => setCurrentPage("home")}
                 title="Главная"
               >
@@ -30,8 +30,8 @@ const Navigation: React.FC<NavigationProps> = ({ isLoggedIn, onLogout, setCurren
                 </Button>
 
                 <Button 
-                  variant="ghost"
-                  className={`rounded-full h-10 w-10 p-0 ${currentPage === "profile" ? "bg-white shadow-sm" : "hover:bg-white"}`}
+                  variant={currentPage === "profile" ? "default" : "ghost"}
+                  className={`rounded-full h-10 w-10 p-0 ${currentPage === "profile" ? "hover:bg-gray-700" : "bg-white shadow-sm hover:bg-gray-400"}`}
                   onClick={() => setCurrentPage("profile")}
                   title="Профиль"
                 >
@@ -41,8 +41,8 @@ const Navigation: React.FC<NavigationProps> = ({ isLoggedIn, onLogout, setCurren
                 {userRole === "tutor" && (
                   <>
                     <Button 
-                      variant="ghost"
-                      className={`rounded-full h-10 w-10 p-0 ${currentPage === "subject-management" ? "bg-white shadow-sm" : "hover:bg-white"}`}
+                      variant={currentPage === "subject-management" ? "default" : "ghost"}
+                      className={`rounded-full h-10 w-10 p-0 ${currentPage === "subject-management" ? "hover:bg-gray-700" : "bg-white shadow-sm hover:bg-gray-400"}`}
                       onClick={() => setCurrentPage("subject-management")}
                       title="Управление предметами"
                     >
@@ -50,8 +50,8 @@ const Navigation: React.FC<NavigationProps> = ({ isLoggedIn, onLogout, setCurren
                     </Button>
 
                     <Button 
-                      variant="ghost"
-                      className={`rounded-full h-10 w-10 p-0 ${currentPage === "lab-sceduling" ? "bg-white shadow-sm" : "hover:bg-white"}`}
+                      variant={currentPage === "lab-scheduling" ? "default" : "ghost"}
+                      className={`rounded-full h-10 w-10 p-0 ${currentPage === "lab-scheduling" ? "hover:bg-gray-700" : "bg-white shadow-sm hover:bg-gray-400"}`}
                       onClick={() => setCurrentPage("lab-scheduling")}
                       title="Планирование занятий"
                     >
@@ -59,8 +59,8 @@ const Navigation: React.FC<NavigationProps> = ({ isLoggedIn, onLogout, setCurren
                     </Button>
 
                     <Button 
-                      variant="ghost"
-                      className={`rounded-full h-10 w-10 p-0 ${currentPage === "group-subject-assignment" ? "bg-white shadow-sm" : "hover:bg-white"}`}
+                      variant={currentPage === "group-subject-assignment" ? "default" : "ghost"}
+                      className={`rounded-full h-10 w-10 p-0 ${currentPage === "group-subject-assignment" ? "hover:bg-gray-700" : "bg-white shadow-sm hover:bg-gray-400"}`}
                       onClick={() => setCurrentPage("group-subject-assignment")}
                       title="Назначение предметов"
                     >
@@ -68,8 +68,8 @@ const Navigation: React.FC<NavigationProps> = ({ isLoggedIn, onLogout, setCurren
                     </Button>
 
                     <Button 
-                      variant="ghost"
-                      className={`rounded-full h-10 w-10 p-0 ${currentPage === "all-teachers-schedule" ? "bg-white shadow-sm" : "hover:bg-white"}`}
+                      variant={currentPage === "all-teachers-schedule" ? "default" : "ghost"}
+                      className={`rounded-full h-10 w-10 p-0 ${currentPage === "all-teachers-schedule" ? "hover:bg-gray-700" : "bg-white shadow-sm hover:bg-gray-400"}`}
                       onClick={() => setCurrentPage("all-teachers-schedule")}
                       title="Расписание преподавателей"
                     >
@@ -88,12 +88,7 @@ const Navigation: React.FC<NavigationProps> = ({ isLoggedIn, onLogout, setCurren
                 </Button>
               </>
             ) : (
-              <Button 
-                onClick={() => setCurrentPage("auth")}
-                className="rounded-full h-10 bg-blue-600 hover:bg-blue-700 text-white"
-              >
-                Войти
-              </Button>
+              <></>
             )}
           </div>
         </div>
