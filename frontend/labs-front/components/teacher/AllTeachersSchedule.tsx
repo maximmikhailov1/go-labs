@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Calendar, Clock, User, Book, Home, Users } from "lucide-react"
+import { Calendar, EthernetPort, Router, Route, Clock, User, Book, Home, Users } from "lucide-react"
 import { format, parseISO } from "date-fns"
 import { ru } from "date-fns/locale"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -13,6 +13,12 @@ type Record = {
   LabDate: string
   ClassNumber: number
   AudienceNumber: string
+  HPRoutersRemaining: number
+  HPSwitchesRemaining: number
+  RoutersRemaining: number
+  SwitchesRemaining: number
+  WirelessRoutersRemaining: number
+
   Tutor: {
     ID: number
     fullName: string
@@ -159,6 +165,28 @@ const AllTeachersSchedule = () => {
                     <User className="h-5 w-5" />
                     {selectedRecord.Tutor.fullName}
                   </div>
+                  <div className="flex items-center gap-2">
+                    <Route className="h-5 w-5" />
+                    Свободных маршуртизаторов {selectedRecord.RoutersRemaining}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <EthernetPort className="h-5 w-5" />
+                    Свободных коммутаторов {selectedRecord.SwitchesRemaining}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Route className="h-5 w-5" />
+                    Свободных HP маршуртизаторов {selectedRecord.HPRoutersRemaining}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <EthernetPort className="h-5 w-5" />
+                    Свободных HP коммутаторов {selectedRecord.HPSwitchesRemaining}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Router className="h-5 w-5" />
+                    Свободных беспроводных маршрутизаторов {selectedRecord.WirelessRoutersRemaining}
+                  </div>
+                  
+                  
                 </div>
 
                 <div className="border-t pt-4">
