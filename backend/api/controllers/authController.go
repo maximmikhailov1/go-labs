@@ -29,7 +29,7 @@ func SingIn(c *fiber.Ctx) error {
 	if result.Error != nil {
 		return c.Status(http.StatusBadRequest).JSON(
 			fiber.Map{
-				"message": "invalid username or password",
+				"message": "Неверный логин или пароль",
 			})
 	}
 
@@ -37,7 +37,7 @@ func SingIn(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(http.StatusBadRequest).JSON(
 			fiber.Map{
-				"message": "invalid username or password",
+				"message": "Неверный логин или пароль",
 			})
 	}
 
@@ -46,7 +46,7 @@ func SingIn(c *fiber.Ctx) error {
 	if result.Error != nil {
 		return c.Status(http.StatusBadRequest).JSON(
 			fiber.Map{
-				"message": "invalid no group",
+				"message": "Нет группы",
 			})
 	}
 	tokenByte := jwt.New(jwt.SigningMethodHS256)
@@ -65,7 +65,7 @@ func SingIn(c *fiber.Ctx) error {
 	tokenString, err := tokenByte.SignedString([]byte(os.Getenv("SECRET")))
 
 	if err != nil {
-		return c.Status(fiber.StatusBadGateway).JSON(fiber.Map{"status": "fail", "message": fmt.Sprintf("generating JWT Token failed: %v", err)})
+		return c.Status(fiber.StatusBadGateway).JSON(fiber.Map{"status": "fail", "error": fmt.Sprintf("generating JWT Token failed: %v", err)})
 	}
 
 	c.Cookie(&fiber.Cookie{
@@ -76,7 +76,7 @@ func SingIn(c *fiber.Ctx) error {
 		Secure:  false,
 	})
 
-	return c.Status(http.StatusOK).JSON(fiber.Map{"message": "Logged in", "role": user.Role})
+	return c.Status(http.StatusOK).JSON(fiber.Map{"message": "Успешный вход", "role": user.Role})
 }
 
 func SignUp(c *fiber.Ctx) error {
@@ -104,7 +104,7 @@ func SignUp(c *fiber.Ctx) error {
 		role = "student"
 		result := initializers.DB.Where("code = ?", body.SignUpCode).First(&group)
 		if result.Error != nil {
-			return c.Status(http.StatusBadRequest).JSON("no groups under that code")
+			return c.Status(http.StatusBadRequest).JSON(fiber.Map{"message": "Нет групп с таким кодом"})
 		}
 	}
 

@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -9,6 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Lock, PencilLine, Users } from "lucide-react"
+import { toast } from "sonner"
 
 interface TabsDemoProps {
   onLogin: (role: "student" | "tutor") => void
@@ -22,65 +22,81 @@ export const TabsDemo: React.FC<TabsDemoProps> = ({ onLogin }) => {
     fullName: "",
     signUpCode: "",
   })
+  const [activeTab, setActiveTab] = useState<"login" | "register">("login") // Состояние для активной вкладки
+  const [loginError, setLoginError] = useState<string | null>(null) // Состояние для ошибки входа
+  const [registerError, setRegisterError] = useState<string | null>(null) // Состояние для ошибки регистрации
 
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setLoginError(null) // Сбрасываем ошибку перед отправкой
+
     const formData = new FormData()
     formData.append("username", loginData.username)
     formData.append("password", loginData.password)
-    // Assuming signIn is defined elsewhere and handles the actual sign-in logic
-    // and returns a promise with a result object.
-    const signIn = async (formData: FormData) => {
-      try {
-        const response = await fetch("/api/signin", {
-          method: "POST",
-          body: formData,
-        })
 
-        if (!response.ok) {
-          const errorData = await response.json()
-          return { success: false, error: errorData.message || "Ошибка входа" }
-        }
+    try {
+      const response = await fetch("/api/signin", {
+        method: "POST",
+        body: formData,
+      })
 
-        const result = await response.json()
-        return { success: true, role: result.role } // Assuming the server returns { success: true, role: "student" | "tutor" }
-      } finally{
-        
+      if (!response.ok) {
+        const errorData = await response.json()
+        setLoginError(errorData.message || "Ошибка входа") // Устанавливаем ошибку
+        toast.error(errorData.message || "Ошибка входа") // Уведомление об ошибке
+        return
       }
-    }
 
-    const result = await signIn(formData)
-    if (result.success) {
-      // Предположим, что роль возвращается с сервера или определяется на клиенте
+      const result = await response.json()
       const userRole = result.role || "student" // По умолчанию "student", если роль не определена
-      onLogin(userRole as "student" | "tutor")
-    } else {
-      console.error("Ошибка входа:", result.error)
+      onLogin(userRole as "student" | "tutor") // Вызываем колбэк для входа
+      toast.success("Вход выполнен успешно") // Уведомление об успешном входе
+    } catch (error) {
+      setLoginError("Произошла ошибка при входе") // Устанавливаем общую ошибку
+      toast.error("Произошла ошибка при входе") // Уведомление об ошибке
+      console.error("Ошибка входа:", error)
     }
   }
 
   const handleRegisterSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setRegisterError(null) // Сбрасываем ошибку перед отправкой
+
     try {
       const response = await fetch("/api/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(registerData),
       })
-      if (response.ok) {
-        console.log("Регистрация выполнена успешно")
-        // Здесь можно добавить логику для обработки успешной регистрации
-      } else {
-        console.error("Ошибка регистрации")
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        setRegisterError(errorData.message || "Ошибка регистрации") // Устанавливаем ошибку
+        toast.error(errorData.message || "Ошибка регистрации") // Уведомление об ошибке
+        return
       }
+
+      // Успешная регистрация
+      toast.success("Вы успешно зарегистрировались. Теперь вы можете войти.") // Уведомление об успешной регистрации
+
+      // Переносим данные регистрации в форму входа
+      setLoginData({
+        username: registerData.username,
+        password: registerData.password,
+      })
+
+      // Переключаемся на вкладку входа
+      setActiveTab("login")
     } catch (error) {
+      setRegisterError("Произошла ошибка при регистрации") // Устанавливаем общую ошибку
+      toast.error("Произошла ошибка при регистрации") // Уведомление об ошибке
       console.error("Ошибка при отправке данных:", error)
     }
   }
 
   return (
     <div className="bg-gray-50 flex items-center justify-center p-4">
-      <Tabs defaultValue="login" className="w-full">
+      <Tabs defaultValue="login" value={activeTab} onValueChange={(value) => setActiveTab(value as "login" | "register")} className="w-full">
         <TabsList className="grid grid-cols-2 h-12 rounded-xl bg-gray-100 p-1">
           <TabsTrigger 
             value="login" 
@@ -111,6 +127,11 @@ export const TabsDemo: React.FC<TabsDemoProps> = ({ onLogin }) => {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
+                {loginError && (
+                  <div className="text-red-600 bg-red-50 p-3 rounded-lg">
+                    {loginError}
+                  </div>
+                )}
                 <div className="space-y-2">
                   <Label htmlFor="login-username" className="text-gray-600">Логин</Label>
                   <Input
@@ -158,6 +179,11 @@ export const TabsDemo: React.FC<TabsDemoProps> = ({ onLogin }) => {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
+                {registerError && (
+                  <div className="text-red-600 bg-red-50 p-3 rounded-lg">
+                    {registerError}
+                  </div>
+                )}
                 <div className="space-y-2">
                   <Label htmlFor="register-username" className="text-gray-600">Логин</Label>
                   <Input

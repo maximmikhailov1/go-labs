@@ -29,7 +29,7 @@ func UsersIndex(c *fiber.Ctx) error {
 func UserFirst(c *fiber.Ctx) error {
 
 	if c.Locals("user") == nil {
-		return c.Status(http.StatusUnauthorized).JSON(fiber.Map{"message": "unauthorized"})
+		return c.Status(http.StatusUnauthorized).JSON(fiber.Map{"error": "unauthorized"})
 	}
 	userCredentials := c.Locals("user").(fiber.Map)
 	fio := userCredentials["FullName"].(string)
@@ -105,20 +105,20 @@ func TutorsIndex(c *fiber.Ctx) error {
 func LabsFirstBySubject(c *fiber.Ctx) error {
 	subjectID := c.QueryInt("subjectId", 0)
 	if subjectID == 0 {
-		c.Status(http.StatusBadRequest).JSON("provide subject id")
+		c.Status(http.StatusBadRequest).JSON(fiber.Map{"message": "предоставьте id предмета"})
 	}
 
 	var labs []models.Lab
 	err := initializers.DB.Where("subject_id = ?", uint(subjectID)).Find(&labs).Error
 	if err != nil {
-		return c.Status(http.StatusBadRequest).JSON("no labs under this subject")
+		return c.Status(http.StatusBadRequest).JSON(fiber.Map{"message": "у этого предмета нет назначенных лабораторных работ"})
 	}
 	return c.Status(http.StatusOK).JSON(labs)
 }
 
 func TeamCreate(c *fiber.Ctx) error {
 	if c.Locals("user") == nil {
-		return c.Status(http.StatusUnauthorized).JSON(fiber.Map{"message": "unauthorized"})
+		return c.Status(http.StatusUnauthorized).JSON(fiber.Map{"error": "unauthorized"})
 	}
 	var body struct {
 		Name string
@@ -182,7 +182,7 @@ func TeamLeave(c *fiber.Ctx) error {
 
 func TeamEnter(c *fiber.Ctx) error {
 	if c.Locals("user") == nil {
-		return c.Status(http.StatusUnauthorized).JSON(fiber.Map{"message": "unauthorized"})
+		return c.Status(http.StatusUnauthorized).JSON(fiber.Map{"error": "unauthorized"})
 	}
 	teamCode := c.Query("code")
 	if teamCode == "" {
@@ -209,7 +209,7 @@ func TeamEnter(c *fiber.Ctx) error {
 
 func TeamChangeName(c *fiber.Ctx) error {
 	if c.Locals("user") == nil {
-		return c.Status(http.StatusUnauthorized).JSON(fiber.Map{"message": "unauthorized"})
+		return c.Status(http.StatusUnauthorized).JSON(fiber.Map{"error": "unauthorized"})
 	}
 	teamCode := c.Query("code")
 
@@ -250,7 +250,7 @@ func CheckAuth(c *fiber.Ctx) error {
 			return []byte(os.Getenv("SECRET")), nil
 		})
 		if err != nil {
-			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"status": "fail", "message": fmt.Sprintf("invalid token: %v", err)})
+			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"status": "fail", "error": fmt.Sprintf("invalid token: %v", err)})
 		}
 		return c.SendStatus(http.StatusOK)
 	}
@@ -261,7 +261,7 @@ func UserTeamsIndex(c *fiber.Ctx) error {
 	// var teams []models.Team
 	// var students []models.User
 	if c.Locals("user") == nil {
-		return c.Status(http.StatusUnauthorized).JSON(fiber.Map{"message": "unauthorized"})
+		return c.Status(http.StatusUnauthorized).JSON(fiber.Map{"error": "unauthorized"})
 	}
 	var student models.User
 	studentCred := c.Locals("user").(fiber.Map)
@@ -308,7 +308,7 @@ func UserLabsIndex(c *fiber.Ctx) error {
 		return c.Status(http.StatusOK).JSON([]models.Lab{emptyListForTutors})
 	}
 	if studentGroup == "" {
-		return c.Status(http.StatusBadRequest).JSON("user has no group")
+		return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": "user has no group"})
 	}
 
 	var group models.Group
