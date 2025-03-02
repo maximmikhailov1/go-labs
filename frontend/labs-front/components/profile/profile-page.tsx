@@ -122,7 +122,7 @@ export function ProfilePage() {
   
   async function updateTeamName(teamCode: string, newName: string) {
     try {
-      const response = await fetch(`/api/team?code=${teamCode}`, {
+      const response = await fetch(`/api/user/teams?code=${teamCode}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -145,7 +145,7 @@ export function ProfilePage() {
   
   async function joinTeam(teamCode: string) {
     try {
-      const response = await fetch(`/api/team?code=${teamCode}`, {
+      const response = await fetch(`/api/user/teams?code=${teamCode}`, {
         method: "PUT",
         credentials: "include",
       })
