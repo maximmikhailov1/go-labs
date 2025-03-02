@@ -38,11 +38,18 @@ const Layout: React.FC<LayoutProps> = ({ searchParams }) => {
       if (loggedInStatus === "true" && storedUserRole) {
         setIsLoggedIn(true)
         setUserRole(storedUserRole)
-  
+
+        // Перенаправление преподавателей на страницу расписания
+        if (storedUserRole === "tutor" && (pathname === "/" || pathname === "/home")) {
+          router.replace("/all-teachers-schedule")
+          setCurrentPage("all-teachers-schedule")
+          return
+        }
+
         if (pathname === "/auth") {
           const params = new URLSearchParams(searchParams)
           const callbackUrl = params.get("callbackUrl")
-          router.replace(callbackUrl || lastPage || "/")
+          router.replace(callbackUrl || lastPage || (storedUserRole === "tutor" ? "/all-teachers-schedule" : "/"))
         }
       } else {
         if (pathname !== "/auth") {
@@ -53,7 +60,6 @@ const Layout: React.FC<LayoutProps> = ({ searchParams }) => {
         setUserRole(null)
       }
   
-      // Устанавливаем текущую страницу
       const page = pathname === "/" ? "home" : pathname.slice(1)
       setCurrentPage(page)
       setIsLoading(false)
@@ -62,59 +68,29 @@ const Layout: React.FC<LayoutProps> = ({ searchParams }) => {
     initialize()
   }, [pathname, router, searchParams])
 
-  useEffect(() => {
-    const loggedInStatus = localStorage.getItem("isLoggedIn")
-    const storedUserRole = localStorage.getItem("userRole") as "student" | "tutor" | null
-    const lastPage = localStorage.getItem("lastPage")
-  
-    if (loggedInStatus === "true" && storedUserRole) {
-      setIsLoggedIn(true)
-      setUserRole(storedUserRole)
-  
-      if (pathname === "/auth") {
-        const params = new URLSearchParams(searchParams)
-        const callbackUrl = params.get("callbackUrl")
-        router.replace(callbackUrl || lastPage || "/")
-      }
-    } else {
-      if (pathname !== "/auth") {
-        localStorage.setItem("lastPage", pathname)
-        router.replace("/auth")
-      }
-      setIsLoggedIn(false)
-      setUserRole(null)
-    }
-  
-    setIsLoading(false)
-  }, [pathname, router, searchParams]) // Добавляем searchParams в зависимости
-    useEffect(() => {
-      // Синхронизируем currentPage с pathname
-      const pageFromPath = pathname === "/" ? "home" : pathname.slice(1)
-      if (pageFromPath !== currentPage) {
-        setCurrentPage(pageFromPath)
-      }
-    }, [pathname]) // Добавляем pathname в зависимости
-    const handleLogin = async (role: "student" | "tutor") => {
-      setIsLoggedIn(true)
-      setUserRole(role)
-      localStorage.setItem("isLoggedIn", "true")
-      localStorage.setItem("userRole", role)
+  const handleLogin = async (role: "student" | "tutor") => {
+    setIsLoggedIn(true)
+    setUserRole(role)
+    localStorage.setItem("isLoggedIn", "true")
+    localStorage.setItem("userRole", role)
     
     try {
-      const result = await getUser();
+      const result = await getUser()
       if (result.success && result.user) {
-        localStorage.setItem("userProfile", JSON.stringify(result.user));
+        localStorage.setItem("userProfile", JSON.stringify(result.user))
       }
     } catch (error) {
-      console.error("Ошибка загрузки данных пользователя:", error);
+      console.error("Ошибка загрузки данных пользователя:", error)
     }
-  
+
     const params = new URLSearchParams(searchParams)
     const callbackUrl = params.get("callbackUrl")
     const lastPage = localStorage.getItem("lastPage")
     
-    router.replace(callbackUrl || lastPage || "/")
-    setCurrentPage(callbackUrl?.slice(1) || lastPage?.slice(1) || "home")
+    // Перенаправление преподавателей по умолчанию
+    const defaultRoute = role === "tutor" ? "/all-teachers-schedule" : "/"
+    router.replace(callbackUrl || lastPage || defaultRoute)
+    setCurrentPage(callbackUrl?.slice(1) || lastPage?.slice(1) || (role === "tutor" ? "all-teachers-schedule" : "home"))
   }
 
   const handleLogout = () => {
@@ -149,19 +125,42 @@ const Layout: React.FC<LayoutProps> = ({ searchParams }) => {
       return <AuthPage onLogin={handleLogin} />
     }
 
+    // Автоматическое перенаправление для преподавателей
+    if (userRole === "tutor" && (currentPage === "home" || currentPage === "")) {
+      router.replace("/all-teachers-schedule")
+      return null
+    }
+
+    const tutorPages = [
+      "subject-management",
+      "lab-scheduling",
+      "group-subject-assignment",
+      "all-teachers-schedule"
+    ]
+
+    const studentPages = ["home", "profile"]
+
+    if (
+      (userRole === "tutor" && !tutorPages.includes(currentPage)) ||
+      (userRole === "student" && !studentPages.includes(currentPage))
+    ) {
+      router.replace(userRole === "tutor" ? "/all-teachers-schedule" : "/")
+      return null
+    }
+
     switch (currentPage) {
       case "home":
         return <Home />
       case "profile":
         return <ProfilePage />
       case "subject-management":
-        return userRole === "tutor" ? <SubjectManagement /> : null
+        return <SubjectManagement />
       case "lab-scheduling":
-        return userRole === "tutor" ? <LabScheduling /> : null
+        return <LabScheduling />
       case "group-subject-assignment":
-        return userRole === "tutor" ? <GroupSubjectAssignment /> : null
+        return <GroupSubjectAssignment />
       case "all-teachers-schedule":
-        return userRole === "tutor" ? <AllTeachersSchedule /> : null
+        return <AllTeachersSchedule />
       default:
         return <Home />
     }
@@ -175,27 +174,23 @@ const Layout: React.FC<LayoutProps> = ({ searchParams }) => {
         </div>
       ) : (
         <div className="space-y-8 h-full mx-auto p-0">
-             <div className=" bg-gray-50 min-h-full">
-             <Navigation
-            isLoggedIn={isLoggedIn}
-            onLogout={handleLogout}
-            setCurrentPage={handlePageChange}
-            userRole={userRole}
-            currentPage={currentPage} // Добавляем новый пропс
-/>
-
-<main 
-  className={`
-    mx-auto 
-    ${currentPage === "auth" ? "px-0 max-w-md" : "container px-4 sm:px-6 lg:px-8"}
-    pt-6 pb-8 transition-all duration-300
-  `}
->
-  <div className={currentPage === "auth" ? "" : "bg-white rounded-lg shadow-sm p-6"}>
-    {renderContent()}
-  </div>
-</main>
-    </div>
+            <div className=" bg-gray-50 min-h-full">
+              <Navigation
+                isLoggedIn={isLoggedIn}
+                onLogout={handleLogout}
+                setCurrentPage={handlePageChange}
+                userRole={userRole}
+                currentPage={currentPage} />
+              <main 
+                className={`
+                  mx-auto 
+                  ${currentPage === "auth" ? "px-0 max-w-md" : "container px-4 sm:px-6 lg:px-8"}
+                  pt-6 pb-8 transition-all duration-300`}>
+                  <div className={currentPage === "auth" ? "" : "bg-white rounded-lg shadow-sm p-6"}>
+                    {renderContent()}
+                  </div>
+              </main>
+            </div>
         </div>
       )}
     </>

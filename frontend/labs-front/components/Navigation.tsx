@@ -12,7 +12,7 @@ interface NavigationProps {
   currentPage: string
 }
 
-const Navigation: React.FC<NavigationProps> = ({ isLoggedIn, onLogout, setCurrentPage, userRole,currentPage }) => {
+const Navigation: React.FC<NavigationProps> = ({ isLoggedIn, onLogout, setCurrentPage, userRole, currentPage }) => {
   return (
 <nav className="w-full mt-0 pt-4 transition-all duration-300">
       <div className="container mx-auto px-4">
@@ -44,21 +44,25 @@ const Navigation: React.FC<NavigationProps> = ({ isLoggedIn, onLogout, setCurren
                 {userRole === "tutor" && (
                   <>
                     <Button 
+                      variant={currentPage === "all-teachers-schedule" ? "default" : "ghost"}
+                      className={`rounded-full h-10 w-10 p-0 ${
+                        currentPage === "all-teachers-schedule" ? "hover:bg-gray-700" : "bg-white shadow-sm hover:bg-gray-400"
+                      }`}
+                      onClick={() => setCurrentPage("all-teachers-schedule")}
+                      title="Расписание преподавателей"
+                    >
+                      <HomeIcon className="h-5 w-5" />
+                    </Button>
+
+                    <Button 
                       variant={currentPage === "lab-scheduling" ? "default" : "ghost"}
-                      className={`rounded-full h-10 w-10 p-0 ${currentPage === "lab-scheduling" ? "hover:bg-gray-700" : "bg-white shadow-sm hover:bg-gray-400"}`}
+                      className={`rounded-full h-10 w-10 p-0 ${
+                        currentPage === "lab-scheduling" ? "hover:bg-gray-700" : "bg-white shadow-sm hover:bg-gray-400"
+                      }`}
                       onClick={() => setCurrentPage("lab-scheduling")}
                       title="Планирование занятий"
                     >
                       <Calendar className="h-5 w-5" />
-                    </Button>
-                    
-                    <Button 
-                      variant={currentPage === "all-teachers-schedule" ? "default" : "ghost"}
-                      className={`rounded-full h-10 w-10 p-0 ${currentPage === "all-teachers-schedule" ? "hover:bg-gray-700" : "bg-white shadow-sm hover:bg-gray-400"}`}
-                      onClick={() => setCurrentPage("all-teachers-schedule")}
-                      title="Расписание преподавателей"
-                    >
-                      <Clock className="h-5 w-5" />
                     </Button>
 
                     <Button 
