@@ -7,7 +7,6 @@ import (
 	"reflect"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/log"
 	"github.com/golang-jwt/jwt/v5"
 )
 
@@ -28,17 +27,12 @@ func Authorized(c *fiber.Ctx) error {
 
 		var trID uint
 		rtest := reflect.ValueOf(claims["id"])
-		log.Info(rtest)
 		switch rtest.Kind() {
 		case reflect.Float64:
 			trID = uint(claims["id"].(float64))
 		case reflect.Int:
 			trID = claims["id"].(uint)
 		}
-		//SOMETHING WRONG WITH TYPE OF ID inside claims something with uint float64 shenanigans
-		log.Info(trID, reflect.TypeOf(trID), reflect.ValueOf(trID))
-		log.Info(claims["fio"])
-		log.Info(claims["group"], reflect.TypeOf(claims["group"]))
 		userData := fiber.Map{
 			"Id":       trID,
 			"FullName": claims["fio"],

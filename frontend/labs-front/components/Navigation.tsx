@@ -2,7 +2,7 @@
 
 import type React from "react"
 import { Button } from "@/components/ui/button"
-import { User, Book, Calendar, Users, Clock, HomeIcon } from "lucide-react"
+import { User, Book, Calendar, Users, HomeIcon } from "lucide-react"
 
 interface NavigationProps {
   isLoggedIn: boolean

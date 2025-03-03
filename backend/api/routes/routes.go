@@ -21,7 +21,7 @@ func SetupRoutes(app *fiber.App) {
 	app.Get("/api/user/teams", controllers.UserTeamsIndex)
 	app.Post("/api/user/teams", controllers.TeamCreate)
 	app.Get("/api/user/labs", controllers.UserLabsIndex)
-	app.Get("/api/tutors", controllers.TutorsIndex)
+	app.Get("/api/tutors", controllers.TutorsIndex) // TODO: ЗАБЛОКИРОВАТЬ ДОСТУП ЗЛОДЕЮ БРИТАНЦУ
 	app.Get("/api/schedule", controllers.ScheduleWeek)
 	app.Post("/api/schedule", controllers.ScheduleCreate)
 	app.Get("/demo/users", controllers.UsersIndex)
