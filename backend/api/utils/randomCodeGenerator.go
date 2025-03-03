@@ -9,7 +9,7 @@ import (
 func GenerateRandomCode(n int) (string, error) {
 	const letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 	res := make([]byte, n)
-	for i := 0; i < n; i++ {
+	for i := range n {
 		num, err := rand.Int(rand.Reader, big.NewInt(int64(len(letters))))
 		if err != nil {
 			return "", err

@@ -427,7 +427,7 @@ func UserRecords(c *fiber.Ctx) error {
 			Joins("JOIN records ON entries.record_id = records.id").
 			Where("users_teams.user_id = ?", studentID).
 			Group("entries.id, labs.number, records.lab_date, records.class_number, labs.description,records.audience_number, entries.status, teams.name").
-			Find(&response)
+			Find(&response) //TODO: ORDER BY LAB_DATE
 
 		if result.Error != nil {
 			return c.Status(500).JSON(fiber.Map{"error": "Ошибка получения записей"})
@@ -440,7 +440,7 @@ func UserRecords(c *fiber.Ctx) error {
 			Preload("Entries.Team.Members.Group").
 			Preload("Entries.Lab").
 			Preload("Tutor").
-			Find(&records)
+			Find(&records) //TODO: ORDER BY LAB_DATE
 
 		if result.Error != nil {
 			return c.Status(http.StatusInternalServerError).JSON(fiber.Map{
@@ -508,6 +508,11 @@ func Enroll(c *fiber.Ctx) error {
 		}
 	}
 	var premadeTeam models.Team
+	// TODO: человек в разных командах может записаться на одну пару
+	// TODO: ограничить количество команд у одного человека до 5
+	// TODO: добавить чтобы человек не мог записаться на такую же лабу, пока не прошло дата такой же предыдущей
+	// TODO: Если пользователь записан без команды то он вступив в команду, может записать другого пользователя на лабу дважды
+	// TODO: пофиксить на один день когда можно записаться в разные аудитории
 	// Попытка добавить в существующую команду
 	if req.TeamID == nil {
 		// Поиск команды с доступными местами
