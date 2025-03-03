@@ -222,7 +222,7 @@ export function ProfilePage() {
   
   async function leaveTeam(teamCode: string) {
     try {
-      const response = await fetch(`/api/team?code=${teamCode}`, {
+      const response = await fetch(`/api/user/team?code=${teamCode}`, {
         method: "DELETE",
         credentials: "include",
       })
