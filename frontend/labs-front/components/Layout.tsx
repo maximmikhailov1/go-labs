@@ -38,7 +38,7 @@ const Layout: React.FC<LayoutProps> = ({ searchParams }) => {
   
       if (loggedInStatus === "true" && storedUserRole) {
         setIsLoggedIn(true)
-        setUserRole(userRole)
+        setUserRole(storedUserRole)
 
         // Перенаправление преподавателей на страницу расписания
         if (storedUserRole === "tutor" && (pathname === "/" || pathname === "/home")) {
