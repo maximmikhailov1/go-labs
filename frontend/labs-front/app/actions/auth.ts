@@ -43,8 +43,8 @@ export async function checkAuth() {
       return {error: errorData.message || "Ошибка проверки аутентификации"}
     }
   } catch (error) {
-    console.error("Error during sign up:", error)
-    return {error: "Ошибка проверка аутентификации"}
+    console.error("Ошибка при аутентификации:", error)
+    return {error: "Ошибка аутентификации"}
   }
 }
 

@@ -76,6 +76,7 @@ const Layout: React.FC<LayoutProps> = ({ searchParams }) => {
         setUserRole(result.userRole)
       }
     } catch (error) {
+      console.error("Ошибка загрузки данных пользователя:", error)
       toast.error("Попытка перейти на страницу, которая не предназначается пользователю")
     }
   }
@@ -92,6 +93,8 @@ const Layout: React.FC<LayoutProps> = ({ searchParams }) => {
       }
     } catch (error) {
       console.error("Ошибка загрузки данных пользователя:", error)
+      toast.error("Ошибка загрузки данных пользователя")
+
     }
 
     const params = new URLSearchParams(searchParams)
