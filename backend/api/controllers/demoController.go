@@ -19,6 +19,18 @@ import (
 func UsersIndex(c *fiber.Ctx) error {
 	var users []models.User
 
+	if c.Locals("user") == nil {
+		return c.Status(http.StatusUnauthorized).JSON(fiber.Map{"error": "unauthorized"})
+	}
+	userCredentials := c.Locals("user").(fiber.Map)
+	role := userCredentials["Role"].(string)
+
+	if role != "tutor" {
+		return c.Status(http.StatusUnauthorized).JSON(fiber.Map{
+			"error": "unauthorized to perform this action",
+		})
+	}
+
 	result := initializers.DB.Find(&users)
 	if result.Error != nil {
 		return result.Error
@@ -49,6 +61,17 @@ func UserFirst(c *fiber.Ctx) error {
 
 func SubjectCreate(c *fiber.Ctx) error {
 	var subject models.Subject
+	if c.Locals("user") == nil {
+		return c.Status(http.StatusUnauthorized).JSON(fiber.Map{"error": "unauthorized"})
+	}
+	userCredentials := c.Locals("user").(fiber.Map)
+	role := userCredentials["Role"].(string)
+
+	if role != "tutor" {
+		return c.Status(http.StatusUnauthorized).JSON(fiber.Map{
+			"error": "unauthorized to perform this action",
+		})
+	}
 
 	if err := c.BodyParser(&subject); err != nil {
 		return c.Status(http.StatusBadRequest).JSON("failed to parse body to subject")
@@ -65,6 +88,18 @@ func SubjectCreate(c *fiber.Ctx) error {
 func SubjectIndex(c *fiber.Ctx) error {
 	var subjects []models.Subject
 
+	if c.Locals("user") == nil {
+		return c.Status(http.StatusUnauthorized).JSON(fiber.Map{"error": "unauthorized"})
+	}
+	userCredentials := c.Locals("user").(fiber.Map)
+	role := userCredentials["Role"].(string)
+
+	if role != "tutor" {
+		return c.Status(http.StatusUnauthorized).JSON(fiber.Map{
+			"error": "unauthorized to perform this action",
+		})
+	}
+
 	err := initializers.DB.Debug().Preload("Groups", func(db *gorm.DB) *gorm.DB {
 		return db.Select("id, name, subject_id") // Загружаем только ID название группы
 	}).Find(&subjects).Error
@@ -79,6 +114,19 @@ func SubjectIndex(c *fiber.Ctx) error {
 
 func ScheduleCreate(c *fiber.Ctx) error {
 	var record models.Record
+
+	if c.Locals("user") == nil {
+		return c.Status(http.StatusUnauthorized).JSON(fiber.Map{"error": "unauthorized"})
+	}
+	userCredentials := c.Locals("user").(fiber.Map)
+	role := userCredentials["Role"].(string)
+
+	if role != "tutor" {
+		return c.Status(http.StatusUnauthorized).JSON(fiber.Map{
+			"error": "unauthorized to perform this action",
+		})
+	}
+
 	if err := c.BodyParser(&record); err != nil {
 		log.Info(err)
 		return c.Status(http.StatusBadRequest).JSON("failed to parse body to record")
@@ -93,6 +141,18 @@ func ScheduleCreate(c *fiber.Ctx) error {
 
 func TutorsIndex(c *fiber.Ctx) error {
 	var tutors []models.User
+
+	if c.Locals("user") == nil {
+		return c.Status(http.StatusUnauthorized).JSON(fiber.Map{"error": "unauthorized"})
+	}
+	userCredentials := c.Locals("user").(fiber.Map)
+	role := userCredentials["Role"].(string)
+
+	if role != "tutor" {
+		return c.Status(http.StatusUnauthorized).JSON(fiber.Map{
+			"error": "unauthorized to perform this action",
+		})
+	}
 
 	err := initializers.DB.Where("role = ?", "tutor").Find(&tutors).Error
 	if err != nil {
@@ -243,7 +303,7 @@ func TeamChangeName(c *fiber.Ctx) error {
 func CheckAuth(c *fiber.Ctx) error {
 	jwtTokenString := c.Cookies("token")
 	if jwtTokenString != "" {
-		_, err := jwt.Parse(jwtTokenString, func(jwtToken *jwt.Token) (interface{}, error) {
+		tokenByte, err := jwt.Parse(jwtTokenString, func(jwtToken *jwt.Token) (interface{}, error) {
 			if _, ok := jwtToken.Method.(*jwt.SigningMethodHMAC); !ok {
 				return nil, fmt.Errorf("unexpected signing method: %s", jwtToken.Header["alg"])
 			}
@@ -252,7 +312,9 @@ func CheckAuth(c *fiber.Ctx) error {
 		if err != nil {
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"status": "fail", "error": fmt.Sprintf("invalid token: %v", err)})
 		}
-		return c.SendStatus(http.StatusOK)
+		claims := tokenByte.Claims.(jwt.MapClaims)
+
+		return c.Status(http.StatusOK).JSON(fiber.Map{"role": claims["role"]})
 	}
 	return c.SendStatus(http.StatusUnauthorized)
 }
@@ -703,6 +765,18 @@ func GroupCreate(c *fiber.Ctx) error {
 		Name string
 	}
 
+	if c.Locals("user") == nil {
+		return c.Status(http.StatusUnauthorized).JSON(fiber.Map{"error": "unauthorized"})
+	}
+	userCredentials := c.Locals("user").(fiber.Map)
+	role := userCredentials["Role"].(string)
+
+	if role != "tutor" {
+		return c.Status(http.StatusUnauthorized).JSON(fiber.Map{
+			"error": "unauthorized to perform this action",
+		})
+	}
+
 	if err := c.BodyParser(&requestBody); err != nil {
 		c.Status(http.StatusBadRequest).JSON("failed to parse body")
 	}
@@ -726,6 +800,17 @@ func GroupCreate(c *fiber.Ctx) error {
 
 func GroupsIndex(c *fiber.Ctx) error {
 	var groups []models.Group
+	if c.Locals("user") == nil {
+		return c.Status(http.StatusUnauthorized).JSON(fiber.Map{"error": "unauthorized"})
+	}
+	userCredentials := c.Locals("user").(fiber.Map)
+	role := userCredentials["Role"].(string)
+
+	if role != "tutor" {
+		return c.Status(http.StatusUnauthorized).JSON(fiber.Map{
+			"error": "unauthorized to perform this action",
+		})
+	}
 	err := initializers.DB.Debug().Preload("Subject", func(db *gorm.DB) *gorm.DB {
 		return db.Select("id, name") // Загружаем только ID название группы
 	}).Order("name DESC").Find(&groups).Error
@@ -743,6 +828,17 @@ func GroupUpdateSubject(c *fiber.Ctx) error {
 		SubjectID string `json:"subjectId"`
 	}
 	log.Info(string(c.Body()))
+	if c.Locals("user") == nil {
+		return c.Status(http.StatusUnauthorized).JSON(fiber.Map{"error": "unauthorized"})
+	}
+	userCredentials := c.Locals("user").(fiber.Map)
+	role := userCredentials["Role"].(string)
+
+	if role != "tutor" {
+		return c.Status(http.StatusUnauthorized).JSON(fiber.Map{
+			"error": "unauthorized to perform this action",
+		})
+	}
 
 	if err := c.BodyParser(&requestBody); err != nil {
 		c.Status(http.StatusBadRequest).JSON("failed to parse body")
