@@ -260,9 +260,17 @@ func TeamEnter(c *fiber.Ctx) error {
 	if result.Error != nil {
 		return c.Status(http.StatusBadRequest).JSON("no teams under this code")
 	}
+
+	membersCount := initializers.DB.Model(&teamWanted).Association("Members").Count()
+	if membersCount <= 4 {
+		return c.Status(http.StatusBadRequest).JSON("cant join a full team")
+	}
+
 	err := initializers.DB.Model(&teamWanted).Association("Members").Append(&student)
 	if err != nil {
-		return err
+		return c.Status(http.StatusBadRequest).JSON(fiber.Map{
+			"error": err,
+		})
 	}
 	return c.Status(http.StatusOK).JSON("successful")
 }
