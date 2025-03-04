@@ -5,7 +5,7 @@ import { useState, useEffect } from "react"
 import { useRouter, usePathname} from "next/navigation"
 import Navigation from "./Navigation"
 import Home from "./Home"
-import {getUser} from "@/app/actions/auth"
+import {checkAuth, getUser} from "@/app/actions/auth"
 import { ProfilePage } from "./profile/profile-page"
 import AuthPage from "./AuthPage"
 import SubjectManagement from "./teacher/SubjectManagement"
@@ -13,6 +13,7 @@ import LabScheduling from "./teacher/LabScheduling"
 import GroupSubjectAssignment from "./teacher/GroupSubjectAssignment"
 import AllTeachersSchedule from "./teacher/AllTeachersSchedule"
 import Spinner from "./Spinner"
+import { toast } from "sonner"
 
 
 interface LayoutProps {
@@ -32,15 +33,15 @@ const Layout: React.FC<LayoutProps> = ({ searchParams }) => {
   useEffect(() => {
     const initialize = async () => {
       const loggedInStatus = localStorage.getItem("isLoggedIn")
-      const storedUserRole = localStorage.getItem("userRole") as "student" | "tutor" | null
+      getAndSetUserRole()
       const lastPage = localStorage.getItem("lastPage")
   
-      if (loggedInStatus === "true" && storedUserRole) {
+      if (loggedInStatus === "true" && userRole) {
         setIsLoggedIn(true)
-        setUserRole(storedUserRole)
+        setUserRole(userRole)
 
         // Перенаправление преподавателей на страницу расписания
-        if (storedUserRole === "tutor" && (pathname === "/" || pathname === "/home")) {
+        if (userRole === "tutor" && (pathname === "/" || pathname === "/home")) {
           router.replace("/all-teachers-schedule")
           setCurrentPage("all-teachers-schedule")
           return
@@ -49,7 +50,7 @@ const Layout: React.FC<LayoutProps> = ({ searchParams }) => {
         if (pathname === "/auth") {
           const params = new URLSearchParams(searchParams)
           const callbackUrl = params.get("callbackUrl")
-          router.replace(callbackUrl || lastPage || (storedUserRole === "tutor" ? "/all-teachers-schedule" : "/"))
+          router.replace(callbackUrl || lastPage || (userRole === "tutor" ? "/all-teachers-schedule" : "/"))
         }
       } else {
         if (pathname !== "/auth") {
@@ -68,11 +69,21 @@ const Layout: React.FC<LayoutProps> = ({ searchParams }) => {
     initialize()
   }, [pathname, router, searchParams])
 
+  const getAndSetUserRole = async () => {
+    try {
+      const result = await checkAuth()
+      if (result.success && result.userRole){
+        setUserRole(result.userRole)
+      }
+    } catch (error) {
+      toast.error("Попытка перейти на страницу, которая не предназначается пользователю")
+    }
+  }
+
   const handleLogin = async (role: "student" | "tutor") => {
     setIsLoggedIn(true)
     setUserRole(role)
     localStorage.setItem("isLoggedIn", "true")
-    localStorage.setItem("userRole", role)
     
     try {
       const result = await getUser()
@@ -98,7 +109,6 @@ const Layout: React.FC<LayoutProps> = ({ searchParams }) => {
     setUserRole(null)
     document.cookie = `token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
     localStorage.removeItem("isLoggedIn")
-    localStorage.removeItem("userRole")
     localStorage.removeItem("lastPage")
     localStorage.removeItem("userProfile")
     router.replace("/auth",{scroll:false})

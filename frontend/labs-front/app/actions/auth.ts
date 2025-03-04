@@ -26,6 +26,27 @@ export async function signIn(formData: FormData) {
   }
 }
 
+export async function checkAuth() {
+  try {
+    const response = await fetch("/api/check-auth", {
+      method: "GET",
+      headers: {
+        "Content-Type" : "application/json",
+      },
+      credentials: "include",
+    })
+    if (response.ok) {
+      const data = await response.json()
+      return {success: true, userRole: data}
+    } else {
+      const errorData = await response.json()
+      return {error: errorData.message || "Ошибка проверки аутентификации"}
+    }
+  } catch (error) {
+    return {error: "Ошибка проверка аутентификации"}
+  }
+}
+
 export async function signUp(formData: FormData) {
   const username = formData.get("username")
   const password = formData.get("password")

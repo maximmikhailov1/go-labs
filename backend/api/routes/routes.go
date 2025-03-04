@@ -31,10 +31,10 @@ func SetupRoutes(app *fiber.App) {
 	app.Delete("api/user/teams", controllers.TeamLeave)
 	app.Get("api/user/records", controllers.UserRecords)
 	app.Get("/api/check-auth", controllers.CheckAuth)
-	app.Post("/api/labs", controllers.LabCreate)
-	app.Post("/api/groups", controllers.GroupCreate) //создает новую группу
-	app.Get("/api/groups", controllers.GroupsIndex)  //возвращает список групп с Subject
-	app.Patch("/api/groups", controllers.GroupUpdateSubject)
+	app.Post("/api/labs", controllers.LabCreate)             // создаёт новую лабу
+	app.Post("/api/groups", controllers.GroupCreate)         //создает новую группу
+	app.Get("/api/groups", controllers.GroupsIndex)          //возвращает список групп с Subject
+	app.Patch("/api/groups", controllers.GroupUpdateSubject) // обновляет предмет у группы
 
 	//*new
 	//API Routes
@@ -58,8 +58,5 @@ func SetupRoutes(app *fiber.App) {
 	// app.Get("/api/student-info")
 	app.Get("/student/:id", controllers.StudentRender)
 	app.Get("/api/student/:id", controllers.StudentGetRecords)
-
-	//REGISTRATION
-	app.Post("/api/registration", controllers.RegisterAppointment)
 
 }
