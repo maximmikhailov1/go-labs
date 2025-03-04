@@ -59,7 +59,4 @@ func SetupRoutes(app *fiber.App) {
 	app.Get("/student/:id", controllers.StudentRender)
 	app.Get("/api/student/:id", controllers.StudentGetRecords)
 
-	//REGISTRATION
-	app.Post("/api/registration", controllers.RegisterAppointment)
-
 }
