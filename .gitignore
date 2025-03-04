@@ -1,6 +1,7 @@
 *.exe*
 .env
 *.idea
+/.vscode
 # dependencies
 /node_modules
 /.pnp

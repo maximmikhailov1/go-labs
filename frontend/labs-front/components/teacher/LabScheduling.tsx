@@ -13,6 +13,7 @@ import { CalendarIcon, Clock, Users, User } from "lucide-react"
 import { format } from "date-fns"
 import { cn } from "@/lib/utils"
 import { Skeleton } from "@/components/ui/skeleton"
+import { toast } from "sonner"
 
 interface Tutor {
   ID: string
@@ -90,14 +91,13 @@ const LabScheduling: React.FC = () => {
       if (!response.ok) {
         throw new Error('Ошибка при создании занятия')
       }
-
       setDate(undefined);
       setClassNumber("");
       setAudienceNumber("");
       setSelectedTutorId("");
       setSelectedTutorName("");
       setFormErrors({});
-
+      toast.success("Занятие успешно запланировано")
       console.log("Занятие успешно запланировано")
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Неизвестная ошибка')
