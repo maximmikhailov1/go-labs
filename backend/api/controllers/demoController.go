@@ -394,9 +394,7 @@ func UserLabsIndex(c *fiber.Ctx) error {
 	}
 
 	if group.SubjectID == nil {
-		return c.JSON(fiber.Map{
-			"labs": []models.Lab{},
-		})
+		return c.Status(http.StatusOK).JSON([]models.Lab{})
 	}
 
 	// Получаем лабораторные работы по предмету группы
