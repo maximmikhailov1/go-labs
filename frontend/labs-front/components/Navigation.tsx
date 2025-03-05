@@ -19,6 +19,8 @@ const Navigation: React.FC<NavigationProps> = ({ isLoggedIn, onLogout, setCurren
       setCurrentPage(page);
     }
   };
+
+  if (!isLoggedIn) return null
   
   return (
 <nav className="w-full mt-0 pt-4 transition-all duration-300">

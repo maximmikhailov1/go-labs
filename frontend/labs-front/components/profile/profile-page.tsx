@@ -45,7 +45,7 @@ const ProfilePage: React.FC = () => {
   const [editingTeam, setEditingTeam] = useState<string | null>(null);
   const [editTeamName, setEditTeamName] = useState("");
   const [user, setUser] = useState<User>(() => {
-    // Инициализация из localStorage при монтировании
+
     const savedUser = typeof window !== 'undefined' ? localStorage.getItem('userProfile') : null;
     return savedUser ? JSON.parse(savedUser) : { fullName: "", groupName: "" };
   });
