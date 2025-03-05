@@ -13,6 +13,13 @@ interface NavigationProps {
 }
 
 const Navigation: React.FC<NavigationProps> = ({ isLoggedIn, onLogout, setCurrentPage, userRole, currentPage }) => {
+  
+  const handleNavigation = (page: string) => {
+    if (page !== currentPage) {
+      setCurrentPage(page);
+    }
+  };
+  
   return (
 <nav className="w-full mt-0 pt-4 transition-all duration-300">
       <div className="container mx-auto px-4">
@@ -25,7 +32,7 @@ const Navigation: React.FC<NavigationProps> = ({ isLoggedIn, onLogout, setCurren
                 <Button 
                 variant={currentPage === "home" ? "default" : "ghost"}
                 className={`rounded-full h-10 w-10 p-0 ${currentPage === "home" ? "hover:bg-gray-700" : "bg-white shadow-sm hover:bg-gray-400"}`}
-                onClick={() => setCurrentPage("home")}
+                onClick={() => handleNavigation("home")}
                 title="Главная"
               >
                 <HomeIcon className="h-5 w-5" />
@@ -34,7 +41,7 @@ const Navigation: React.FC<NavigationProps> = ({ isLoggedIn, onLogout, setCurren
                 <Button 
                   variant={currentPage === "profile" ? "default" : "ghost"}
                   className={`rounded-full h-10 w-10 p-0 ${currentPage === "profile" ? "hover:bg-gray-700" : "bg-white shadow-sm hover:bg-gray-400"}`}
-                  onClick={() => setCurrentPage("profile")}
+                  onClick={() => handleNavigation("profile")}
                   title="Профиль"
                 >
                   <User className="h-5 w-5" />
@@ -48,7 +55,7 @@ const Navigation: React.FC<NavigationProps> = ({ isLoggedIn, onLogout, setCurren
                       className={`rounded-full h-10 w-10 p-0 ${
                         currentPage === "all-teachers-schedule" ? "hover:bg-gray-700" : "bg-white shadow-sm hover:bg-gray-400"
                       }`}
-                      onClick={() => setCurrentPage("all-teachers-schedule")}
+                      onClick={() => handleNavigation("all-teachers-schedule")}
                       title="Расписание преподавателей"
                     >
                       <HomeIcon className="h-5 w-5" />
@@ -59,7 +66,7 @@ const Navigation: React.FC<NavigationProps> = ({ isLoggedIn, onLogout, setCurren
                       className={`rounded-full h-10 w-10 p-0 ${
                         currentPage === "lab-scheduling" ? "hover:bg-gray-700" : "bg-white shadow-sm hover:bg-gray-400"
                       }`}
-                      onClick={() => setCurrentPage("lab-scheduling")}
+                      onClick={() => handleNavigation("lab-scheduling")}
                       title="Планирование занятий"
                     >
                       <Calendar className="h-5 w-5" />
@@ -68,7 +75,7 @@ const Navigation: React.FC<NavigationProps> = ({ isLoggedIn, onLogout, setCurren
                     <Button 
                       variant={currentPage === "subject-management" ? "default" : "ghost"}
                       className={`rounded-full h-10 w-10 p-0 ${currentPage === "subject-management" ? "hover:bg-gray-700" : "bg-white shadow-sm hover:bg-gray-400"}`}
-                      onClick={() => setCurrentPage("subject-management")}
+                      onClick={() => handleNavigation("subject-management")}
                       title="Управление предметами"
                     >
                       <Book className="h-5 w-5" />
@@ -77,7 +84,7 @@ const Navigation: React.FC<NavigationProps> = ({ isLoggedIn, onLogout, setCurren
                     <Button 
                       variant={currentPage === "group-subject-assignment" ? "default" : "ghost"}
                       className={`rounded-full h-10 w-10 p-0 ${currentPage === "group-subject-assignment" ? "hover:bg-gray-700" : "bg-white shadow-sm hover:bg-gray-400"}`}
-                      onClick={() => setCurrentPage("group-subject-assignment")}
+                      onClick={() => handleNavigation("group-subject-assignment")}
                       title="Назначение предметов"
                     >
                       <Users className="h-5 w-5" />
