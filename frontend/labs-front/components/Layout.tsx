@@ -35,9 +35,11 @@ const Layout: React.FC<LayoutProps> = ({ searchParams }) => {
       const { isAuthenticated, storedRole } = await checkAuthAndRole()
       const lastPage = localStorage.getItem("lastPage")
   
+
       if (isAuthenticated && storedRole) {
         setIsAuthenticated(true)
         setUserRole(storedRole)
+
         // Перенаправление преподавателей на страницу расписания
         if (storedRole === "tutor" && (pathname === "/" || pathname === "/home")) {
           router.replace("/all-teachers-schedule")
