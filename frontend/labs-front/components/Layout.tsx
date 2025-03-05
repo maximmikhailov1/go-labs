@@ -35,25 +35,27 @@ const Layout: React.FC<LayoutProps> = ({ searchParams }) => {
       try {
         const { isAuthenticated, storedRole } = await checkAuthAndRole()
         
-        if (!isAuthenticated && pathname !== "/auth") {
-          router.replace("/auth")
+        if (!isAuthenticated) {
+          if (pathname !== "/auth") {
+            router.replace("/auth")
+          }
           return
         }
-        
-        setIsAuthenticated(isAuthenticated)
+        setIsAuthenticated(true)
         setUserRole(storedRole || null)
 
-        const pageFromPath = pathname === '/' ? 'home' : pathname.slice(1);
-        if (isAuthenticated && pageFromPath !== currentPage) {
-          setCurrentPage(pageFromPath);
-        }
+        // Затем синхронизируем страницу из URL
+        const pageFromPath = pathname === '/' ? 'home' : pathname.slice(1)
+        setCurrentPage(pageFromPath) // Форсируем установку страницы из URL
+        console.log("50Current role:", userRole)
+        console.log("51Current page:", currentPage)
+
       } catch (error) {
         console.error("Auth check failed:", error)
         router.replace("/auth")
       } finally {
         setIsLoading(false)
-        setAuthChecked(true) // Отмечаем завершение проверки
-
+        setAuthChecked(true)
       }
     }
 
@@ -131,24 +133,21 @@ const Layout: React.FC<LayoutProps> = ({ searchParams }) => {
     }
 
     if (!userRole) return null;
-    // Упрощенная проверка доступа
+
     const allowedPages = {
-      tutor: [
-        "subject-management",
-        "lab-scheduling",
-        "group-subject-assignment",
-        "all-teachers-schedule"
-      ],
+      tutor: ["subject-management", "lab-scheduling", "group-subject-assignment", "all-teachers-schedule"],
       student: ["home", "profile"]
     }
-    console.log(currentPage, userRole)
-    console.log(allowedPages[userRole!], allowedPages[userRole!].includes(currentPage))
-    if (!(allowedPages[userRole!].includes(currentPage))) {
-      router.replace(userRole === "tutor" ? "/all-teachers-schedule" : "/");
-      console.log("not allowed")
-      console.log(currentPage, userRole)
-      console.log(allowedPages[userRole!], allowedPages[userRole!].includes(currentPage))
-      return null
+    console.log("139Current role:", userRole)
+    console.log("140Current page:", currentPage)
+    console.log("141Allowed pages:", allowedPages[userRole!])
+    console.log("142Access granted:", allowedPages[userRole!].includes(currentPage))
+
+    if (!allowedPages[userRole!].includes(currentPage)) {
+      const defaultPage = userRole === "tutor" ? "all-teachers-schedule" : "home"
+      setCurrentPage(defaultPage)
+      router.replace(defaultPage === "home" ? "/" : `/${defaultPage}`)
+      return <Spinner />
     }
 
     switch (currentPage) {
