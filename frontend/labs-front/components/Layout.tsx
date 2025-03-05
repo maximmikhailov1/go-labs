@@ -41,17 +41,28 @@ const Layout: React.FC<LayoutProps> = ({ searchParams }) => {
         setUserRole(storedRole)
 
         // Перенаправление преподавателей на страницу расписания
-        if (storedRole === "tutor" && (pathname === "/" || pathname === "/home")) {
-          router.replace("/all-teachers-schedule")
-          setCurrentPage("all-teachers-schedule")
-          return
+        const pageFromPath = pathname === "/" ? "home" : pathname.slice(1)
+
+        const allowedPages = {
+          tutor: [
+            "subject-management",
+            "lab-scheduling",
+            "group-subject-assignment",
+            "all-teachers-schedule"
+          ],
+          student: ["home", "profile"]
         }
 
-        if (pathname === "/auth") {
-          const params = new URLSearchParams(searchParams)
-          const callbackUrl = params.get("callbackUrl")
-          router.replace(callbackUrl || lastPage || (storedRole === "tutor" ? "/all-teachers-schedule" : "/"))
+        if (!allowedPages[storedRole].includes(pageFromPath)) {
+          const defaultRoute = storedRole === "tutor" 
+            ? "/all-teachers-schedule" 
+            : "/profile" // Изменили дефолтный роут для студента
+          router.replace(defaultRoute)
+          setCurrentPage(defaultRoute.replace(/^\//, ""))
+          return
         }
+        setCurrentPage(pageFromPath)
+
       } else {
         if (pathname !== "/auth") {
           localStorage.setItem("lastPage", pathname)
@@ -132,26 +143,21 @@ const Layout: React.FC<LayoutProps> = ({ searchParams }) => {
       return <AuthPage onLogin={handleLogin} />
     }
 
-    // Автоматическое перенаправление для преподавателей
-    if (userRole === "tutor" && (currentPage === "home" || currentPage === "")) {
-      router.replace("/all-teachers-schedule")
-      return null
+    // Упрощенная проверка доступа
+    const allowedPages = {
+      tutor: [
+        "subject-management",
+        "lab-scheduling",
+        "group-subject-assignment",
+        "all-teachers-schedule"
+      ],
+      student: ["home", "profile"]
     }
 
-    const tutorPages = [
-      "subject-management",
-      "lab-scheduling",
-      "group-subject-assignment",
-      "all-teachers-schedule"
-    ]
-
-    const studentPages = ["home", "profile"]
-
-    if (
-      (userRole === "tutor" && !tutorPages.includes(currentPage)) ||
-      (userRole === "student" && !studentPages.includes(currentPage))
-    ) {
-      router.replace(userRole === "tutor" ? "/all-teachers-schedule" : "/")
+    if (!allowedPages[userRole!].includes(currentPage)) {
+      router.replace(userRole === "tutor" 
+        ? "/all-teachers-schedule" 
+        : "/profile") // Перенаправляем студентов на профиль
       return null
     }
 
