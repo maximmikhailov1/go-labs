@@ -31,52 +31,42 @@ const Layout: React.FC<LayoutProps> = ({ searchParams }) => {
   const pathname = usePathname()
 
   useEffect(() => {
-    const initialize = async () => {
-      const { isAuthenticated, storedRole } = await checkAuthAndRole()  
-
-      if (isAuthenticated && storedRole) {
-        setIsAuthenticated(true)
-        setUserRole(storedRole)
-
-        // Перенаправление преподавателей на страницу расписания
-        const pageFromPath = pathname === "/" ? "home" : pathname.slice(1)
-
-        const allowedPages = {
-          tutor: [
-            "subject-management",
-            "lab-scheduling",
-            "group-subject-assignment",
-            "all-teachers-schedule"
-          ],
-          student: ["home", "profile"]
-        }
-
-        if (!allowedPages[storedRole].includes(pageFromPath)) {
-          const defaultRoute = storedRole === "tutor" 
-            ? "/all-teachers-schedule" 
-            : "/profile" // Изменили дефолтный роут для студента
-          router.replace(defaultRoute)
-          setCurrentPage(defaultRoute.replace(/^\//, ""))
+    const checkAuth = async () => {
+      try {
+        const { isAuthenticated, storedRole } = await checkAuthAndRole()
+        
+        if (!isAuthenticated && pathname !== "/auth") {
+          router.replace("/auth")
           return
         }
-        setCurrentPage(pageFromPath)
 
-      } else {
-        if (pathname !== "/auth") {
-          localStorage.setItem("lastPage", pathname)
-          router.replace("/auth")
+        if (isAuthenticated) {
+          // Проверка доступа для текущего URL
+          const allowedPages = {
+            tutor: ["subject-management", "lab-scheduling", "group-subject-assignment", "all-teachers-schedule"],
+            student: ["home", "profile"]
+          }
+
+          if (!allowedPages[storedRole!].includes(currentPage)) {
+            const defaultRoute = storedRole === "tutor" 
+              ? "/all-teachers-schedule" 
+              : "/profile"
+            router.replace(defaultRoute)
+          }
         }
-        setIsAuthenticated(false)
-        setUserRole(null)
+        
+        setIsAuthenticated(isAuthenticated)
+        setUserRole(storedRole || null)
+      } catch (error) {
+        console.error("Auth check failed:", error)
+        router.replace("/auth")
+      } finally {
+        setIsLoading(false)
       }
-  
-      const page = pathname === "/" ? "home" : pathname.slice(1)
-      setCurrentPage(page)
-      setIsLoading(false)
     }
-  
-    initialize()
-  }, [pathname, router, searchParams])
+
+    checkAuth()
+  }, [pathname]) 
 
 
   const handleLogin = async (role: "student" | "tutor") => {
@@ -153,9 +143,6 @@ const Layout: React.FC<LayoutProps> = ({ searchParams }) => {
     }
 
     if (!allowedPages[userRole!].includes(currentPage)) {
-      router.replace(userRole === "tutor" 
-        ? "/all-teachers-schedule" 
-        : "/profile") // Перенаправляем студентов на профиль
       return null
     }
 
