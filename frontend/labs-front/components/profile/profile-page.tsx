@@ -35,7 +35,7 @@ interface Record {
 		team_member:  number
 }
 
-export function ProfilePage() {
+const ProfilePage: React.FC = () => {
   const [selectedTeam, setSelectedTeam] = useState<string>("solo");
   const [teams, setTeams] = useState<Team[]>([]);
   const [showCreateTeam, setShowCreateTeam] = useState(false);
@@ -502,3 +502,4 @@ export function ProfilePage() {
 
   )
 }
+export default ProfilePage
