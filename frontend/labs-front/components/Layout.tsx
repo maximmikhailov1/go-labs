@@ -10,7 +10,7 @@ import GroupSubjectAssignment from "./teacher/GroupSubjectAssignment"
 import AllTeachersSchedule from "./teacher/AllTeachersSchedule"
 import Spinner from "./Spinner"
 import AuthPage from "./AuthPage"
-import { checkAuthAndRole, getUser } from "@/app/actions/auth"
+import { checkAuthAndRole} from "@/app/actions/auth"
 
 const Layout = () => {
   const router = useRouter()
