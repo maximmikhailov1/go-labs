@@ -32,9 +32,7 @@ const Layout: React.FC<LayoutProps> = ({ searchParams }) => {
 
   useEffect(() => {
     const initialize = async () => {
-      const { isAuthenticated, storedRole } = await checkAuthAndRole()
-      const lastPage = localStorage.getItem("lastPage")
-  
+      const { isAuthenticated, storedRole } = await checkAuthAndRole()  
 
       if (isAuthenticated && storedRole) {
         setIsAuthenticated(true)
