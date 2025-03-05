@@ -6,7 +6,7 @@ import { useRouter, usePathname} from "next/navigation"
 import Navigation from "./Navigation"
 import Home from "./Home"
 import {checkAuthAndRole, getUser} from "@/app/actions/auth"
-import { ProfilePage } from "./profile/profile-page"
+import ProfilePage from "./profile/profile-page"
 import AuthPage from "./AuthPage"
 import SubjectManagement from "./teacher/SubjectManagement"
 import LabScheduling from "./teacher/LabScheduling"
@@ -127,7 +127,7 @@ const Layout: React.FC<LayoutProps> = ({ searchParams }) => {
       student: ["home", "profile"]
     }
 
-    if (!allowedPages[userRole!].includes(currentPage)) {
+    if (!(allowedPages[userRole!].includes(currentPage))) {
       console.log("not allowed")
       console.log(currentPage, userRole)
       console.log(allowedPages[userRole!], allowedPages[userRole!].includes(currentPage))
