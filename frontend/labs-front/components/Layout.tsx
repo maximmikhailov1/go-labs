@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect } from "react"
 import { useRouter, usePathname} from "next/navigation"
 import Navigation from "./Navigation"
 import Home from "./Home"
@@ -66,13 +66,23 @@ useEffect(() => {
     student: ["home", "profile"]
   };
 
+  // Проверяем необходимость редиректа
   if (!allowedPages[userRole].includes(pageFromPath)) {
     setIsRedirecting(true);
     const defaultPage = userRole === "tutor" ? "all-teachers-schedule" : "home";
+    const newPath = defaultPage === "home" ? "/" : `/${defaultPage}`;
+
+    // Выполняем редирект и синхронное обновление
+    router.replace(newPath);
     setCurrentPage(defaultPage);
     setIsRedirecting(false);
-    router.replace(defaultPage === "home" ? "/" : `/${defaultPage}`)
-  } else if (currentPage !== pageFromPath) {
+  } else if (userRole === "tutor" && pageFromPath === "home") {
+    setIsRedirecting(true);
+    router.replace("/all-teachers-schedule");
+    setCurrentPage("all-teachers-schedule");
+    setIsRedirecting(false);
+  }
+  else {
     setCurrentPage(pageFromPath);
   }
 }, [userRole, pathname, isAuthenticated]);
@@ -119,21 +129,13 @@ useEffect(() => {
     router.replace("/auth",{scroll:false})
   }
 
-  const handlePageChange = useCallback((page: string) =>  {
-    if (isRedirecting || page === currentPage) return; // Блокировка во время редиректа
-    if (!isAuthenticated && page !== "auth") {
-      localStorage.setItem("lastPage", `/${page}`)
-      router.replace("/auth", { scroll: false })
-      return
-    }
-  
-    // Сначала обновляем состояние
+  const handlePageChange = (page: string) => {
+    if (page === currentPage || isRedirecting) return;
+    
     const path = page === "home" ? "/" : `/${page}`;
-    localStorage.setItem("lastPage", path);
-
+    router.replace(path);
     setCurrentPage(page);
-    router.replace(path, { scroll: false })
-  }, [isAuthenticated, router, currentPage, isRedirecting]);
+  };
 
   const renderContent = () => {
     if (!authChecked || isLoading) return <Spinner />;
