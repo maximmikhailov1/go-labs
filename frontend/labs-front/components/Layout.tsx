@@ -1,124 +1,74 @@
 "use client"
-
-import type React from "react"
-import { useState, useEffect } from "react"
-import { useRouter, usePathname} from "next/navigation"
+import { useState, useEffect, useCallback } from "react"
+import { useRouter, usePathname } from "next/navigation"
 import Navigation from "./Navigation"
 import Home from "./Home"
-import {checkAuthAndRole, getUser} from "@/app/actions/auth"
 import ProfilePage from "./profile/profile-page"
-import AuthPage from "./AuthPage"
 import SubjectManagement from "./teacher/SubjectManagement"
 import LabScheduling from "./teacher/LabScheduling"
 import GroupSubjectAssignment from "./teacher/GroupSubjectAssignment"
 import AllTeachersSchedule from "./teacher/AllTeachersSchedule"
 import Spinner from "./Spinner"
-import { toast } from "sonner"
+import AuthPage from "./AuthPage"
+import { checkAuthAndRole, getUser } from "@/app/actions/auth"
 
-
-interface LayoutProps {
-  searchParams?: string;
-}
-
-
-const Layout: React.FC<LayoutProps> = ({ searchParams }) => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
-  const [currentPage, setCurrentPage] = useState("home")
-  const [isLoading, setIsLoading] = useState(true)
-  const [userRole, setUserRole] = useState<"student" | "tutor" | null>(null)
-  const [authChecked, setAuthChecked] = useState(false) // Добавляем флаг проверки авторизации
+const Layout = () => {
   const router = useRouter()
-  const [isRedirecting, setIsRedirecting] = useState(false); // Добавляем флаг редиректа
   const pathname = usePathname()
+  const [currentPage, setCurrentPage] = useState("home")
+  const [userRole, setUserRole] = useState<"student" | "tutor" | null>(null)
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
 
-useEffect(() => {
-  const checkAuth = async () => {
-    try {
-      const { isAuthenticated, storedRole } = await checkAuthAndRole();
-      
-      if (!isAuthenticated) {
-        if (pathname !== "/auth") router.replace("/auth");
-        return;
+  // Мемоизированный обработчик навигации
+  const handlePageChange = useCallback((page: string) => {
+    const allowedPages = {
+      tutor: [
+        "subject-management", 
+        "lab-scheduling",
+        "group-subject-assignment",
+        "all-teachers-schedule"
+      ],
+      student: ["home", "profile"]
+    }
+
+    if (userRole && allowedPages[userRole].includes(page)) {
+      const path = page === "home" ? "/" : `/${page}`
+      router.replace(path)
+      setCurrentPage(page)
+    }
+  }, [userRole, router])
+
+  // Проверка авторизации и синхронизация страницы
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const { isAuthenticated, storedRole } = await checkAuthAndRole()
+        
+        if (!isAuthenticated) {
+          router.replace("/auth")
+          return
+        }
+
+        setIsAuthenticated(true)
+        setUserRole(storedRole)
+
+        // Синхронизация страницы из URL
+        const pageFromPath = pathname === '/' ? 'home' : pathname.slice(1)
+        if (pageFromPath !== currentPage) {
+          handlePageChange(pageFromPath)
+        }
+
+      } catch (error) {
+        console.error("Auth check failed:", error)
+        router.replace("/auth")
+      } finally {
+        setIsLoading(false)
       }
-
-      // Важно: сначала обновляем аутентификацию и роль
-      setIsAuthenticated(true);
-      setUserRole(storedRole || null);
-
-    } catch (error) {
-      console.error("Auth check failed:", error);
-      router.replace("/auth");
-    } finally {
-      setIsLoading(false);
-      setAuthChecked(true);
-    }
-  };
-
-  checkAuth();
-}, [pathname]);
-
-useEffect(() => {
-  if (!userRole || !isAuthenticated || isRedirecting) return;
-
-  const pageFromPath = pathname === '/' ? 'home' : pathname.slice(1);
-  const allowedPages = {
-    tutor: ["subject-management", "lab-scheduling", "group-subject-assignment", "all-teachers-schedule"],
-    student: ["home", "profile"]
-  };
-
-  // Проверяем необходимость редиректа
-  if (!allowedPages[userRole].includes(pageFromPath)) {
-    setIsRedirecting(true);
-    const defaultPage = userRole === "tutor" ? "all-teachers-schedule" : "home";
-    const newPath = defaultPage === "home" ? "/" : `/${defaultPage}`;
-
-    // Выполняем редирект и синхронное обновление
-    router.replace(newPath);
-    setCurrentPage(defaultPage);
-    setIsRedirecting(false);
-  } else if (userRole === "tutor" && pageFromPath === "home") {
-    setIsRedirecting(true);
-    router.replace("/all-teachers-schedule");
-    setCurrentPage("all-teachers-schedule");
-    setIsRedirecting(false);
-  }
-  else {
-    setCurrentPage(pageFromPath);
-  }
-}, [userRole, pathname, isAuthenticated]);
-
-  const handleLogin = async (role: "student" | "tutor") => {
-    const { isAuthenticated, storedRole } = await checkAuthAndRole()
-
-    console.log(isAuthenticated, storedRole)
-    if (!isAuthenticated || storedRole !== role) {
-      toast.error("Ошибка авторизации")
-      return
     }
 
-    setIsAuthenticated(true)
-    setUserRole(storedRole)
-
-    try {
-      const result = await getUser()
-      if (result.success && result.user) {
-        localStorage.setItem("userProfile", JSON.stringify(result.user))
-      }
-    } catch (error) {
-      console.error("Ошибка загрузки данных пользователя:", error)
-      toast.error("Ошибка загрузки данных пользователя")
-
-    }
-
-    const params = new URLSearchParams(searchParams)
-    const callbackUrl = params.get("callbackUrl")
-    const lastPage = localStorage.getItem("lastPage")
-    
-    // Перенаправление преподавателей по умолчанию
-    const defaultRoute = role === "tutor" ? "/all-teachers-schedule" : "/"
-    router.replace(callbackUrl || lastPage || defaultRoute)
-    setCurrentPage(callbackUrl?.slice(1) || lastPage?.slice(1) || (role === "tutor" ? "all-teachers-schedule" : "home"))
-  }
+    checkAuth()
+  }, [pathname])
 
   const handleLogout = () => {
     setIsAuthenticated(false)
@@ -128,35 +78,14 @@ useEffect(() => {
     localStorage.removeItem("userProfile")
     router.replace("/auth",{scroll:false})
   }
-
-  const handlePageChange = (page: string) => {
-    if (page === currentPage || isRedirecting) return;
-    
-    const path = page === "home" ? "/" : `/${page}`;
-    router.replace(path);
-    setCurrentPage(page);
-  };
-
+  // Рендер контента через switch
   const renderContent = () => {
-    if (!authChecked || isLoading) return <Spinner />;
-    if (!isAuthenticated) return <AuthPage onLogin={handleLogin} />;
-    if (!userRole) return <Spinner />;
-
-
-    const allowedPages = {
-      tutor: ["subject-management", "lab-scheduling", "group-subject-assignment", "all-teachers-schedule"],
-      student: ["home", "profile"]
-    }
-    console.log("139Current role:", userRole)
-    console.log("140Current page:", currentPage)
-    console.log("141Allowed pages:", allowedPages[userRole!])
-    console.log("142Access granted:", allowedPages[userRole!].includes(currentPage))
-
-    if (!allowedPages[userRole!].includes(currentPage)) {
-      const defaultPage = userRole === "tutor" ? "all-teachers-schedule" : "home"
-      setCurrentPage(defaultPage)
-      router.replace(defaultPage === "home" ? "/" : `/${defaultPage}`)
+    if (isLoading) {
       return <Spinner />
+    }
+
+    if (!isAuthenticated) {
+      return <AuthPage onLogin={handlePageChange} />
     }
 
     switch (currentPage) {
@@ -178,50 +107,21 @@ useEffect(() => {
   }
 
   return (
-    <>
-      {isLoading ? (
-        <div className="flex justify-center items-center min-h-[400px]">
-          <Spinner size="lg" />
-        </div>
-      ) : (
-        <div className="space-y-8 h-full mx-auto p-0">
-          {isAuthenticated && ( // Показываем навигацию только когда аутентифицированы
-            <div className="bg-gray-50 min-h-full">
-              <Navigation
-                isLoggedIn={isAuthenticated}
-                onLogout={handleLogout}
-                setCurrentPage={handlePageChange}
-                userRole={userRole}
-                currentPage={currentPage}
-              />
-              <main 
-                className={`
-                  mx-auto 
-                  ${currentPage === "auth" ? "px-0 max-w-md" : "container px-4 sm:px-6 lg:px-8"}
-                  pt-6 pb-8 transition-all duration-300`}>
-                  <div className={currentPage === "auth" ? "" : "bg-white rounded-lg shadow-sm p-6"}>
-                    {renderContent()}
-                  </div>
-              </main>
-            </div>
-          )}
-          {!isAuthenticated && 
-            <main 
-            className={`
-              mx-auto 
-              ${currentPage === "auth" ? "px-0 max-w-md" : "container px-4 sm:px-6 lg:px-8"}
-              pt-6 pb-8 transition-all duration-300`}>
-              <div className={currentPage === "auth" ? "" : "bg-white rounded-lg shadow-sm p-6"}>
-                {renderContent()}
-              </div>
-          </main>}
-        </div>
+    <div className="layout-container">
+      {isAuthenticated && (
+        <Navigation
+          userRole={userRole}
+          currentPage={currentPage}
+          onPageChange={handlePageChange}
+          onLogout={handleLogout}
+          />
       )}
-    </>
-  );
-
- 
+      
+      <main className="content-wrapper">
+        {renderContent()}
+      </main>
+    </div>
+  )
 }
 
 export default Layout
-
