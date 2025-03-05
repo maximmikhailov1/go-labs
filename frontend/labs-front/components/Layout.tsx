@@ -26,7 +26,7 @@ const Layout: React.FC<LayoutProps> = ({ searchParams }) => {
   const [currentPage, setCurrentPage] = useState("home")
   const [isLoading, setIsLoading] = useState(true)
   const [userRole, setUserRole] = useState<"student" | "tutor" | null>(null)
-  
+  const [authChecked, setAuthChecked] = useState(false) // Добавляем флаг проверки авторизации
   const router = useRouter()
   const pathname = usePathname()
 
@@ -52,6 +52,8 @@ const Layout: React.FC<LayoutProps> = ({ searchParams }) => {
         router.replace("/auth")
       } finally {
         setIsLoading(false)
+        setAuthChecked(true) // Отмечаем завершение проверки
+
       }
     }
     const pageFromPath = pathname === '/' ? 'home' : pathname.slice(1);
@@ -106,6 +108,7 @@ const Layout: React.FC<LayoutProps> = ({ searchParams }) => {
   }
 
   const handlePageChange = (page: string) => {
+    
     if (!isAuthenticated && page !== "auth") {
       localStorage.setItem("lastPage", `/${page}`)
       router.replace("/auth", { scroll: false })
@@ -121,7 +124,13 @@ const Layout: React.FC<LayoutProps> = ({ searchParams }) => {
   }
 
   const renderContent = () => {
-    if (!isAuthenticated || currentPage === "auth") {
+    if (!authChecked || isLoading) { // Ждем завершения проверки
+      return <div className="flex justify-center items-center min-h-[400px]">
+        <Spinner size="lg" />
+      </div>
+    }
+
+    if (!isAuthenticated) {
       return <AuthPage onLogin={handleLogin} />
     }
 
@@ -172,13 +181,15 @@ const Layout: React.FC<LayoutProps> = ({ searchParams }) => {
         </div>
       ) : (
         <div className="space-y-8 h-full mx-auto p-0">
-            <div className=" bg-gray-50 min-h-full">
+          {isAuthenticated && ( // Показываем навигацию только когда аутентифицированы
+            <div className="bg-gray-50 min-h-full">
               <Navigation
                 isLoggedIn={isAuthenticated}
                 onLogout={handleLogout}
                 setCurrentPage={handlePageChange}
                 userRole={userRole}
-                currentPage={currentPage} />
+                currentPage={currentPage}
+              />
               <main 
                 className={`
                   mx-auto 
@@ -189,6 +200,17 @@ const Layout: React.FC<LayoutProps> = ({ searchParams }) => {
                   </div>
               </main>
             </div>
+          )}
+          {!isAuthenticated && 
+            <main 
+            className={`
+              mx-auto 
+              ${currentPage === "auth" ? "px-0 max-w-md" : "container px-4 sm:px-6 lg:px-8"}
+              pt-6 pb-8 transition-all duration-300`}>
+              <div className={currentPage === "auth" ? "" : "bg-white rounded-lg shadow-sm p-6"}>
+                {renderContent()}
+              </div>
+          </main>}
         </div>
       )}
     </>
