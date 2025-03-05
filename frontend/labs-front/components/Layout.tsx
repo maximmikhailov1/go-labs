@@ -44,7 +44,7 @@ const Layout: React.FC<LayoutProps> = ({ searchParams }) => {
         setUserRole(storedRole || null)
 
         const pageFromPath = pathname === '/' ? 'home' : pathname.slice(1);
-        if (pageFromPath !== currentPage) {
+        if (isAuthenticated && pageFromPath !== currentPage) {
           setCurrentPage(pageFromPath);
         }
       } catch (error) {
@@ -55,10 +55,6 @@ const Layout: React.FC<LayoutProps> = ({ searchParams }) => {
         setAuthChecked(true) // Отмечаем завершение проверки
 
       }
-    }
-    const pageFromPath = pathname === '/' ? 'home' : pathname.slice(1);
-    if (pageFromPath !== currentPage) {
-      setCurrentPage(pageFromPath);
     }
 
     checkAuth()
