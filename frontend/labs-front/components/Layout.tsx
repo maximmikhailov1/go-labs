@@ -30,38 +30,49 @@ const Layout: React.FC<LayoutProps> = ({ searchParams }) => {
   const router = useRouter()
   const pathname = usePathname()
 
-  useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const { isAuthenticated, storedRole } = await checkAuthAndRole()
-        
-        if (!isAuthenticated) {
-          if (pathname !== "/auth") {
-            router.replace("/auth")
-          }
-          return
-        }
-        setIsAuthenticated(true)
-        setUserRole(storedRole || null)
-
-        // Затем синхронизируем страницу из URL
-        const pageFromPath = pathname === '/' ? 'home' : pathname.slice(1)
-        setCurrentPage(pageFromPath) // Форсируем установку страницы из URL
-        console.log("50Current role:", userRole)
-        console.log("51Current page:", currentPage)
-
-      } catch (error) {
-        console.error("Auth check failed:", error)
-        router.replace("/auth")
-      } finally {
-        setIsLoading(false)
-        setAuthChecked(true)
+useEffect(() => {
+  const checkAuth = async () => {
+    try {
+      const { isAuthenticated, storedRole } = await checkAuthAndRole();
+      
+      if (!isAuthenticated) {
+        if (pathname !== "/auth") router.replace("/auth");
+        return;
       }
+
+      // Важно: сначала обновляем аутентификацию и роль
+      setIsAuthenticated(true);
+      setUserRole(storedRole || null);
+
+    } catch (error) {
+      console.error("Auth check failed:", error);
+      router.replace("/auth");
+    } finally {
+      setIsLoading(false);
+      setAuthChecked(true);
     }
+  };
 
-    checkAuth()
-  }, [pathname]) 
+  checkAuth();
+}, [pathname]);
 
+  useEffect(() => {
+    if (!userRole || !isAuthenticated) return;
+  
+    const pageFromPath = pathname === '/' ? 'home' : pathname.slice(1);
+    const allowedPages = {
+      tutor: ["subject-management", "lab-scheduling", "group-subject-assignment", "all-teachers-schedule"],
+      student: ["home", "profile"]
+    };
+  
+    if (allowedPages[userRole].includes(pageFromPath)) {
+      setCurrentPage(pageFromPath);
+    } else {
+      const defaultPage = userRole === "tutor" ? "all-teachers-schedule" : "home";
+      router.replace(defaultPage === "home" ? "/" : `/${defaultPage}`);
+      setCurrentPage(defaultPage);
+    }
+  }, [userRole, pathname, isAuthenticated]);
 
   const handleLogin = async (role: "student" | "tutor") => {
     const { isAuthenticated, storedRole } = await checkAuthAndRole()
@@ -122,17 +133,10 @@ const Layout: React.FC<LayoutProps> = ({ searchParams }) => {
   }
 
   const renderContent = () => {
-    if (!authChecked || isLoading) { // Ждем завершения проверки
-      return <div className="flex justify-center items-center min-h-[400px]">
-        <Spinner size="lg" />
-      </div>
-    }
+    if (!authChecked || isLoading) return <Spinner />;
+    if (!isAuthenticated) return <AuthPage onLogin={handleLogin} />;
+    if (!userRole) return <Spinner />;
 
-    if (!isAuthenticated) {
-      return <AuthPage onLogin={handleLogin} />
-    }
-
-    if (!userRole) return null;
 
     const allowedPages = {
       tutor: ["subject-management", "lab-scheduling", "group-subject-assignment", "all-teachers-schedule"],
