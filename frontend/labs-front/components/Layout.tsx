@@ -42,12 +42,21 @@ const Layout: React.FC<LayoutProps> = ({ searchParams }) => {
         
         setIsAuthenticated(isAuthenticated)
         setUserRole(storedRole || null)
+
+        const pageFromPath = pathname === '/' ? 'home' : pathname.slice(1);
+        if (pageFromPath !== currentPage) {
+          setCurrentPage(pageFromPath);
+        }
       } catch (error) {
         console.error("Auth check failed:", error)
         router.replace("/auth")
       } finally {
         setIsLoading(false)
       }
+    }
+    const pageFromPath = pathname === '/' ? 'home' : pathname.slice(1);
+    if (pageFromPath !== currentPage) {
+      setCurrentPage(pageFromPath);
     }
 
     checkAuth()
@@ -104,10 +113,10 @@ const Layout: React.FC<LayoutProps> = ({ searchParams }) => {
     }
   
     // Сначала обновляем состояние
-    setCurrentPage(page)
+    const path = page === "home" ? "/" : `/${page}`;
+    localStorage.setItem("lastPage", path);
 
-    const path = page === "home" ? "/" : `/${page}`
-    localStorage.setItem("lastPage", path)
+    setCurrentPage(page);
     router.replace(path, { scroll: false })
   }
 
@@ -116,6 +125,7 @@ const Layout: React.FC<LayoutProps> = ({ searchParams }) => {
       return <AuthPage onLogin={handleLogin} />
     }
 
+    if (!userRole) return null;
     // Упрощенная проверка доступа
     const allowedPages = {
       tutor: [
@@ -129,6 +139,7 @@ const Layout: React.FC<LayoutProps> = ({ searchParams }) => {
     console.log(currentPage, userRole)
     console.log(allowedPages[userRole!], allowedPages[userRole!].includes(currentPage))
     if (!(allowedPages[userRole!].includes(currentPage))) {
+      router.replace(userRole === "tutor" ? "/all-teachers-schedule" : "/");
       console.log("not allowed")
       console.log(currentPage, userRole)
       console.log(allowedPages[userRole!], allowedPages[userRole!].includes(currentPage))
