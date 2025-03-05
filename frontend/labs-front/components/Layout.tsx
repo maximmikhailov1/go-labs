@@ -39,21 +39,6 @@ const Layout: React.FC<LayoutProps> = ({ searchParams }) => {
           router.replace("/auth")
           return
         }
-
-        if (isAuthenticated) {
-          // Проверка доступа для текущего URL
-          const allowedPages = {
-            tutor: ["subject-management", "lab-scheduling", "group-subject-assignment", "all-teachers-schedule"],
-            student: ["home", "profile"]
-          }
-
-          if (!allowedPages[storedRole!].includes(currentPage)) {
-            const defaultRoute = storedRole === "tutor" 
-              ? "/all-teachers-schedule" 
-              : "/profile"
-            router.replace(defaultRoute)
-          }
-        }
         
         setIsAuthenticated(isAuthenticated)
         setUserRole(storedRole || null)
@@ -143,6 +128,7 @@ const Layout: React.FC<LayoutProps> = ({ searchParams }) => {
     }
 
     if (!allowedPages[userRole!].includes(currentPage)) {
+      console.log("not allowed")
       return null
     }
 
