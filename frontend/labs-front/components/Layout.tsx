@@ -129,6 +129,7 @@ const Layout: React.FC<LayoutProps> = ({ searchParams }) => {
 
     if (!allowedPages[userRole!].includes(currentPage)) {
       console.log("not allowed")
+      console.log(currentPage, userRole)
       return null
     }
 
