@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useRouter, usePathname} from "next/navigation"
 import Navigation from "./Navigation"
 import Home from "./Home"
@@ -28,6 +28,7 @@ const Layout: React.FC<LayoutProps> = ({ searchParams }) => {
   const [userRole, setUserRole] = useState<"student" | "tutor" | null>(null)
   const [authChecked, setAuthChecked] = useState(false) // Добавляем флаг проверки авторизации
   const router = useRouter()
+  const [isRedirecting, setIsRedirecting] = useState(false); // Добавляем флаг редиректа
   const pathname = usePathname()
 
 useEffect(() => {
@@ -56,23 +57,25 @@ useEffect(() => {
   checkAuth();
 }, [pathname]);
 
-  useEffect(() => {
-    if (!userRole || !isAuthenticated) return;
-  
-    const pageFromPath = pathname === '/' ? 'home' : pathname.slice(1);
-    const allowedPages = {
-      tutor: ["subject-management", "lab-scheduling", "group-subject-assignment", "all-teachers-schedule"],
-      student: ["home", "profile"]
-    };
-  
-    if (allowedPages[userRole].includes(pageFromPath)) {
-      setCurrentPage(pageFromPath);
-    } else {
-      const defaultPage = userRole === "tutor" ? "all-teachers-schedule" : "home";
-      router.replace(defaultPage === "home" ? "/" : `/${defaultPage}`);
-      setCurrentPage(defaultPage);
-    }
-  }, [userRole, pathname, isAuthenticated]);
+useEffect(() => {
+  if (!userRole || !isAuthenticated || isRedirecting) return;
+
+  const pageFromPath = pathname === '/' ? 'home' : pathname.slice(1);
+  const allowedPages = {
+    tutor: ["subject-management", "lab-scheduling", "group-subject-assignment", "all-teachers-schedule"],
+    student: ["home", "profile"]
+  };
+
+  if (!allowedPages[userRole].includes(pageFromPath)) {
+    setIsRedirecting(true);
+    const defaultPage = userRole === "tutor" ? "all-teachers-schedule" : "home";
+    setCurrentPage(defaultPage);
+    setIsRedirecting(false);
+    router.replace(defaultPage === "home" ? "/" : `/${defaultPage}`)
+  } else if (currentPage !== pageFromPath) {
+    setCurrentPage(pageFromPath);
+  }
+}, [userRole, pathname, isAuthenticated]);
 
   const handleLogin = async (role: "student" | "tutor") => {
     const { isAuthenticated, storedRole } = await checkAuthAndRole()
@@ -116,8 +119,8 @@ useEffect(() => {
     router.replace("/auth",{scroll:false})
   }
 
-  const handlePageChange = (page: string) => {
-    
+  const handlePageChange = useCallback((page: string) =>  {
+    if (isRedirecting || page === currentPage) return; // Блокировка во время редиректа
     if (!isAuthenticated && page !== "auth") {
       localStorage.setItem("lastPage", `/${page}`)
       router.replace("/auth", { scroll: false })
@@ -130,7 +133,7 @@ useEffect(() => {
 
     setCurrentPage(page);
     router.replace(path, { scroll: false })
-  }
+  }, [isAuthenticated, router, currentPage, isRedirecting]);
 
   const renderContent = () => {
     if (!authChecked || isLoading) return <Spinner />;
