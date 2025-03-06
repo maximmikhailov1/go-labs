@@ -12,18 +12,18 @@ func SetupRoutes(app *fiber.App) {
 	//MIDDLEWARE
 	app.Use(middleware.Authorized)
 	//new
-	app.Get("/api/subjects", controllers.SubjectIndex) //возвращает список предметов
-	app.Post("/api/subjects", controllers.SubjectCreate)
+	app.Get("/api/subjects", controllers.SubjectIndex)   //возвращает список предметов secure
+	app.Post("/api/subjects", controllers.SubjectCreate) // secure
 	app.Get("/api/labs/", controllers.LabsFirstBySubject)
-	app.Post("/api/records", controllers.RecordCreate)
+	app.Post("/api/records", controllers.RecordCreate) //secure
 	app.Get("/api/user", controllers.UserFirst)
 	app.Get("/api/user/teams", controllers.UserTeamsIndex)
 	app.Post("/api/user/teams", controllers.TeamCreate)
 	app.Get("/api/user/labs", controllers.UserLabsIndex)
 	app.Get("/api/tutors", controllers.TutorsIndex) // TODO: ЗАБЛОКИРОВАТЬ ДОСТУП ЗЛОДЕЮ БРИТАНЦУ
 	app.Get("/api/schedule", controllers.ScheduleWeek)
-	app.Post("/api/schedule", controllers.ScheduleCreate)
-	app.Get("/demo/users", controllers.UsersIndex)
+	app.Post("/api/schedule", controllers.ScheduleCreate) //secure
+	app.Get("/demo/users", controllers.UsersIndex)        //secure
 	app.Post("/api/enroll", controllers.Enroll)
 	app.Patch("/api/user/teams", controllers.TeamChangeName) // предполагается query с кодом
 	app.Put("/api/user/teams", controllers.TeamEnter)        // предполагается query с кодом
