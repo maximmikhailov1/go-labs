@@ -37,15 +37,15 @@ export async function checkAuthAndRole() {
     })
     if (response.ok) {
       const data = await response.json()
-      return {success: true, storedRole: data.role as "student" | "tutor" | null, isAuthenticated: true}
+      return {success: true, role: data.role as "student" | "tutor" | null, isAuthenticated: true}
       
     } else {
       const errorData = await response.json()
-      return {error: errorData.message || "Ошибка проверки аутентификации",  isAuthenticated:false, storedRole:null}
+      return {error: errorData.message || "Ошибка проверки аутентификации",  isAuthenticated:false, role:null}
     }
   } catch (error) {
     console.error("Ошибка при аутентификации:", error)
-    return {error: "Ошибка аутентификации", isAuthenticated: false, storedRole:null}
+    return {error: "Ошибка аутентификации", isAuthenticated: false, role:null}
   }
 }
 
