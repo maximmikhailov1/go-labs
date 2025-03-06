@@ -2,7 +2,6 @@ package routes
 
 import (
 	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/middleware/monitor"
 	"github.com/maximmikhailov1/go-labs/backend/api/controllers"
 	"github.com/maximmikhailov1/go-labs/backend/api/middleware"
 )
@@ -41,22 +40,20 @@ func SetupRoutes(app *fiber.App) {
 	app.Post("/api/signin", controllers.SingIn)
 	app.Post("/api/signup", controllers.SignUp)
 	app.Post("/api/logout", controllers.Logout)
-	app.Get("/metrics", monitor.New()) //default fiber metrics
 	//RECORDS
 	app.Get("/api/records", controllers.RecordsGet)
 	app.Get("/api/records/dates", controllers.RecordsDatesGet)
 	app.Get("/api/records/times/:date", controllers.RecordsClassesGet)
 	app.Get("/api/records/:id", controllers.RecordIndex)
-	app.Delete("/api/records/:id", controllers.RecordDelete)
+	app.Delete("/api/records/:id", controllers.RecordDelete) //secure
 	//LABS
 
 	// app.Get("/api/labs", controllers.LabsGet)
-	app.Delete("/api/labs/:id", controllers.LabDelete)
+	app.Delete("/api/labs/:id", controllers.LabDelete) // secure
 	app.Get("/api/labs/numbers", controllers.LabsNumbersGet)
 	//STUDENTS
 
 	// app.Get("/api/student-info")
-	app.Get("/student/:id", controllers.StudentRender)
 	app.Get("/api/student/:id", controllers.StudentGetRecords)
 
 }

@@ -102,6 +102,15 @@ func RecordRender(c *fiber.Ctx) error {
 func RecordDelete(c *fiber.Ctx) error {
 
 	id := c.Params("id")
+
+	userCredentials := c.Locals("user").(fiber.Map)
+	role := userCredentials["Role"].(string)
+
+	if role != "tutor" {
+		return c.Status(http.StatusUnauthorized).JSON(fiber.Map{
+			"error": "unauthorized to perform this action",
+		})
+	}
 	result := initializers.DB.Delete(&models.Record{}, id)
 	if result.Error != nil {
 		return c.Status(http.StatusBadRequest).JSON(
