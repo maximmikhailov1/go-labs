@@ -2,7 +2,6 @@ package routes
 
 import (
 	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/middleware/monitor"
 	"github.com/maximmikhailov1/go-labs/backend/api/controllers"
 	"github.com/maximmikhailov1/go-labs/backend/api/middleware"
 )
@@ -13,18 +12,18 @@ func SetupRoutes(app *fiber.App) {
 	//MIDDLEWARE
 	app.Use(middleware.Authorized)
 	//new
-	app.Get("/api/subjects", controllers.SubjectIndex) //возвращает список предметов
-	app.Post("/api/subjects", controllers.SubjectCreate)
+	app.Get("/api/subjects", controllers.SubjectIndex)   //возвращает список предметов secure
+	app.Post("/api/subjects", controllers.SubjectCreate) // secure
 	app.Get("/api/labs/", controllers.LabsFirstBySubject)
-	app.Post("/api/records", controllers.RecordCreate)
+	app.Post("/api/records", controllers.RecordCreate) //secure
 	app.Get("/api/user", controllers.UserFirst)
 	app.Get("/api/user/teams", controllers.UserTeamsIndex)
 	app.Post("/api/user/teams", controllers.TeamCreate)
 	app.Get("/api/user/labs", controllers.UserLabsIndex)
 	app.Get("/api/tutors", controllers.TutorsIndex) // TODO: ЗАБЛОКИРОВАТЬ ДОСТУП ЗЛОДЕЮ БРИТАНЦУ
 	app.Get("/api/schedule", controllers.ScheduleWeek)
-	app.Post("/api/schedule", controllers.ScheduleCreate)
-	app.Get("/demo/users", controllers.UsersIndex)
+	app.Post("/api/schedule", controllers.ScheduleCreate) //secure
+	app.Get("/demo/users", controllers.UsersIndex)        //secure
 	app.Post("/api/enroll", controllers.Enroll)
 	app.Patch("/api/user/teams", controllers.TeamChangeName) // предполагается query с кодом
 	app.Put("/api/user/teams", controllers.TeamEnter)        // предполагается query с кодом
@@ -41,22 +40,20 @@ func SetupRoutes(app *fiber.App) {
 	app.Post("/api/signin", controllers.SingIn)
 	app.Post("/api/signup", controllers.SignUp)
 	app.Post("/api/logout", controllers.Logout)
-	app.Get("/metrics", monitor.New()) //default fiber metrics
 	//RECORDS
 	app.Get("/api/records", controllers.RecordsGet)
 	app.Get("/api/records/dates", controllers.RecordsDatesGet)
 	app.Get("/api/records/times/:date", controllers.RecordsClassesGet)
 	app.Get("/api/records/:id", controllers.RecordIndex)
-	app.Delete("/api/records/:id", controllers.RecordDelete)
+	app.Delete("/api/records/:id", controllers.RecordDelete) //secure
 	//LABS
 
 	// app.Get("/api/labs", controllers.LabsGet)
-	app.Delete("/api/labs/:id", controllers.LabDelete)
+	app.Delete("/api/labs/:id", controllers.LabDelete) // secure
 	app.Get("/api/labs/numbers", controllers.LabsNumbersGet)
 	//STUDENTS
 
 	// app.Get("/api/student-info")
-	app.Get("/student/:id", controllers.StudentRender)
 	app.Get("/api/student/:id", controllers.StudentGetRecords)
 
 }
