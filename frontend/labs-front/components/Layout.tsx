@@ -1,25 +1,34 @@
 "use client"
-import { useState, useEffect, useCallback } from "react"
-import { useRouter, usePathname } from "next/navigation"
+
+import type React from "react"
+import { useState, useEffect } from "react"
+import { useRouter, usePathname} from "next/navigation"
 import Navigation from "./Navigation"
 import Home from "./Home"
+import {checkAuthAndRole, getUser} from "@/app/actions/auth"
 import ProfilePage from "./profile/profile-page"
+import AuthPage from "./AuthPage"
 import SubjectManagement from "./teacher/SubjectManagement"
 import LabScheduling from "./teacher/LabScheduling"
 import GroupSubjectAssignment from "./teacher/GroupSubjectAssignment"
 import AllTeachersSchedule from "./teacher/AllTeachersSchedule"
 import Spinner from "./Spinner"
-import AuthPage from "./AuthPage"
-import { checkAuthAndRole} from "@/app/actions/auth"
+import { toast } from "sonner"
 
-const Layout = () => {
+
+interface LayoutProps {
+  searchParams?: string;
+}
+
+
+const Layout: React.FC<LayoutProps> = ({ searchParams }) => {
+  const [isLoggedIn, setIsLoggedIn] = useState(false)
+  const [currentPage, setCurrentPage] = useState("home")
+  const [isLoading, setIsLoading] = useState(true)
+  const [userRole, setUserRole] = useState<"student" | "tutor" | null>(null)
+  
   const router = useRouter()
   const pathname = usePathname()
-  const [currentPage, setCurrentPage] = useState("home")
-  const [userRole, setUserRole] = useState<"student" | "tutor" | null>(null)
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
-  const [isLoading, setIsLoading] = useState(true)
-
 
   useEffect(() => {
     const initialize = async () => {
@@ -47,7 +56,6 @@ const Layout = () => {
         if (pathname !== "/auth") {
           localStorage.setItem("lastPage", pathname)
           router.replace("/auth")
-          return
         }
         setIsLoggedIn(false)
         setUserRole(null)
@@ -63,9 +71,9 @@ const Layout = () => {
 
   const getAndSetUserRole = async () => {
     try {
-      const result = await checkAuth()
-      if (result.success && result.userRole){
-        return  result.userRole as "student" | "tutor" | null
+      const result = await checkAuthAndRole()
+      if (result.success && result.role){
+        return  result.role as "student" | "tutor" | null
       }
     } catch (error) {
         toast.error("Попытка перейти на страницу, которая не предназначается пользователю")
@@ -73,6 +81,7 @@ const Layout = () => {
       return null
     }
   }
+
   const handleLogin = async (role: "student" | "tutor") => {
     setIsLoggedIn(true)
     setUserRole(role)
@@ -97,17 +106,32 @@ const Layout = () => {
     setCurrentPage(callbackUrl?.slice(1) || lastPage?.slice(1) || (role === "tutor" ? "all-teachers-schedule" : "home"))
   }
 
-
   const handleLogout = () => {
-    setIsAuthenticated(false)
+    setIsLoggedIn(false)
     setUserRole(null)
     document.cookie = `token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
+    localStorage.removeItem("isLoggedIn")
     localStorage.removeItem("lastPage")
     localStorage.removeItem("userProfile")
     router.replace("/auth",{scroll:false})
   }
 
+  const handlePageChange = (page: string) => {
+    if (!isLoggedIn && page !== "auth") {
+      localStorage.setItem("lastPage", `/${page}`)
+      router.replace("/auth", { scroll: false })
+      return
+    }
   
+    // Сначала обновляем состояние
+    setCurrentPage(page)
+    
+    // Затем выполняем навигацию
+    const path = page === "home" ? "/" : `/${page}`
+    localStorage.setItem("lastPage", path)
+    router.replace(path, { scroll: false })
+  }
+
   const renderContent = () => {
     if (!isLoggedIn || currentPage === "auth") {
       return <AuthPage onLogin={handleLogin} />
@@ -164,9 +188,8 @@ const Layout = () => {
         <div className="space-y-8 h-full mx-auto p-0">
             <div className=" bg-gray-50 min-h-full">
               <Navigation
-                isLoggedIn={isLoggedIn}
                 onLogout={handleLogout}
-                setCurrentPage={handlePageChange}
+                onPageChange={handlePageChange}
                 userRole={userRole}
                 currentPage={currentPage} />
               <main 
@@ -188,3 +211,4 @@ const Layout = () => {
 }
 
 export default Layout
+
