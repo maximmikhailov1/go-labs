@@ -76,7 +76,8 @@ const Layout: React.FC<LayoutProps> = ({ searchParams }) => {
         return  result.role as "student" | "tutor" | null
       }
     } catch (error) {
-        toast.error("Попытка перейти на страницу, которая не предназначается пользователю")
+      console.log(error)
+      toast.error("Попытка перейти на страницу, которая не предназначается пользователю")
     } finally {
       return null
     }
