@@ -5,7 +5,7 @@ import { useState, useEffect } from "react"
 import { useRouter, usePathname} from "next/navigation"
 import Navigation from "./Navigation"
 import Home from "./Home"
-import {checkAuthAndRole, getUser} from "@/app/actions/auth"
+import {getUser} from "@/app/actions/auth"
 import ProfilePage from "./profile/profile-page"
 import AuthPage from "./AuthPage"
 import SubjectManagement from "./teacher/SubjectManagement"
@@ -13,7 +13,6 @@ import LabScheduling from "./teacher/LabScheduling"
 import GroupSubjectAssignment from "./teacher/GroupSubjectAssignment"
 import AllTeachersSchedule from "./teacher/AllTeachersSchedule"
 import Spinner from "./Spinner"
-import { toast } from "sonner"
 
 
 interface LayoutProps {
@@ -33,7 +32,7 @@ const Layout: React.FC<LayoutProps> = ({ searchParams }) => {
   useEffect(() => {
     const initialize = async () => {
       const loggedInStatus = localStorage.getItem("isLoggedIn")
-      const storedUserRole = await getAndSetUserRole()
+      const storedUserRole = localStorage.getItem("userRole") as "student" | "tutor" | null
       const lastPage = localStorage.getItem("lastPage")
   
       if (loggedInStatus === "true" && storedUserRole) {
@@ -69,24 +68,11 @@ const Layout: React.FC<LayoutProps> = ({ searchParams }) => {
     initialize()
   }, [pathname, router, searchParams])
 
-  const getAndSetUserRole = async () => {
-    try {
-      const result = await checkAuthAndRole()
-      if (result.success && result.role){
-        return  result.role as "student" | "tutor" | null
-      }
-    } catch (error) {
-      console.log(error)
-      toast.error("Попытка перейти на страницу, которая не предназначается пользователю")
-    } finally {
-      return null
-    }
-  }
-
   const handleLogin = async (role: "student" | "tutor") => {
     setIsLoggedIn(true)
     setUserRole(role)
     localStorage.setItem("isLoggedIn", "true")
+    localStorage.setItem("userRole", role)
     
     try {
       const result = await getUser()
@@ -112,6 +98,7 @@ const Layout: React.FC<LayoutProps> = ({ searchParams }) => {
     setUserRole(null)
     document.cookie = `token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
     localStorage.removeItem("isLoggedIn")
+    localStorage.removeItem("userRole")
     localStorage.removeItem("lastPage")
     localStorage.removeItem("userProfile")
     router.replace("/auth",{scroll:false})
@@ -189,8 +176,9 @@ const Layout: React.FC<LayoutProps> = ({ searchParams }) => {
         <div className="space-y-8 h-full mx-auto p-0">
             <div className=" bg-gray-50 min-h-full">
               <Navigation
+                isLoggedIn={isLoggedIn}
                 onLogout={handleLogout}
-                onPageChange={handlePageChange}
+                setCurrentPage={handlePageChange}
                 userRole={userRole}
                 currentPage={currentPage} />
               <main 
@@ -212,4 +200,3 @@ const Layout: React.FC<LayoutProps> = ({ searchParams }) => {
 }
 
 export default Layout
-
