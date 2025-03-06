@@ -26,7 +26,7 @@ export async function signIn(formData: FormData) {
   }
 }
 
-export async function checkAuth() {
+export async function checkAuthAndRole() {
   try {
     const response = await fetch("/api/check-auth", {
       method: "GET",
@@ -37,13 +37,15 @@ export async function checkAuth() {
     })
     if (response.ok) {
       const data = await response.json()
-      return {success: true, userRole: data}
+      return {success: true, storedRole: data.role as "student" | "tutor" | null, isAuthenticated: true}
+      
     } else {
       const errorData = await response.json()
-      return {error: errorData.message || "Ошибка проверки аутентификации"}
+      return {error: errorData.message || "Ошибка проверки аутентификации",  isAuthenticated:false, storedRole:null}
     }
   } catch (error) {
-    return {error: "Ошибка проверка аутентификации"}
+    console.error("Ошибка при аутентификации:", error)
+    return {error: "Ошибка аутентификации", isAuthenticated: false, storedRole:null}
   }
 }
 

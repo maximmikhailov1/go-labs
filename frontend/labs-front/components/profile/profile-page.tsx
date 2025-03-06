@@ -35,7 +35,7 @@ interface Record {
 		team_member:  number
 }
 
-export function ProfilePage() {
+const ProfilePage: React.FC = () => {
   const [selectedTeam, setSelectedTeam] = useState<string>("solo");
   const [teams, setTeams] = useState<Team[]>([]);
   const [showCreateTeam, setShowCreateTeam] = useState(false);
@@ -45,7 +45,7 @@ export function ProfilePage() {
   const [editingTeam, setEditingTeam] = useState<string | null>(null);
   const [editTeamName, setEditTeamName] = useState("");
   const [user, setUser] = useState<User>(() => {
-    // Инициализация из localStorage при монтировании
+
     const savedUser = typeof window !== 'undefined' ? localStorage.getItem('userProfile') : null;
     return savedUser ? JSON.parse(savedUser) : { fullName: "", groupName: "" };
   });
@@ -502,3 +502,4 @@ export function ProfilePage() {
 
   )
 }
+export default ProfilePage
