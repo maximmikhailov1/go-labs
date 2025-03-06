@@ -33,15 +33,15 @@ const Layout: React.FC<LayoutProps> = ({ searchParams }) => {
   useEffect(() => {
     const initialize = async () => {
       const loggedInStatus = localStorage.getItem("isLoggedIn")
-      getAndSetUserRole()
+      const storedUserRole = await getAndSetUserRole()
       const lastPage = localStorage.getItem("lastPage")
   
-      if (loggedInStatus === "true" && userRole) {
+      if (loggedInStatus === "true" && storedUserRole) {
         setIsLoggedIn(true)
-        setUserRole(userRole)
+        setUserRole(storedUserRole)
 
         // Перенаправление преподавателей на страницу расписания
-        if (userRole === "tutor" && (pathname === "/" || pathname === "/home")) {
+        if (storedUserRole === "tutor" && (pathname === "/" || pathname === "/home")) {
           router.replace("/all-teachers-schedule")
           setCurrentPage("all-teachers-schedule")
           return
@@ -50,7 +50,7 @@ const Layout: React.FC<LayoutProps> = ({ searchParams }) => {
         if (pathname === "/auth") {
           const params = new URLSearchParams(searchParams)
           const callbackUrl = params.get("callbackUrl")
-          router.replace(callbackUrl || lastPage || (userRole === "tutor" ? "/all-teachers-schedule" : "/"))
+          router.replace(callbackUrl || lastPage || (storedUserRole === "tutor" ? "/all-teachers-schedule" : "/"))
         }
       } else {
         if (pathname !== "/auth") {
@@ -73,10 +73,12 @@ const Layout: React.FC<LayoutProps> = ({ searchParams }) => {
     try {
       const result = await checkAuth()
       if (result.success && result.userRole){
-        setUserRole(result.userRole)
+        return  result.userRole as "student" | "tutor" | null
       }
     } catch (error) {
-      toast.error("Попытка перейти на страницу, которая не предназначается пользователю")
+        toast.error("Попытка перейти на страницу, которая не предназначается пользователю")
+    } finally {
+      return null
     }
   }
 
