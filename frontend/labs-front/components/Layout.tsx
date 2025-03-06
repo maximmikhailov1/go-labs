@@ -20,55 +20,83 @@ const Layout = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
 
-  // Мемоизированный обработчик навигации
-  const handlePageChange = useCallback((page: string) => {
-    const allowedPages = {
-      tutor: [
-        "subject-management", 
-        "lab-scheduling",
-        "group-subject-assignment",
-        "all-teachers-schedule"
-      ],
-      student: ["home", "profile"]
-    }
 
-    if (userRole && allowedPages[userRole].includes(page)) {
-      const path = page === "home" ? "/" : `/${page}`
-      router.replace(path)
-      setCurrentPage(page)
-    }
-  }, [userRole, router])
-
-  // Проверка авторизации и синхронизация страницы
   useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const { isAuthenticated, storedRole } = await checkAuthAndRole()
-        
-        if (!isAuthenticated) {
-          router.replace("/auth")
+    const initialize = async () => {
+      const loggedInStatus = localStorage.getItem("isLoggedIn")
+      const storedUserRole = await getAndSetUserRole()
+      const lastPage = localStorage.getItem("lastPage")
+  
+      if (loggedInStatus === "true" && storedUserRole) {
+        setIsLoggedIn(true)
+        setUserRole(storedUserRole)
+
+        // Перенаправление преподавателей на страницу расписания
+        if (storedUserRole === "tutor" && (pathname === "/" || pathname === "/home")) {
+          router.replace("/all-teachers-schedule")
+          setCurrentPage("all-teachers-schedule")
           return
         }
 
-        setIsAuthenticated(true)
-        setUserRole(storedRole)
-
-        // Синхронизация страницы из URL
-        const pageFromPath = pathname === '/' ? 'home' : pathname.slice(1)
-        if (pageFromPath !== currentPage) {
-          handlePageChange(pageFromPath)
+        if (pathname === "/auth") {
+          const params = new URLSearchParams(searchParams)
+          const callbackUrl = params.get("callbackUrl")
+          router.replace(callbackUrl || lastPage || (storedUserRole === "tutor" ? "/all-teachers-schedule" : "/"))
         }
-
-      } catch (error) {
-        console.error("Auth check failed:", error)
-        router.replace("/auth")
-      } finally {
-        setIsLoading(false)
+      } else {
+        if (pathname !== "/auth") {
+          localStorage.setItem("lastPage", pathname)
+          router.replace("/auth")
+          return
+        }
+        setIsLoggedIn(false)
+        setUserRole(null)
       }
+  
+      const page = pathname === "/" ? "home" : pathname.slice(1)
+      setCurrentPage(page)
+      setIsLoading(false)
+    }
+  
+    initialize()
+  }, [pathname, router, searchParams])
+
+  const getAndSetUserRole = async () => {
+    try {
+      const result = await checkAuth()
+      if (result.success && result.userRole){
+        return  result.userRole as "student" | "tutor" | null
+      }
+    } catch (error) {
+        toast.error("Попытка перейти на страницу, которая не предназначается пользователю")
+    } finally {
+      return null
+    }
+  }
+  const handleLogin = async (role: "student" | "tutor") => {
+    setIsLoggedIn(true)
+    setUserRole(role)
+    localStorage.setItem("isLoggedIn", "true")
+    
+    try {
+      const result = await getUser()
+      if (result.success && result.user) {
+        localStorage.setItem("userProfile", JSON.stringify(result.user))
+      }
+    } catch (error) {
+      console.error("Ошибка загрузки данных пользователя:", error)
     }
 
-    checkAuth()
-  }, [pathname])
+    const params = new URLSearchParams(searchParams)
+    const callbackUrl = params.get("callbackUrl")
+    const lastPage = localStorage.getItem("lastPage")
+    
+    // Перенаправление преподавателей по умолчанию
+    const defaultRoute = role === "tutor" ? "/all-teachers-schedule" : "/"
+    router.replace(callbackUrl || lastPage || defaultRoute)
+    setCurrentPage(callbackUrl?.slice(1) || lastPage?.slice(1) || (role === "tutor" ? "all-teachers-schedule" : "home"))
+  }
+
 
   const handleLogout = () => {
     setIsAuthenticated(false)
@@ -78,14 +106,34 @@ const Layout = () => {
     localStorage.removeItem("userProfile")
     router.replace("/auth",{scroll:false})
   }
-  // Рендер контента через switch
+
+  
   const renderContent = () => {
-    if (isLoading) {
-      return <Spinner />
+    if (!isLoggedIn || currentPage === "auth") {
+      return <AuthPage onLogin={handleLogin} />
     }
 
-    if (!isAuthenticated) {
-      return <AuthPage onLogin={handlePageChange} />
+    // Автоматическое перенаправление для преподавателей
+    if (userRole === "tutor" && (currentPage === "home" || currentPage === "")) {
+      router.replace("/all-teachers-schedule")
+      return null
+    }
+
+    const tutorPages = [
+      "subject-management",
+      "lab-scheduling",
+      "group-subject-assignment",
+      "all-teachers-schedule"
+    ]
+
+    const studentPages = ["home", "profile"]
+
+    if (
+      (userRole === "tutor" && !tutorPages.includes(currentPage)) ||
+      (userRole === "student" && !studentPages.includes(currentPage))
+    ) {
+      router.replace(userRole === "tutor" ? "/all-teachers-schedule" : "/")
+      return null
     }
 
     switch (currentPage) {
@@ -107,21 +155,36 @@ const Layout = () => {
   }
 
   return (
-    <div className="layout-container">
-      {isAuthenticated && (
-        <Navigation
-          userRole={userRole}
-          currentPage={currentPage}
-          onPageChange={handlePageChange}
-          onLogout={handleLogout}
-          />
+    <>
+      {isLoading ? (
+        <div className="flex justify-center items-center min-h-[400px]">
+          <Spinner size="lg" />
+        </div>
+      ) : (
+        <div className="space-y-8 h-full mx-auto p-0">
+            <div className=" bg-gray-50 min-h-full">
+              <Navigation
+                isLoggedIn={isLoggedIn}
+                onLogout={handleLogout}
+                setCurrentPage={handlePageChange}
+                userRole={userRole}
+                currentPage={currentPage} />
+              <main 
+                className={`
+                  mx-auto 
+                  ${currentPage === "auth" ? "px-0 max-w-md" : "container px-4 sm:px-6 lg:px-8"}
+                  pt-6 pb-8 transition-all duration-300`}>
+                  <div className={currentPage === "auth" ? "" : "bg-white rounded-lg shadow-sm p-6"}>
+                    {renderContent()}
+                  </div>
+              </main>
+            </div>
+        </div>
       )}
-      
-      <main className="content-wrapper">
-        {renderContent()}
-      </main>
-    </div>
-  )
+    </>
+  );
+
+ 
 }
 
 export default Layout
