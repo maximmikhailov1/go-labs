@@ -1,13 +1,11 @@
 'use client'
 
-import { useSearchParams } from 'next/navigation'
 import { Suspense } from 'react'
 import Layout from '../Layout'
 
 export default function SearchParamsWrapper() {
-  const searchParams = useSearchParams()
   
-  return <Layout searchParams={searchParams.toString()} />
+  return <Layout />
 }
 
 export function WrappedLayout() {
