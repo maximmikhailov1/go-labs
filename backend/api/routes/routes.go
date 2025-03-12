@@ -14,13 +14,16 @@ func SetupRoutes(app *fiber.App) {
 	//new
 	app.Get("/api/subjects", controllers.SubjectIndex)   //возвращает список предметов secure
 	app.Post("/api/subjects", controllers.SubjectCreate) // secure
+
 	app.Get("/api/labs/", controllers.LabsFirstBySubject)
+	app.Get("/api/user/labs", controllers.UserLabsIndex)
+
 	app.Post("/api/records", controllers.RecordCreate) //secure
+
 	app.Get("/api/user", controllers.UserFirst)
 	app.Get("/api/user/teams", controllers.UserTeamsIndex)
 	app.Post("/api/user/teams", controllers.TeamCreate)
-	app.Get("/api/user/labs", controllers.UserLabsIndex)
-	app.Get("/api/tutors", controllers.TutorsIndex) // TODO: ЗАБЛОКИРОВАТЬ ДОСТУП ЗЛОДЕЮ БРИТАНЦУ
+	app.Get("/api/tutors", controllers.TutorsIndex)
 	app.Get("/api/schedule", controllers.ScheduleWeek)
 	app.Post("/api/schedule", controllers.ScheduleCreate) //secure
 	app.Get("/demo/users", controllers.UsersIndex)        //secure
@@ -34,7 +37,7 @@ func SetupRoutes(app *fiber.App) {
 	app.Post("/api/groups", controllers.GroupCreate)         //создает новую группу
 	app.Get("/api/groups", controllers.GroupsIndex)          //возвращает список групп с Subject
 	app.Patch("/api/groups", controllers.GroupUpdateSubject) // обновляет предмет у группы
-
+	app.Delete("/api/user/records", controllers.UnsubRecord) // recordId + tutor: studentID отписка
 	//*new
 	//API Routes
 	app.Post("/api/signin", controllers.SingIn)

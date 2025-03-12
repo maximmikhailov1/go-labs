@@ -222,7 +222,7 @@ const ProfilePage: React.FC = () => {
   
   async function leaveTeam(teamCode: string) {
     try {
-      const response = await fetch(`/api/user/team?code=${teamCode}`, {
+      const response = await fetch(`/api/user/teams?code=${teamCode}`, {
         method: "DELETE",
         credentials: "include",
       })
@@ -260,6 +260,24 @@ const ProfilePage: React.FC = () => {
       fetchTeams()
     }
   }
+
+  const handleDeleteRecord = async (recordId: number) => {
+    try {
+      const response = await fetch("/api/user/records", {
+        method: 'DELETE',
+        credentials: 'include',
+        body:JSON.stringify({"EntryID": recordId})
+      });
+  
+      if (response.ok) {  
+        setRecords(prev => prev.filter(record => record.id !== recordId));
+      } else {
+        console.error('Ошибка при удалении записи');
+      }
+    } catch (error) {
+      console.error('Ошибка:', error);
+    }
+  };
 
   const handleUpdateTeamName = async (teamCode: string) => {
     const result = await updateTeamName(teamCode, editTeamName)
@@ -460,7 +478,7 @@ const ProfilePage: React.FC = () => {
               <Table className="">
                 <TableHeader className="bg-gray-50">
                   <TableRow>
-                    {["Дата", "Пара", "Лаба", "Статус"].map((header) => (
+                    {["Дата", "Пара", "Лаба", "Статус", "Действие"].map((header) => (
                       <TableHead key={header} className="text-gray-600 font-medium py-3">
                         {header}
                       </TableHead>
@@ -488,6 +506,16 @@ const ProfilePage: React.FC = () => {
                           {(record.status == "active") ? "✅ Выполнено" : "🕒 Записан"}
                         </span>
                       </TableCell>
+                      <TableCell>
+                      <Button 
+                        variant="destructive" 
+                        size="sm"
+                        onClick={() => handleDeleteRecord(record.id)}
+                        className="rounded-lg shadow-sm"
+                      >
+                        Отписаться
+                      </Button>
+                    </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
