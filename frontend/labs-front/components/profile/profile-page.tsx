@@ -478,7 +478,7 @@ const ProfilePage: React.FC = () => {
               <Table className="">
                 <TableHeader className="bg-gray-50">
                   <TableRow>
-                    {["Дата", "Пара", "Лаба", "Статус", "Действие"].map((header) => (
+                    {["Дата", "Пара", "Лабораторная","Аудитория", "Статус", "Действие"].map((header) => (
                       <TableHead key={header} className="text-gray-600 font-medium py-3">
                         {header}
                       </TableHead>
@@ -495,6 +495,7 @@ const ProfilePage: React.FC = () => {
                       <TableCell className="font-medium text-gray-700">  {record.lab_date ? format(parseISO(record.lab_date), "d MMMM yyyy", { locale: ru }) : "Дата не указана"}</TableCell>
                       <TableCell className="text-gray-600">{record.class_number}</TableCell>
                       <TableCell className="text-gray-600">{record.lab_name}</TableCell>
+                      <TableCell className="text-gray-600">{record.audience}</TableCell>
                       <TableCell>
                         <span 
                           className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${

@@ -885,8 +885,8 @@ func GroupUpdateSubject(c *fiber.Ctx) error {
 func UnsubRecord(c *fiber.Ctx) error {
 
 	var requestBody struct {
-		StudentID uint
-		EntryID   uint
+		StudentID uint `json:"StudentID"`
+		EntryID   uint `json:"EntryID"`
 	}
 
 	if err := c.BodyParser(&requestBody); err != nil {
