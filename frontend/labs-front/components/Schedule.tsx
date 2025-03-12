@@ -193,7 +193,7 @@ const TIME_SLOTS = [
         )
         const hasAvailableTeams:boolean = calculateIfAnyAvailableSlotsInTeamInRecord(lab.ID, record)
 
-        return hasEnoughEquipment && hasAvailableTeams
+        return hasEnoughEquipment || hasAvailableTeams
       }).length > 0
     }
     //Это нужно будет заменить на бин поиск и доабвить порядок по дате
@@ -211,11 +211,18 @@ const TIME_SLOTS = [
     const renderTimeSlots = (date: string) => {
       const currentWeekRecords = scheduleData[currentWeekIndex] || [];
       const groupedRecords = groupRecordsByTimeSlot(currentWeekRecords);
-      
       return TIME_SLOTS.map((slot, index) => {
         const slotNumber = index + 1;
         const timeSlotKey = `${date}-${slotNumber}`;
         const records = groupedRecords[timeSlotKey] || [];
+        var scheduled = false;
+        if (records.length > 1) {
+          records.map(record => {
+            if (isUserScheduled(record)){
+              scheduled = true
+            }
+          })
+        }
   
         return (
           <div 
@@ -227,7 +234,7 @@ const TIME_SLOTS = [
             {records.map(record => {
               
               const isAvailable = isRecordAvailable(record)
-              const isScheduled = isUserScheduled(record)
+              const isScheduled = (isUserScheduled(record) || scheduled)
               
               return (
                 <div 

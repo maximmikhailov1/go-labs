@@ -6,6 +6,7 @@ import (
 )
 
 type Record struct {
+	ID uint
 	gorm.Model
 	LabDate                  datatypes.Date `gorm:"index:idx_record_main,unique;not null"`
 	ClassNumber              int            `gorm:"index:idx_record_main,check:class_number > 0 AND class_number < 9"`

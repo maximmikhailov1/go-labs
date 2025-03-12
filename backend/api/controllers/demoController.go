@@ -210,6 +210,11 @@ func TeamCreate(c *fiber.Ctx) error {
 	if appRes != nil {
 		return appRes
 	}
+	log.Info(fiber.Map{
+		"message": "user created a team",
+		"teamID":  team.ID,
+		"userID":  student.ID,
+	})
 	return c.Status(http.StatusOK).JSON(fiber.Map{
 		"team":    team,
 		"student": student,
@@ -495,12 +500,12 @@ func UserRecords(c *fiber.Ctx) error {
 			Joins("JOIN records ON entries.record_id = records.id").
 			Where("users_teams.user_id = ?", studentID).
 			Group("entries.id, labs.number, records.lab_date, records.class_number, labs.description,records.audience_number, entries.status, teams.name").
-			Find(&response) //TODO: ORDER BY LAB_DATE
+			Find(&response).Order("lab_date DESC")
 
 		if result.Error != nil {
-			return c.Status(500).JSON(fiber.Map{"error": "Ошибка получения записей"})
+			return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"error": "Ошибка получения записей"})
 		}
-		return c.Status(200).JSON(response)
+		return c.Status(http.StatusOK).JSON(response)
 	} else if userRole == "tutor" {
 
 		var records []models.Record
@@ -508,7 +513,8 @@ func UserRecords(c *fiber.Ctx) error {
 			Preload("Entries.Team.Members.Group").
 			Preload("Entries.Lab").
 			Preload("Tutor").
-			Find(&records) //TODO: ORDER BY LAB_DATE
+			Find(&records).
+			Order("lab_date DESC")
 
 		if result.Error != nil {
 			return c.Status(http.StatusInternalServerError).JSON(fiber.Map{
@@ -516,7 +522,7 @@ func UserRecords(c *fiber.Ctx) error {
 			})
 		}
 
-		return c.Status(200).JSON(records)
+		return c.Status(http.StatusOK).JSON(records)
 
 	}
 
@@ -874,4 +880,75 @@ func GroupUpdateSubject(c *fiber.Ctx) error {
 		return c.Status(http.StatusBadRequest).JSON("failed to provide a group with new subject")
 	}
 	return c.SendStatus(http.StatusOK)
+}
+
+func UnsubRecord(c *fiber.Ctx) error {
+
+	var requestBody struct {
+		StudentID uint
+		EntryID   uint
+	}
+
+	if err := c.BodyParser(&requestBody); err != nil {
+		return c.Status(http.StatusBadRequest).JSON("failed to parse body")
+	}
+
+	userCredentials := c.Locals("user").(fiber.Map)
+	role := userCredentials["Role"].(string)
+
+	if role != "tutor" {
+		userID := userCredentials["Id"].(uint)
+		if requestBody.StudentID != 0 {
+			return c.Status(http.StatusUnauthorized).JSON(fiber.Map{
+				"error": "unauthorized to perform this action",
+			})
+		}
+
+		var team models.Team
+
+		if err := initializers.DB.Model(&models.Entry{ID: requestBody.EntryID}).
+			Association("Team").
+			Find(&team); err != nil {
+			return c.Status(http.StatusBadRequest).JSON(fiber.Map{
+				"error": "не вышло найти команды записанные на этот слот",
+			})
+		}
+
+		if err := initializers.DB.Model(&team).
+			Association("Members").
+			Delete(&models.User{ID: userID}); err != nil {
+			return c.Status(http.StatusBadRequest).JSON(fiber.Map{
+				"error": "не вышло отписаться",
+			})
+		}
+
+		log.Info(fiber.Map{
+			"message": "пользователь отписался",
+			"entry":   requestBody.EntryID,
+			"student": requestBody.StudentID,
+		})
+
+		return c.Status(http.StatusOK).JSON(fiber.Map{"message": "вы успешно отписались"})
+	}
+
+	var team models.Team
+	if err := initializers.DB.Model(&models.Entry{ID: requestBody.EntryID}).
+		Association("Team").
+		Find(&team); err != nil {
+		return c.Status(http.StatusBadRequest).JSON(fiber.Map{
+			"error": "не удалось найти команду",
+		})
+	}
+
+	if err := initializers.DB.Model(&team).
+		Association("Members").
+		Delete(&models.User{ID: requestBody.StudentID}); err != nil {
+		return c.Status(http.StatusBadRequest).JSON(fiber.Map{
+			"error": "не вышло отписать",
+		})
+	}
+
+	return c.Status(http.StatusOK).JSON(fiber.Map{
+		"message": "вы успешно отписали студента",
+	})
 }

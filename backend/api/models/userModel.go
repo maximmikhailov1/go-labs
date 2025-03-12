@@ -10,7 +10,7 @@ type User struct {
 	Username       string `gorm:"unique;not null" json:"username"`
 	PasswordHashed string `gorm:"not null" json:"password"`
 	FullName       string `gorm:"not null" json:"fullName"` // Объединенное ФИО
-	Role           string `gorm:"index" json:"role"`
+	Role           string `gorm:"index" json:"role"`        //student || tutor
 	GroupID        *uint
 	Group          *Group
 	Teams          *[]Team `gorm:"many2many:users_teams"`
