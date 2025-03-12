@@ -215,7 +215,7 @@ const TIME_SLOTS = [
         const slotNumber = index + 1;
         const timeSlotKey = `${date}-${slotNumber}`;
         const records = groupedRecords[timeSlotKey] || [];
-        var scheduled = false;
+        let scheduled = false;
         if (records.length > 1) {
           records.map(record => {
             if (isUserScheduled(record)){
