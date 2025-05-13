@@ -885,70 +885,134 @@ func GroupUpdateSubject(c *fiber.Ctx) error {
 func UnsubRecord(c *fiber.Ctx) error {
 
 	var requestBody struct {
-		StudentID uint `json:"StudentID"`
-		EntryID   uint `json:"EntryID"`
+		EntryID   uint `json:"entryId"`
+		StudentID uint `json:"studentId"`
 	}
 
 	if err := c.BodyParser(&requestBody); err != nil {
+		log.Errorf("failed to parse body\n%+v,\n%v", requestBody, string(c.Body()))
 		return c.Status(http.StatusBadRequest).JSON("failed to parse body")
 	}
 
 	userCredentials := c.Locals("user").(fiber.Map)
 	role := userCredentials["Role"].(string)
-
 	if role != "tutor" {
-		userID := userCredentials["Id"].(uint)
+		userID, ok := userCredentials["Id"].(uint)
+		if !ok {
+			return c.Status(http.StatusInternalServerError).JSON(fiber.Map{
+				"error": "invalid user id format",
+			})
+		}
+
 		if requestBody.StudentID != 0 {
-			return c.Status(http.StatusUnauthorized).JSON(fiber.Map{
-				"error": "unauthorized to perform this action",
-			})
+			return c.Status(http.StatusUnauthorized).JSON(fiber.Map{"error": "unauthorized"})
 		}
 
-		var team models.Team
+		// Начинаем транзакцию
+		return initializers.DB.Transaction(func(tx *gorm.DB) error {
+			var entry models.Entry
+			if err := tx.Preload("Team.Members").Preload("Lab").First(&entry, requestBody.EntryID).Error; err != nil {
+				return c.Status(http.StatusNotFound).JSON(fiber.Map{"error": "entry not found"})
+			}
 
-		if err := initializers.DB.Model(&models.Entry{ID: requestBody.EntryID}).
-			Association("Team").
-			Find(&team); err != nil {
-			return c.Status(http.StatusBadRequest).JSON(fiber.Map{
-				"error": "не вышло найти команды записанные на этот слот",
-			})
-		}
+			// Удаляем студента из команды
+			if err := tx.Model(&entry.Team).Association("Members").Delete(&models.User{ID: userID}); err != nil {
+				return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"error": "failed to unsubscribe"})
+			}
 
-		if err := initializers.DB.Model(&team).
-			Association("Members").
-			Delete(&models.User{ID: userID}); err != nil {
-			return c.Status(http.StatusBadRequest).JSON(fiber.Map{
-				"error": "не вышло отписаться",
-			})
-		}
+			// Проверяем обновленное количество участников
+			var updatedTeam models.Team
+			if err := tx.Preload("Members").First(&updatedTeam, entry.TeamID).Error; err != nil {
+				return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"error": "team check failed"})
+			}
 
-		log.Info(fiber.Map{
-			"message": "пользователь отписался",
-			"entry":   requestBody.EntryID,
-			"student": requestBody.StudentID,
+			// Если участников не осталось
+			if len(updatedTeam.Members) == 0 {
+				// Возвращаем оборудование
+				lab := entry.Lab
+
+				var record models.Record
+
+				if err := tx.Model(&entry).Association("Record").Find(&record); err != nil {
+					return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"error": "failed to find record"})
+				}
+				updates := map[string]interface{}{
+					"switches_remaining":         gorm.Expr("switches_remaining + ?", lab.SwitchesRequired),
+					"routers_remaining":          gorm.Expr("routers_remaining + ?", lab.RoutersRequired),
+					"wireless_routers_remaining": gorm.Expr("wireless_routers_remaining + ?", lab.WirelessRoutersRequired),
+					"hp_routers_remaining":       gorm.Expr("hp_routers_remaining + ?", lab.HPRoutersRequired),
+					"hp_switches_remaining":      gorm.Expr("hp_switches_remaining + ?", lab.HPSwitchesRequired),
+				}
+
+				if err := tx.Model(&record).Updates(updates).Error; err != nil {
+					return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"error": "equipment return failed"})
+				}
+
+				// Удаляем запись
+				if err := tx.Delete(&entry).Error; err != nil {
+					return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"error": "entry deletion failed"})
+				}
+
+				return c.Status(http.StatusOK).JSON(fiber.Map{"message": "unsubscribed and entry deleted"})
+			}
+
+			// Если участники остались, обновляем запись
+			if err := tx.Model(&entry).Update("updated_at", time.Now()).Error; err != nil {
+				return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"error": "update failed"})
+			}
+
+			return c.Status(http.StatusOK).JSON(fiber.Map{"message": "unsubscribed successfully"})
 		})
-
-		return c.Status(http.StatusOK).JSON(fiber.Map{"message": "вы успешно отписались"})
+	}
+	var entry models.Entry
+	if err := initializers.DB.Preload("Team").First(&entry, requestBody.EntryID).Error; err != nil {
+		log.Errorf("Entry not found: %v", err)
+		return c.Status(http.StatusNotFound).JSON(fiber.Map{
+			"error": "запись не найдена",
+		})
 	}
 
-	var team models.Team
-	if err := initializers.DB.Model(&models.Entry{ID: requestBody.EntryID}).
-		Association("Team").
-		Find(&team); err != nil {
-		return c.Status(http.StatusBadRequest).JSON(fiber.Map{
-			"error": "не удалось найти команду",
+	// Проверка существования команды
+	if entry.Team.ID == 0 {
+		return c.Status(http.StatusNotFound).JSON(fiber.Map{
+			"error": "команда не найдена для этой записи",
 		})
 	}
 
-	if err := initializers.DB.Model(&team).
-		Association("Members").
-		Delete(&models.User{ID: requestBody.StudentID}); err != nil {
-		return c.Status(http.StatusBadRequest).JSON(fiber.Map{
-			"error": "не вышло отписать",
+	// Проверка что студент существует
+	var student models.User
+	if err := initializers.DB.First(&student, requestBody.StudentID).Error; err != nil {
+		log.Errorf("Student not found: %v", err)
+		return c.Status(http.StatusNotFound).JSON(fiber.Map{
+			"error": "студент не найден",
 		})
 	}
+
+	// Удаление студента из команды
+	if err := initializers.DB.Model(&entry.Team).Association("Members").Delete(&student); err != nil {
+		log.Errorf("Failed to delete student: %v", err)
+		return c.Status(http.StatusInternalServerError).JSON(fiber.Map{
+			"error": "ошибка при удалении студента",
+		})
+	}
+
+	// Обновление updated_at для записи
+	if err := initializers.DB.Model(&entry).Update("updated_at", time.Now()).Error; err != nil {
+		log.Warnf("Failed to update entry timestamp: %v", err)
+	}
+
+	log.Info(fiber.Map{
+		"message": "студент отписан",
+		"entry":   entry.ID,
+		"student": student.ID,
+		"tutor":   userCredentials["Id"],
+	})
 
 	return c.Status(http.StatusOK).JSON(fiber.Map{
-		"message": "вы успешно отписали студента",
+		"message": "студент успешно отписан",
+		"entryId": entry.ID,
+		"teamId":  entry.Team.ID,
 	})
 }
+
+//TODO: Так почему-то не получается удалить запись при самостоятельной отписке пользователя, но если там кто-то есть то всё воркс эз интендед

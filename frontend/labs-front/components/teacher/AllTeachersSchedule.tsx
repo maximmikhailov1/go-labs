@@ -82,8 +82,11 @@ const AllTeachersSchedule = () => {
     try {
       const response = await fetch("/api/user/records", {
         method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
         credentials: 'include',
-        body:JSON.stringify({"EntryID": recordId, "StudentID": memberId})
+        body:JSON.stringify({"entryId": recordId, "studentId": memberId})
       });
   
       if (response.ok) {  

@@ -266,7 +266,10 @@ const ProfilePage: React.FC = () => {
       const response = await fetch("/api/user/records", {
         method: 'DELETE',
         credentials: 'include',
-        body:JSON.stringify({"EntryID": recordId})
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body:JSON.stringify({"entryId": recordId})
       });
   
       if (response.ok) {  
@@ -318,9 +321,9 @@ const ProfilePage: React.FC = () => {
               </div>
             </div>
             <div className="space-y-1">
-              <Label className="text-sm text-gray-500">{user.groupName || <span>Должность</span>}</Label>
+              <Label className="text-sm text-gray-500">{user.groupName && <span>Группа</span> || <span>Должность</span>}</Label>
               <div className="font-medium text-gray-800 text-lg animate-fade-in">
-                {user.groupName || <span className="text-gray-800">Преподаватель</span>}
+                { user.groupName && <span className="text-gray-800">{user.groupName}</span> || <span className="text-gray-800">Преподаватель</span>}
               </div>
             </div>
           </div>

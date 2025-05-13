@@ -11,3 +11,12 @@ type Team struct {
 	Entries []Entry
 	Premade bool
 }
+
+func (t *Team) AfterUpdate(tx *gorm.DB) (err error) {
+	membersCount := tx.Model(t).Association("Members").Count()
+
+	if membersCount == 0 {
+		tx.Where("team_id = ?", t.ID).Delete(&Entry{})
+	}
+	return
+}
