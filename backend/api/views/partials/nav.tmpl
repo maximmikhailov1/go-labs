@@ -1,9 +1,0 @@
-<nav class="navbar">
-    <ul class="nav-links">
-        <li><a href="/">Sign Up for Classes</a></li>
-        <li><a href="/records">Manage Records</a></li>
-        <li><a href="/labs">Manage Labs</a></li>
-        <li><a href="/student/{{.Id}}" id="my-records">My Records</a></li>
-        <li>{{if and .SecondName .FirstName}} <a href="/api/logout" id="logout">Logout</a> {{else}} <li><a href="/auth">Authentication</a></li> {{end}}</li>
-    </ul>
-</nav>

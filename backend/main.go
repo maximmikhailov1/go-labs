@@ -5,7 +5,6 @@ import (
 	"os"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/template/html/v2"
 	"github.com/maximmikhailov1/go-labs/backend/api/initializers"
 	"github.com/maximmikhailov1/go-labs/backend/api/migrations"
 	"github.com/maximmikhailov1/go-labs/backend/api/routes"
@@ -17,15 +16,14 @@ func init() {
 	initializers.ConnectToDB()
 }
 func main() {
-	engine := html.New("./views", ".tmpl")
-	app := fiber.New(fiber.Config{
-		Views: engine,
-	})
+	app := fiber.New(fiber.Config{})
+
 	fiber.SetParserDecoder(fiber.ParserConfig{
 		IgnoreUnknownKeys: true,
 		ParserType:        []fiber.ParserType{utils.AddDateParser()},
 		ZeroEmpty:         true,
 	})
+
 	routes.SetupRoutes(app)
 	ip := fmt.Sprintf(":%s", os.Getenv("PORT"))
 	migrations.Migrate()
