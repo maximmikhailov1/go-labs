@@ -211,27 +211,27 @@ const TIME_SLOTS = [
     };
 
     const isUserScheduled = (record: ScheduleItem) => {
-      if (!record.entries) return false;
+      if (!record.entries || !user) return false;
 
       return record.entries.some(entry => {
         if (!entry.team || !entry.team.members) return false;
 
-        // Проверяем оба варианта:
-        // 1. members как массив объектов {id: number}
-        // 2. members как массив чисел (ID пользователей)
         return entry.team.members.some(member => {
-          // Если member - объект с полем id
-          if (typeof member === 'object' && member !== null) {
-            return member.id === user?.id;
-          }
-          // Если member - число (ID пользователя)
-          else if (typeof member === 'number') {
-            return member === user?.id;
+          // Обрабатываем оба варианта: массив чисел и массив объектов
+          if (typeof member === 'number') {
+            return member === user.id;
+          } else if (typeof member === 'object') {
+            return member.id === user.id;
           }
           return false;
         });
       });
     };
+
+    const isUserScheduledInSlot = (records: ScheduleItem[]) => {
+      return records.some(record => isUserScheduled(record));
+    };
+
     const renderTimeSlots = (date: string) => {
       const currentWeekRecords = scheduleData[currentWeekIndex] || [];
       const groupedRecords = groupRecordsByTimeSlot(currentWeekRecords);
@@ -241,6 +241,9 @@ const TIME_SLOTS = [
         const timeSlotKey = `${date}-${slotNumber}`;
         const records = groupedRecords[timeSlotKey] || [];
 
+        // Проверяем, записан ли пользователь на любой из записей в этом слоте
+        const isScheduledInSlot = isUserScheduledInSlot(records);
+
         return (
             <div key={index} className="p-4 min-h-[160px] border-b border-gray-200">
               <div className="text-gray-600 font-medium text-sm mb-2">
@@ -249,7 +252,7 @@ const TIME_SLOTS = [
 
               {records.map(record => {
                 const isAvailable = isRecordAvailable(record);
-                const isScheduled = isUserScheduled(record);
+                const isScheduled = isScheduledInSlot || isUserScheduled(record);
 
                 return (
                     <div
@@ -283,7 +286,7 @@ const TIME_SLOTS = [
 
                       {isScheduled && (
                           <div className="text-xs text-yellow-600 mt-1">
-                            Вы уже записаны
+                            Вы уже записаны на этот временной слот
                           </div>
                       )}
 

@@ -5,14 +5,14 @@ import (
 )
 
 type UserRecordDTO struct {
-	ID          uint           `json:"id"`
-	LabName     string         `json:"labName"`
-	LabDate     datatypes.Date `json:"labDate"`
-	LabNumber   string         `json:"labNumber"`
-	ClassNumber int            `json:"classNumber"`
-	Audience    int            `json:"audienceNumber"`
-	Status      string         `json:"status"`
-	TeamName    string         `json:"teamName"`
+	ID             uint           `json:"id"`
+	LabName        string         `json:"labName"`
+	LabDate        datatypes.Date `json:"labDate"`
+	LabNumber      string         `json:"labNumber"`
+	ClassNumber    int            `json:"classNumber"`
+	AudienceNumber int            `json:"audienceNumber"`
+	Status         string         `json:"status"`
+	TeamName       string         `json:"teamName"`
 }
 
 type TutorRecordResponse struct {
