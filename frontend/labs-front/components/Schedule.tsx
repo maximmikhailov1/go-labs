@@ -1,43 +1,43 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { Button } from "@/components/ui/button"
-import { ChevronLeft, ChevronRight } from "lucide-react"
+import {useEffect, useState} from "react"
+import {Button} from "@/components/ui/button"
+import {ChevronLeft, ChevronRight} from "lucide-react"
 
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
+import {Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle} from "@/components/ui/dialog"
 
 type Lab = {
-  ID: number
-  Number: string
-  Description: string
-  MaxStudents: number
-  RoutersRequired: number
-  SwitchesRequired: number
-  WirelessRoutersRequired: number
-  HPRoutersRequired: number
-  HPSwitchesRequired: number
+  id: number
+  number: string
+  description: string
+  maxStudents: number
+  routersRequired: number
+  switchesRequired: number
+  wirelessRoutersRequired: number
+  hpRoutersRequired: number
+  hpSwitchesRequired: number
 }
 type Team = {
-  ID: number
-  Name: string
-  Members: Array<{ ID: number }>
+  id: number
+  name: string
+  members: Array<{ id: number }> | number[]
 }
-type Entries = Array<{Lab:Lab, Team:Team}>
+type Entries = Array<{lab:Lab, team:Team}>
 type ScheduleItem = {
-  ID: number
-  LabDate: string
-  ClassNumber: number
-  AudienceNumber: number
-  Tutor: {
-    ID: number
+  id: number
+  labDate: string
+  classNumber: number
+  audienceNumber: number
+  tutor: {
+    id: number
     fullName:string
   }
-  SwitchesRemaining: number
-  RoutersRemaining: number
-  WirelessRoutersRemaining: number
-  HPRoutersRemaining: number
-  HPSwitchesRemaining: number
-  Entries: Entries
+  switches: number
+  routers: number
+  wirelessRouters: number
+  hpRouters: number
+  hpSwitches: number
+  entries: Entries
 }
 
 type User = {
@@ -74,10 +74,10 @@ const TIME_SLOTS = [
       const loadData = async () => {
         try {
           const [scheduleRes, labsRes, teamsRes, userRes] = await Promise.all([
-            fetch(`/api/schedule?week=${currentWeekIndex}`),
-            fetch('/api/user/labs'),
-            fetch('/api/user/teams'),
-            fetch('/api/user')
+            fetch(`/api/schedules/week?week=${currentWeekIndex}`),
+            fetch('/api/labs/my'),
+            fetch('/api/teams'),
+            fetch('/api/users')
           ]);
     
           const scheduleData = await scheduleRes.json();
@@ -90,10 +90,7 @@ const TIME_SLOTS = [
             console.error("Ожидался массив лабораторных работ, получено:", userLabsData);
             return;
           }
-          if (!Array.isArray(userTeamsData)) {
-            console.error("Ожидался массив команд, получено:", userTeamsData);
-            return;
-          }
+
     
           setScheduleData(prev => {
             const newData = [...prev];
@@ -104,6 +101,9 @@ const TIME_SLOTS = [
           setUserLabs(userLabsData);
           setUserTeams(userTeamsData);
           setUser(user)
+          console.log('Current week data:', scheduleData[currentWeekIndex]);
+          console.log('User labs:', userLabs);
+          console.log('User:', user);
         } catch (error) {
           console.error("Ошибка загрузки данных:", error);
         }
@@ -112,37 +112,38 @@ const TIME_SLOTS = [
       loadData();
     }, [currentWeekIndex]);
 
-    const formatFIO = (n: string | undefined) => n?.split(' ')[0] + ' ' + n?.split(' ').slice(1).map(p => p[0] + '.').join('');
+    const formatFIO = (n: string) => n?.split(' ')[0] + ' ' + n?.split(' ').slice(1).map(p => p[0] + '.').join('');
 
 
 
     const calculateAvailableSlotsInTeam = (labId: number) => {
       if (!selectedSession) return 0
-      const totalUsed = selectedSession.Entries
-        .filter(e => e.Lab.ID === labId)
-        .reduce((sum, e) => sum + e.Team.Members.length, 0)
+
+      const totalUsed = selectedSession?.entries?.
+        filter(e => e.lab.id === labId)
+        .reduce((sum, e) => sum + e.team.members?.length, 0)
         
-      const lab = userLabs.find(l => l.ID === labId)
-      return lab ? lab.MaxStudents - totalUsed : 0
+      const lab = userLabs.find(l => l.id === labId)
+      return lab ? lab.maxStudents - totalUsed : 0
     }
 
 
-    const handleEnroll = async (labId: number, teamId?: number) => {
+    const handleEnroll = async (labId: number | undefined, teamId?: number) => {
       if (!selectedSession) return;
 
       try {
-        const response = await fetch('/api/enroll', {
+        const response = await fetch('/api/records/enroll', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            recordId: selectedSession.ID,
+            recordId: selectedSession.id,
             labId,
             teamId: teamId || null // Явно указываем null если команда не выбрана
           })
         });
   
         if (response.ok) {
-          const updated = await fetch(`/api/schedule?week=${currentWeekIndex}`).then(r => r.json())
+          const updated = await fetch(`/api/schedules/week?week=${currentWeekIndex}`).then(r => r.json())
           setScheduleData(prev => {
             const newData = [...prev]
             newData[currentWeekIndex] = updated
@@ -157,140 +158,157 @@ const TIME_SLOTS = [
     }
     const groupRecordsByTimeSlot = (records: ScheduleItem[]) => {
       const grouped: { [key: string]: ScheduleItem[] } = {};
-  
+
       records.forEach(record => {
-        const date = new Date(record.LabDate).toISOString().split('T')[0];
-        const timeSlotKey = `${date}-${record.ClassNumber}`;
-        
-        if (!grouped[timeSlotKey]) {
-          grouped[timeSlotKey] = [];
+        try {
+          // Нормализуем дату - берем только часть до 'T'
+          const datePart = record.labDate.split('T')[0];
+          const timeSlotKey = `${datePart}-${record.classNumber}`;
+
+          if (!grouped[timeSlotKey]) {
+            grouped[timeSlotKey] = [];
+          }
+          grouped[timeSlotKey].push(record);
+        } catch (e) {
+          console.error('Error processing record:', record, e);
         }
-        grouped[timeSlotKey].push(record);
       });
-  
+
       return grouped;
-    }
+    };
 
-    const calculateIfAnyAvailableSlotsInTeamInRecord = (labId: number, record: ScheduleItem) => {
-      if (!record) return false
-      const totalUsed = record.Entries
-        .filter(e => e.Lab.ID === labId)
-        .reduce((sum, e) => sum + e.Team.Members.length, 0)
-        
-      const lab = userLabs.find(l => l.ID === labId)
-      return lab? lab.MaxStudents - totalUsed > 0:false
-    }
+    // const calculateIfAnyAvailableSlotsInTeamInRecord = (labId: number, record: ScheduleItem) => {
+    //   if (!record) return false
+    //   const totalUsed = record.entries
+    //     .filter(e => e.lab.id === labId)
+    //     .reduce((sum, e) => sum + e.team.members.length, 0)
+    //
+    //   const lab = userLabs.find(l => l.id === labId)
+    //   return lab? lab.maxStudents - totalUsed > 0:false
+    // }
 
 
-    const isRecordAvailable = (record:ScheduleItem) => {
-      return userLabs.filter(lab =>{
-        const hasEnoughEquipment:boolean = (
-          record.HPRoutersRemaining - lab.HPRoutersRequired >= 0 &&
-          record.HPSwitchesRemaining - lab.HPSwitchesRequired >= 0 &&
-          record.WirelessRoutersRemaining - lab.WirelessRoutersRequired >= 0 &&
-          record.SwitchesRemaining - lab.SwitchesRequired >= 0 &&
-          record.RoutersRemaining - lab.RoutersRequired>= 0
-        )
-        const hasAvailableTeams:boolean = calculateIfAnyAvailableSlotsInTeamInRecord(lab.ID, record)
+    const isRecordAvailable = (record: ScheduleItem) => {
+      if (!userLabs) return false;
 
-        return hasEnoughEquipment || hasAvailableTeams
-      }).length > 0
-    }
-    //Это нужно будет заменить на бин поиск и доабвить порядок по дате
-    const isUserScheduled = (record:ScheduleItem) => {
-      if (record.Entries.filter((entry)=>{
-        return (
-          (entry.Team.Members.
-          filter( (member) => member.ID == (user? user.id : 0)).length) > 0) }
-    ).length > 0){
-      return true
-    }
-      return false
-    }
+      return userLabs.some(lab => {
+        // Проверяем оборудование
+        const hasEquipment = (
+            (record.hpRouters ?? 0) >= lab.hpRoutersRequired &&
+            (record.hpSwitches ?? 0) >= lab.hpSwitchesRequired &&
+            (record.wirelessRouters ?? 0) >= lab.wirelessRoutersRequired &&
+            (record.switches ?? 0) >= lab.switchesRequired &&
+            (record.routers ?? 0) >= lab.routersRequired
+        );
 
+        // Если у пользователя нет команд, проверяем только оборудование
+        if (!userTeams) return hasEquipment;
+
+        // Если есть команды, дополнительно проверяем доступные места
+        const availableSlots = calculateAvailableSlotsInTeam(lab.id);
+        return hasEquipment || availableSlots > 0;
+      });
+    };
+
+    const isUserScheduled = (record: ScheduleItem) => {
+      if (!record.entries) return false;
+
+      return record.entries.some(entry => {
+        if (!entry.team || !entry.team.members) return false;
+
+        // Проверяем оба варианта:
+        // 1. members как массив объектов {id: number}
+        // 2. members как массив чисел (ID пользователей)
+        return entry.team.members.some(member => {
+          // Если member - объект с полем id
+          if (typeof member === 'object' && member !== null) {
+            return member.id === user?.id;
+          }
+          // Если member - число (ID пользователя)
+          else if (typeof member === 'number') {
+            return member === user?.id;
+          }
+          return false;
+        });
+      });
+    };
     const renderTimeSlots = (date: string) => {
       const currentWeekRecords = scheduleData[currentWeekIndex] || [];
       const groupedRecords = groupRecordsByTimeSlot(currentWeekRecords);
+
       return TIME_SLOTS.map((slot, index) => {
         const slotNumber = index + 1;
         const timeSlotKey = `${date}-${slotNumber}`;
         const records = groupedRecords[timeSlotKey] || [];
-        let scheduled = false;
-        if (records.length > 1) {
-          records.map(record => {
-            if (isUserScheduled(record)){
-              scheduled = true
-            }
-          })
-        }
-  
+
         return (
-          <div 
-            key={index} 
-            className="p-4 min-h-[160px] border-b border-gray-200"
-          >
-            <div className="text-gray-600 font-medium text-sm mb-2">{slot} {index + 1} Пара</div>
-            
-            {records.map(record => {
-              
-              const isAvailable = isRecordAvailable(record)
-              const isScheduled = (isUserScheduled(record) || scheduled)
-              
-              return (
-                <div 
-                  key={record.ID} 
-                  className={`mb-2 p-2 rounded-lg ${isAvailable && !isScheduled ? 'bg-green-100' : 'bg-gray-100'}`}
-                >
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <span className="text-sm font-medium">
-                        Аудитория {record.AudienceNumber}
-                      </span>
-                      <div className="text-xs text-gray-500">
-                        {typeof record.Tutor === 'object' 
-                          ? formatFIO(record.Tutor.fullName)
-                          : record.Tutor}
+            <div key={index} className="p-4 min-h-[160px] border-b border-gray-200">
+              <div className="text-gray-600 font-medium text-sm mb-2">
+                {slot} {slotNumber} Пара
+              </div>
+
+              {records.map(record => {
+                const isAvailable = isRecordAvailable(record);
+                const isScheduled = isUserScheduled(record);
+
+                return (
+                    <div
+                        key={record.id}
+                        className={`mb-2 p-2 rounded-lg ${
+                            isAvailable && !isScheduled
+                                ? 'bg-green-100'
+                                : 'bg-gray-100'
+                        }`}
+                    >
+                      <div className="flex justify-between items-center">
+                        <div>
+                  <span className="text-sm font-medium">
+                    Аудитория {record.audienceNumber}
+                  </span>
+                          <div className="text-xs text-gray-500">
+                            {formatFIO(record.tutor.fullName)}
+                          </div>
+                        </div>
+
+                        {isAvailable && !isScheduled && (
+                            <Button
+                                onClick={() => setSelectedSession(record)}
+                                size="sm"
+                                className="ml-2"
+                            >
+                              Записаться
+                            </Button>
+                        )}
                       </div>
+
+                      {isScheduled && (
+                          <div className="text-xs text-yellow-600 mt-1">
+                            Вы уже записаны
+                          </div>
+                      )}
+
+                      {!isAvailable && !isScheduled && (
+                          <div className="text-xs text-red-500 mt-1">
+                            Нет свободного оборудования
+                          </div>
+                      )}
                     </div>
-                    
-                    {isAvailable && !isScheduled &&
-                      <Button 
-                        onClick={() => setSelectedSession(record)}
-                        size="sm"
-                        className="ml-2"
-                      >
-                        Записаться
-                      </Button>
-                    }
-                  </div>
-                  
-                  {isScheduled && 
-                    <div className="text-xs text-yellow-600 mt-1">
-                       Записаны
-                       </div>
-                  }
-                  {!isAvailable && (
-                    <div className="text-xs text-red-500 mt-1">
-                      Нет свободного оборудования
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
         );
       });
     };
-  
+
     const getDaysOfWeek = (weekIndex: number) => {
       const today = new Date();
       const startOfWeek = new Date(today);
       startOfWeek.setDate(today.getDate() - today.getDay() + 1 + weekIndex * 7);
-      
+
       return Array(5).fill(null).map((_, i) => {
         const day = new Date(startOfWeek);
         day.setDate(startOfWeek.getDate() + i);
-        return day.toISOString().split("T")[0];
+        return day.toISOString().split('T')[0]; // Возвращаем только дату в формате YYYY-MM-DD
       });
     };
   
@@ -346,19 +364,19 @@ const TIME_SLOTS = [
                 <DialogDescription className="text-sm text-gray-600">
                   <div className="grid grid-cols-2 gap-2 mt-2">
                     <div>
-                      <span className="font-medium">Аудитория:</span> {selectedSession?.AudienceNumber}
+                      <span className="font-medium">Аудитория:</span> {selectedSession?.audienceNumber}
                     </div>
                     <div>
-                      <span className="font-medium">Преподаватель:</span> {formatFIO(selectedSession?.Tutor.fullName)}
+                      <span className="font-medium">Преподаватель:</span> {formatFIO(selectedSession?.tutor.fullName as string)}
                     </div>
                     <div className="col-span-2">
                       <span className="font-medium">Оборудование:</span>
                       <div className=" pl-5 mt-1 grid-cols-1 gap-1">
-                        <div><span>Роутеры: {selectedSession?.RoutersRemaining}</span></div>
-                        <div><span>Коммутаторы: {selectedSession?.SwitchesRemaining}</span></div>
-                        <div><span>Беспроводные роутеры: {selectedSession?.WirelessRoutersRemaining}</span></div>
-                        <div><span>HP Роутеры: {selectedSession?.HPRoutersRemaining}</span></div>
-                        <div><span>HP Коммутаторы: {selectedSession?.HPSwitchesRemaining}</span></div>
+                        <div><span>Роутеры: {selectedSession?.routers}</span></div>
+                        <div><span>Коммутаторы: {selectedSession?.switches}</span></div>
+                        <div><span>Беспроводные роутеры: {selectedSession?.wirelessRouters}</span></div>
+                        <div><span>HP Роутеры: {selectedSession?.hpRouters}</span></div>
+                        <div><span>HP Коммутаторы: {selectedSession?.hpSwitches}</span></div>
                       </div>
                     </div>
                   </div>
@@ -367,38 +385,40 @@ const TIME_SLOTS = [
 
               
               <div className="max-h-[60vh] overflow-y-auto pr-2">
-              {  userLabs
-    .filter(lab => {
+              {  userLabs.
+      filter(lab => {
       // Проверка оборудования для создания новой команды
       const hasEnoughEquipment = 
-        lab.RoutersRequired <= (selectedSession?.RoutersRemaining || 0) &&
-        lab.SwitchesRequired <= (selectedSession?.SwitchesRemaining || 0) &&
-        lab.WirelessRoutersRequired <= (selectedSession?.WirelessRoutersRemaining || 0) &&
-        lab.HPRoutersRequired <= (selectedSession?.HPRoutersRemaining || 0) &&
-        lab.HPSwitchesRequired <= (selectedSession?.HPSwitchesRemaining || 0);
+        lab.routersRequired <= (selectedSession?.routers || 0) &&
+        lab.switchesRequired <= (selectedSession?.switches || 0) &&
+        lab.wirelessRoutersRequired <= (selectedSession?.wirelessRouters || 0) &&
+        lab.hpRoutersRequired <= (selectedSession?.hpRouters || 0) &&
+        lab.hpSwitchesRequired <= (selectedSession?.hpSwitches || 0);
 
       // Проверка наличия неполных команд
-      const hasAvailableTeams = calculateAvailableSlotsInTeam(lab.ID) > 0;
+      const hasAvailableTeams = calculateAvailableSlotsInTeam(lab.id) > 0;
 
-      // Лабораторная работа отображается, если:
+      if (!userTeams?.length) return hasEnoughEquipment;
+
+                // Лабораторная работа отображается, если:
       // 1. Есть достаточно оборудования для создания новой команды, ИЛИ
       // 2. Есть неполные команды с доступными местами
-      return hasEnoughEquipment && hasAvailableTeams;
+      return hasEnoughEquipment || hasAvailableTeams;
     })
     .map(lab => (
           <Button 
-            key={lab.ID}
+            key={lab.id}
             onClick={() => setSelectedLab(lab)}
             className="mb-2 text-white w-full h-12 max-h-14 text-left justify-start bg-blue-700 hover:bg-blue-800"
           >
             <div className="flex-1 p-2 min-w-0">
               <div className="font-medium text-white truncate">
-                {lab.Number} - {lab.Description}
+                {lab.number} - {lab.description}
               </div>
               
-              {calculateAvailableSlotsInTeam(lab.ID) > 0 ? (
+              {calculateAvailableSlotsInTeam(lab.id) > 0 ? (
                 <div className="text-xs text-gray-100 mt-1">
-                  Свободно мест: {calculateAvailableSlotsInTeam(lab.ID)}
+                  Свободно мест: {calculateAvailableSlotsInTeam(lab.id)}
                 </div>
               ) : (
                 <div className="text-xs text-gray-100 mt-1">
@@ -417,35 +437,38 @@ const TIME_SLOTS = [
                   Выбор команды
                 </DialogTitle>
                 <DialogDescription className="text-sm text-gray-600">
-                  Максимальный размер команды: {selectedLab.MaxStudents}
+                  Максимальный размер команды: {selectedLab.maxStudents}
                 </DialogDescription>
               </DialogHeader>
               <div className="max-h-[60vh] overflow-y-auto pr-2">
-              {userTeams
-              .filter(team => {
+              {(userTeams as Team[]).
+              filter(team => {
                 // Можно ли добавить в команду
-                const canJoinTeam = team.Members.length <= selectedLab.MaxStudents;
-                
-                // Есть ли оборудование для этой лабораторной
-                const hasEquipment = 
-                  selectedLab.RoutersRequired <= (selectedSession?.RoutersRemaining || 0) &&
-                  selectedLab.SwitchesRequired <= (selectedSession?.SwitchesRemaining || 0) &&
-                  selectedLab.WirelessRoutersRequired <= (selectedSession?.WirelessRoutersRemaining || 0) &&
-                  selectedLab.HPRoutersRequired <= (selectedSession?.HPRoutersRemaining || 0) &&
-                  selectedLab.HPSwitchesRequired <= (selectedSession?.HPSwitchesRemaining || 0);
+                if (selectedLab) {
+                  console.log(430)
+                  const canJoinTeam = team.members.length <= selectedLab.maxStudents;
 
-                return canJoinTeam || hasEquipment;
+                  const hasEquipment =
+                      selectedLab.routersRequired <= (selectedSession?.routers || 0) &&
+                      selectedLab.switchesRequired <= (selectedSession?.switches || 0) &&
+                      selectedLab.wirelessRoutersRequired <= (selectedSession?.wirelessRouters || 0) &&
+                      selectedLab.hpRoutersRequired <= (selectedSession?.hpRouters || 0) &&
+                      selectedLab.hpSwitchesRequired <= (selectedSession?.hpSwitches || 0);
+                  return canJoinTeam || hasEquipment;
+
+                }
+
               })
               .map(team => (
                   <Button
-                    key={team.ID}
-                    onClick={() => handleEnroll(selectedLab.ID, team.ID)}
+                    key={team.id}
+                    onClick={() => handleEnroll(selectedLab?.id, team.id)}
                     className="w-full mb-2 justify-start bg-gray-50 hover:bg-gray-100"
                   >
                     <span className="flex-1 text-left text-blue-500">
-                      {team.Name} 
+                      {team.name} 
                       <span className="ml-2 text-gray-500">
-                        ({team.Members.length} участников)
+                        ({team?.members.length} участников)
                       </span>
                     </span>
                   </Button>
@@ -454,10 +477,10 @@ const TIME_SLOTS = [
                 
               
               <Button 
-              onClick={() => handleEnroll(selectedLab.ID)}
+              onClick={() => handleEnroll(selectedLab?.id)}
               className="w-full mt-4 bg-blue-600 hover:bg-blue-700 text-white"
             >
-              {selectedLab.MaxStudents > 1 ? "Создать новую команду или записаться в существующую" : "Записаться индивидуально"}
+              {selectedLab.maxStudents > 1 ? "Создать новую команду или записаться в существующую" : "Записаться индивидуально"}
             </Button>
             </div>
             </div>
@@ -470,4 +493,8 @@ const TIME_SLOTS = [
 
 export default Schedule
   
-  
+//nQG9am
+//zbPgbv
+//csB1pf
+//rvOOKP
+//1ARaT6

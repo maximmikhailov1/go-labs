@@ -10,37 +10,37 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { toast } from "sonner"
 
 type Record = {
-  ID: number
-  LabDate: string
-  ClassNumber: number
-  AudienceNumber: string
-  HPRoutersRemaining: number
-  HPSwitchesRemaining: number
-  RoutersRemaining: number
-  SwitchesRemaining: number
-  WirelessRoutersRemaining: number
+  id: number
+  labDate: string
+  classNumber: number
+  audienceNumber: string
+  hpRouters: number
+  hpSwitches: number
+  routers: number
+  switches: number
+  wirelessRouters: number
 
-  Tutor: {
-    ID: number
+  tutor: {
+    id: number
     fullName: string
   }
-  Entries: {
-    ID: number
-    Team: {
-      ID: number
-      Name: string
-      Members: {
-        ID: number
+  entries: {
+    id: number
+    team: {
+      id: number
+      name: string
+      members: {
+        id: number
         fullName: string
-        Group:{
-          Name:string
+        group:{
+          name:string
         }
       }[]
     }
-    Lab: {
-      ID: number
-      Number: string
-      Description: string
+    lab: {
+      id: number
+      number: string
+      description: string
     }
   }[]
 }
@@ -53,7 +53,7 @@ const AllTeachersSchedule = () => {
   useEffect(() => {
     const fetchSchedule = async () => {
       try {
-        const response = await fetch('/api/user/records')
+        const response = await fetch('/api/records')
         const data = await response.json()
         setScheduleData(data)
       } catch (error) {
@@ -80,7 +80,7 @@ const AllTeachersSchedule = () => {
 
   const handleDeleteRecord = async (recordId: number, memberId: number) => {
     try {
-      const response = await fetch("/api/user/records", {
+      const response = await fetch("/api/schedules", {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
@@ -124,34 +124,34 @@ const AllTeachersSchedule = () => {
         ) : (
           scheduleData.map(record => (
             <Card 
-              key={record.ID}
+              key={record.id}
               className="hover:shadow-md transition-shadow cursor-pointer"
               onClick={() => setSelectedRecord(record)}
             >
               <CardHeader className="pb-2">
                 <div className="flex items-center gap-2">
                   <User className="h-5 w-5 text-gray-600" />
-                  <span className="font-semibold">{record.Tutor.fullName}</span>
+                  <span className="font-semibold">{record.tutor.fullName}</span>
                 </div>
               </CardHeader>
               <CardContent className="space-y-1">
                 <div className="flex items-center gap-2">
                   <Calendar className="h-4 w-4 text-gray-500" />
-                  <span>{format(parseISO(record.LabDate), "d MMMM yyyy", { locale: ru })}</span>
+                  <span>{format(parseISO(record.labDate), "d MMMM yyyy", { locale: ru })}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Clock className="h-4 w-4 text-gray-500" />
-                  <span>{formatTime(record.ClassNumber)}</span>
+                  <span>{formatTime(record.classNumber)}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Home className="h-4 w-4 text-gray-500" />
-                  <span>Аудитория {record.AudienceNumber}</span>
+                  <span>Аудитория {record.audienceNumber}</span>
                 </div>
               </CardContent>
               <CardFooter className="flex items-center gap-2 pt-2 border-t">
                 <Users className="h-4 w-4 text-gray-500" />
                 <span className="text-sm text-gray-600">
-                  {record.Entries?.length} команд
+                  {record.entries?.length} команд
                 </span>
               </CardFooter>
             </Card>
@@ -174,39 +174,39 @@ const AllTeachersSchedule = () => {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="flex items-center gap-2">
                     <Calendar className="h-5 w-5" />
-                    {format(parseISO(selectedRecord.LabDate), "d MMMM yyyy", { locale: ru })}
+                    {format(parseISO(selectedRecord.labDate), "d MMMM yyyy", { locale: ru })}
                   </div>
                   <div className="flex items-center gap-2">
                     <Clock className="h-5 w-5" />
-                    {formatTime(selectedRecord.ClassNumber)}
+                    {formatTime(selectedRecord.classNumber)}
                   </div>
                   <div className="flex items-center gap-2">
                     <Home className="h-5 w-5" />
-                    Аудитория {selectedRecord.AudienceNumber}
+                    Аудитория {selectedRecord.audienceNumber}
                   </div>
                   <div className="flex items-center gap-2">
                     <User className="h-5 w-5" />
-                    {selectedRecord.Tutor.fullName}
+                    {selectedRecord.tutor.fullName}
                   </div>
                   <div className="flex items-center gap-2">
                     <Route className="h-5 w-5" />
-                    Свободных маршуртизаторов {selectedRecord.RoutersRemaining}
+                    Свободных маршрутизаторов {selectedRecord.routers}
                   </div>
                   <div className="flex items-center gap-2">
                     <EthernetPort className="h-5 w-5" />
-                    Свободных коммутаторов {selectedRecord.SwitchesRemaining}
+                    Свободных коммутаторов {selectedRecord.switches}
                   </div>
                   <div className="flex items-center gap-2">
                     <Route className="h-5 w-5" />
-                    Свободных HP маршуртизаторов {selectedRecord.HPRoutersRemaining}
+                    Свободных HP маршрутизаторов {selectedRecord.hpRouters}
                   </div>
                   <div className="flex items-center gap-2">
                     <EthernetPort className="h-5 w-5" />
-                    Свободных HP коммутаторов {selectedRecord.HPSwitchesRemaining}
+                    Свободных HP коммутаторов {selectedRecord.hpSwitches}
                   </div>
                   <div className="flex items-center gap-2">
                     <Router className="h-5 w-5" />
-                    Свободных беспроводных маршрутизаторов {selectedRecord.WirelessRoutersRemaining}
+                    Свободных беспроводных маршрутизаторов {selectedRecord.wirelessRouters}
                   </div>
                   
                   
@@ -218,11 +218,11 @@ const AllTeachersSchedule = () => {
                     Записавшиеся команды:
                   </h3>
                   <div className="space-y-3">
-                    {selectedRecord.Entries?.map(entry => (
-                      <Card key={entry.ID}>
+                    {selectedRecord.entries?.map(entry => (
+                      <Card key={entry.id}>
                         <CardHeader className="pb-2">
                         <div className="text-sm text-gray-600">
-                            Лабораторная работа: {entry.Lab.Number} - {entry.Lab.Description}
+                            Лабораторная работа: {entry.lab.number} - {entry.lab.description}
                           </div>
                         </CardHeader>
                         <CardContent>
@@ -230,16 +230,16 @@ const AllTeachersSchedule = () => {
                           <div className="mt-2">
                             <div className="text-xs text-gray-500 mb-1">Участники:</div>
                             <div className="space-y-1">
-                              {entry.Team.Members.map(member => (
+                              {entry.team.members?.map(member => (
                                 <div 
-                                  key={member.ID}
+                                  key={member.id}
                                   className="flex items-center gap-2 px-2 py-1 bg-gray-50 rounded"
                                 >
                                   <User className="h-4 w-4 text-gray-400" />
                                   <span>{member.fullName}</span>
-                                  <span>{member.Group.Name}</span>
+                                  <span>{member.group.name}</span>
                                   <button
-                                    onClick={() => handleDeleteRecord(entry.ID, member.ID)}
+                                    onClick={() => handleDeleteRecord(entry.id, member.id)}
                                     className="text-red-600 hover:text-red-800 text-sm flex items-center gap-1"
                                   >
                                     <span>Удалить запись</span>

@@ -5,7 +5,7 @@ export async function signIn(formData: FormData) {
   const password = formData.get("password")
 
   try {
-    const response = await fetch("/api/signin", {
+    const response = await fetch("/api/v1/auth/signin", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -28,7 +28,7 @@ export async function signIn(formData: FormData) {
 
 export async function checkAuthAndRole() {
   try {
-    const response = await fetch("/api/check-auth", {
+    const response = await fetch("/api/v1/auth/check-auth", {
       method: "GET",
       headers: {
         "Content-Type" : "application/json",
@@ -56,7 +56,7 @@ export async function signUp(formData: FormData) {
   const signUpCode = formData.get("signUpCode")
 
   try {
-    const response = await fetch("/api/signup", {
+    const response = await fetch("/api/v1/auth/signup", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -79,7 +79,7 @@ export async function signUp(formData: FormData) {
 
 export async function logout() {
   try {
-    const response = await fetch("/api/logout", {
+    const response = await fetch("/api/v1/auth/logout", {
       method: "POST",
       credentials: "include",
     })
@@ -101,7 +101,7 @@ export function deleteCookie(name:string){
 
 export async function enrollInClass(date: string, slotNumber: number, audienceNumber: number) {
   try {
-    const response = await fetch("/api/enroll", {
+    const response = await fetch("/api/records/enroll", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -123,7 +123,7 @@ export async function enrollInClass(date: string, slotNumber: number, audienceNu
 }
 export async function getUser(){
   try{
-    const response = await fetch("/api/user",{
+    const response = await fetch("/api/users",{
       method: "GET",
       credentials:"include"
     })

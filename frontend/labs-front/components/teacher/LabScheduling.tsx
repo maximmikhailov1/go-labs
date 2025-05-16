@@ -16,7 +16,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { toast } from "sonner"
 
 interface Tutor {
-  ID: string
+  id: string
   fullName: string
 }
 
@@ -34,7 +34,7 @@ const LabScheduling: React.FC = () => {
   useEffect(() => {
     const fetchTutors = async () => {
       try {
-        const response = await fetch('/api/tutors')
+        const response = await fetch('/api/users/tutors')
         if (!response.ok) {
           throw new Error('Ошибка загрузки преподавателей')
         }
@@ -62,9 +62,9 @@ const LabScheduling: React.FC = () => {
   }
 
   const handleTutorChange = (value: string) => {
-    const selectedTutor = tutors.find(tutor => tutor.ID === value);
+    const selectedTutor = tutors.find(tutor => tutor.id === value);
     if (selectedTutor) {
-      setSelectedTutorId(selectedTutor.ID);
+      setSelectedTutorId(selectedTutor.id);
       setSelectedTutorName(selectedTutor.fullName);
     }
   }
@@ -75,16 +75,16 @@ const LabScheduling: React.FC = () => {
     if (!validateForm()) return
 
     try {
-      const response = await fetch('/api/schedule', {
+      const response = await fetch('/api/schedules', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          "LabDate": date,
-          "ClassNumber": Number(classNumber),
-          "AudienceNumber": Number(audienceNumber),
-          "TutorID": Number(selectedTutorId)
+          "labDate": date,
+          "classNumber": Number(classNumber),
+          "audienceNumber": Number(audienceNumber),
+          "tutorId": Number(selectedTutorId)
         })
       })
 
@@ -222,8 +222,8 @@ const LabScheduling: React.FC = () => {
                   <SelectContent className="rounded-lg shadow-lg border border-gray-200">
                     {tutors.map((tutor) => (
                       <SelectItem 
-                        key={tutor.ID} 
-                        value={tutor.ID}
+                        key={tutor.id}
+                        value={tutor.id}
                         className="hover:bg-gray-50"
                       >
                         {tutor.fullName}

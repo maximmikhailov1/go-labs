@@ -76,7 +76,7 @@ const Layout: React.FC<LayoutProps> = ({ searchParams }) => {
     
     try {
       const result = await getUser()
-      if (result.success && result.user) {
+      if (result?.success && result?.user) {
         localStorage.setItem("userProfile", JSON.stringify(result.user))
       }
     } catch (error) {
@@ -93,7 +93,7 @@ const Layout: React.FC<LayoutProps> = ({ searchParams }) => {
     setCurrentPage(callbackUrl?.slice(1) || lastPage?.slice(1) || (role === "tutor" ? "all-teachers-schedule" : "home"))
   }
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     setIsLoggedIn(false)
     setUserRole(null)
     document.cookie = `token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
@@ -101,7 +101,7 @@ const Layout: React.FC<LayoutProps> = ({ searchParams }) => {
     localStorage.removeItem("userRole")
     localStorage.removeItem("lastPage")
     localStorage.removeItem("userProfile")
-    router.replace("/auth",{scroll:false})
+    router.replace("/auth", {scroll: false})
   }
 
   const handlePageChange = (page: string) => {

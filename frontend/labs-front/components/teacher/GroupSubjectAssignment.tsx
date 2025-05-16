@@ -9,18 +9,18 @@ import { Users, BookOpen, Plus } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
 
 interface Group {
-  ID: number
-  Code: string
-  Name: string
-  Subject?: {
-    ID: number
-    Name: string
+  id: number
+  code: string
+  name: string
+  subject?: {
+    id: number
+    name: string
   }
 }
 
 interface Subject {
-  ID: number
-  Name: string
+  id: number
+  name: string
 }
 
 const GroupSubjectAssignment: React.FC = () => {
@@ -87,8 +87,8 @@ const GroupSubjectAssignment: React.FC = () => {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          groupId: selectedGroupId,
-          subjectId: selectedSubjectId
+          groupId: Number(selectedGroupId),
+          subjectId: Number(selectedSubjectId)
         })
       })
 
@@ -96,10 +96,11 @@ const GroupSubjectAssignment: React.FC = () => {
       
       // Обновляем список групп
       const updatedGroups = groups.map(group => 
-        group.ID.toString() === selectedGroupId
-          ? { ...group, Subject: subjects.find(s => s.ID.toString() === selectedSubjectId) }
+        group.id.toString() === selectedGroupId
+          ? { ...group, subject: subjects.find(s => s.id.toString() === selectedSubjectId) }
           : group
       )
+
       setGroups(updatedGroups)
       
       setSelectedGroupId("")
@@ -156,13 +157,13 @@ const GroupSubjectAssignment: React.FC = () => {
           ) : (
             <div className="space-y-4">
               {groups.map((group) => (
-                <div key={group.ID} className="p-4 border rounded-lg hover:shadow-sm transition-shadow">
+                <div key={group.id} className="p-4 border rounded-lg hover:shadow-sm transition-shadow">
                   <div className="flex justify-between items-center">
                     <div>
-                      <h3 className="font-semibold">{group.Name}</h3>
-                      <p className="text-sm text-gray-500">Код: {group.Code}</p>
+                      <h3 className="font-semibold">{group.name}</h3>
+                      <p className="text-sm text-gray-500">Код: {group.code}</p>
                       <p className="text-sm mt-1">
-                        Текущий предмет: {group.Subject?.Name || 'Не назначен'}
+                        Текущий предмет: {group.subject?.name || 'Не назначен'}
                       </p>
                     </div>
                   </div>
@@ -199,8 +200,8 @@ const GroupSubjectAssignment: React.FC = () => {
                   </SelectTrigger>
                   <SelectContent>
                     {groups.map(group => (
-                      <SelectItem key={group.ID} value={group.ID.toString()}>
-                        {group.Name} ({group.Code})
+                      <SelectItem key={group.id} value={group.id.toString()}>
+                        {group.name} ({group.code})
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -218,8 +219,8 @@ const GroupSubjectAssignment: React.FC = () => {
                   </SelectTrigger>
                   <SelectContent>
                     {subjects.map(subject => (
-                      <SelectItem key={subject.ID} value={subject.ID.toString()}>
-                        {subject.Name}
+                      <SelectItem key={subject.id} value={subject.id.toString()}>
+                        {subject.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
