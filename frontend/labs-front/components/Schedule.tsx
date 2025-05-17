@@ -207,10 +207,12 @@ const TIME_SLOTS = [
 
     const isRecordAvailable = (record: ScheduleItem) => {
       if (!userLabs) return false;
-
-      const hasAnyTeamWithSpace = record.entries.some(entry => {
-        return calculateAvailableSlotsInTeamByEntry(entry) > 0;
-      });
+      let hasAnyTeamWithSpace = false
+      if (record.entries){
+         hasAnyTeamWithSpace = record.entries.some(entry => {
+          return calculateAvailableSlotsInTeamByEntry(entry) > 0;
+        });
+      }
 
       return userLabs.some(lab => {
         // Проверяем оборудование
