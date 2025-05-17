@@ -98,7 +98,6 @@ const LabScheduling: React.FC = () => {
       setSelectedTutorName("");
       setFormErrors({});
       toast.success("Занятие успешно запланировано")
-      console.log("Занятие успешно запланировано")
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Неизвестная ошибка')
     }

@@ -128,7 +128,7 @@ const AllTeachersSchedule = () => {
     ]
     return times[classNumber - 1]
   }
-  const handleDeleteRecord = async (recordId: number, memberId: number) => {
+  const handleDeleteRecord = async (entryId: number, memberId: number) => {
     try {
       const response = await fetch("/api/schedules", {
         method: 'DELETE',
@@ -136,23 +136,52 @@ const AllTeachersSchedule = () => {
           'Content-Type': 'application/json',
         },
         credentials: 'include',
-        body: JSON.stringify({"entryId": recordId, "studentId": memberId})
+        body: JSON.stringify({ "entryId": entryId, "studentId": memberId })
       });
 
       if (response.ok) {
         toast.success("Успешно отписан");
 
-        // Обновляем данные в интерфейсе
+        // Обновляем данные в интерфейсе - удаляем только конкретного пользователя
         setScheduleData(prevData => {
           return prevData.map(record => {
             // Обновляем записи в основном расписании
-            const updatedEntries = record.entries.filter(entry => entry.id !== recordId);
+            const updatedEntries = (record.entries || []).map(entry => {
+              if (entry.id === entryId) {
+                // Фильтруем участников команды, удаляя только нужного пользователя
+                const updatedMembers = (entry.team.members || []).filter(
+                    member => member.id !== memberId
+                );
+                return {
+                  ...entry,
+                  team: {
+                    ...entry.team,
+                    members: updatedMembers
+                  }
+                };
+              }
+              return entry;
+            });
 
             // Если это текущая выбранная запись, обновляем и её
             if (selectedRecord && selectedRecord.id === record.id) {
               setSelectedRecord({
                 ...selectedRecord,
-                entries: selectedRecord.entries.filter(entry => entry.id !== recordId)
+                entries: (selectedRecord.entries || []).map(entry => {
+                  if (entry.id === entryId) {
+                    const updatedMembers = (entry.team.members || []).filter(
+                        member => member.id !== memberId
+                    );
+                    return {
+                      ...entry,
+                      team: {
+                        ...entry.team,
+                        members: updatedMembers
+                      }
+                    };
+                  }
+                  return entry;
+                })
               });
             }
 
@@ -166,7 +195,21 @@ const AllTeachersSchedule = () => {
         // Также обновляем отфильтрованные данные
         setFilteredData(prevData => {
           return prevData.map(record => {
-            const updatedEntries = record.entries.filter(entry => entry.id !== recordId);
+            const updatedEntries = (record.entries || []).map(entry => {
+              if (entry.id === entryId) {
+                const updatedMembers = (entry.team.members || []).filter(
+                    member => member.id !== memberId
+                );
+                return {
+                  ...entry,
+                  team: {
+                    ...entry.team,
+                    members: updatedMembers
+                  }
+                };
+              }
+              return entry;
+            });
             return {
               ...record,
               entries: updatedEntries
