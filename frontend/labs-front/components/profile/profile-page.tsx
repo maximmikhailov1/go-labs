@@ -228,6 +228,7 @@ const ProfilePage: React.FC = () => {
       })
   
       if (response.ok) {
+        setTeams(prev => prev.filter(team => team.code !== teamCode));
         return { success: true }
       } else {
         const errorData = await response.json()

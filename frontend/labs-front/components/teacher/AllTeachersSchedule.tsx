@@ -128,7 +128,6 @@ const AllTeachersSchedule = () => {
     ]
     return times[classNumber - 1]
   }
-
   const handleDeleteRecord = async (recordId: number, memberId: number) => {
     try {
       const response = await fetch("/api/schedules", {
@@ -141,13 +140,47 @@ const AllTeachersSchedule = () => {
       });
 
       if (response.ok) {
-        toast.success("успешно отписан")
+        toast.success("Успешно отписан");
+
+        // Обновляем данные в интерфейсе
+        setScheduleData(prevData => {
+          return prevData.map(record => {
+            // Обновляем записи в основном расписании
+            const updatedEntries = record.entries.filter(entry => entry.id !== recordId);
+
+            // Если это текущая выбранная запись, обновляем и её
+            if (selectedRecord && selectedRecord.id === record.id) {
+              setSelectedRecord({
+                ...selectedRecord,
+                entries: selectedRecord.entries.filter(entry => entry.id !== recordId)
+              });
+            }
+
+            return {
+              ...record,
+              entries: updatedEntries
+            };
+          });
+        });
+
+        // Также обновляем отфильтрованные данные
+        setFilteredData(prevData => {
+          return prevData.map(record => {
+            const updatedEntries = record.entries.filter(entry => entry.id !== recordId);
+            return {
+              ...record,
+              entries: updatedEntries
+            };
+          });
+        });
+
       } else {
-        toast.error("ошибка при отмене записи")
+        toast.error("Ошибка при отмене записи");
         console.error('Ошибка при удалении записи');
       }
     } catch (error) {
       console.error('Ошибка:', error);
+      toast.error("Произошла ошибка при удалении записи");
     }
   };
 

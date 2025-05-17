@@ -154,6 +154,7 @@ func (s *Service) GetWeekSchedule(weekNumber int) ([]WeekScheduleResponse, error
 					ID:          e.Lab.ID,
 					Number:      e.Lab.Number,
 					Description: e.Lab.Description,
+					MaxStudents: e.Lab.MaxStudents,
 				},
 				Team: TeamInfo{
 					ID:      e.Team.ID,

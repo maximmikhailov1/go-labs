@@ -94,12 +94,12 @@ const TIME_SLOTS = [
     
           setScheduleData(prev => {
             const newData = [...prev];
-            newData[currentWeekIndex] = scheduleData;
+            newData[currentWeekIndex] = scheduleData || [];
             return newData;
           });
     
           setUserLabs(userLabsData);
-          setUserTeams(userTeamsData);
+          setUserTeams(userTeamsData || []);
           setUser(user)
           console.log('Current week data:', scheduleData[currentWeekIndex]);
           console.log('User labs:', userLabs);
@@ -115,17 +115,34 @@ const TIME_SLOTS = [
     const formatFIO = (n: string) => n?.split(' ')[0] + ' ' + n?.split(' ').slice(1).map(p => p[0] + '.').join('');
 
 
+    const calculateAvailableSlotsInTeamByEntry = (entry: { lab: Lab; team: Team }) => {
+
+      if (!entry.lab) return 0;
+
+      // Считаем общее количество занятых мест
+      const totalUsed = entry.team.members.length
+      // console.log("totalUsed = ",totalUsed,"maxStudents = ", entry.lab.maxStudents)
+      return entry.lab.maxStudents - totalUsed;
+    };
 
     const calculateAvailableSlotsInTeam = (labId: number) => {
-      if (!selectedSession) return 0
+      if (!selectedSession) return 0;
 
-      const totalUsed = selectedSession?.entries?.
-        filter(e => e.lab.id === labId)
-        .reduce((sum, e) => sum + e.team.members?.length, 0)
-        
-      const lab = userLabs.find(l => l.id === labId)
-      return lab ? lab.maxStudents - totalUsed : 0
-    }
+      const lab = userLabs.find(l => l.id === labId);
+      if (!lab) return 0;
+      console.log("lab: ", lab)
+
+      // Находим все записи для выбранной лабораторной
+      const labEntries = selectedSession.entries?.filter(e => e.lab.id === labId) || [];
+      console.log("labEntries: ", labEntries)
+      // Считаем общее количество занятых мест
+      const totalUsed = labEntries.reduce((sum, e) => {
+        return sum + (Array.isArray(e.team.members) ? e.team.members.length : 0);
+      }, 0);
+      console.log("totalUsed: ", totalUsed)
+
+      return lab.maxStudents * labEntries.length - totalUsed;
+    };
 
 
     const handleEnroll = async (labId: number | undefined, teamId?: number) => {
@@ -141,7 +158,7 @@ const TIME_SLOTS = [
             teamId: teamId || null // Явно указываем null если команда не выбрана
           })
         });
-  
+
         if (response.ok) {
           const updated = await fetch(`/api/schedules/week?week=${currentWeekIndex}`).then(r => r.json())
           setScheduleData(prev => {
@@ -191,6 +208,10 @@ const TIME_SLOTS = [
     const isRecordAvailable = (record: ScheduleItem) => {
       if (!userLabs) return false;
 
+      const hasAnyTeamWithSpace = record.entries.some(entry => {
+        return calculateAvailableSlotsInTeamByEntry(entry) > 0;
+      });
+
       return userLabs.some(lab => {
         // Проверяем оборудование
         const hasEquipment = (
@@ -200,13 +221,8 @@ const TIME_SLOTS = [
             (record.switches ?? 0) >= lab.switchesRequired &&
             (record.routers ?? 0) >= lab.routersRequired
         );
-
-        // Если у пользователя нет команд, проверяем только оборудование
-        if (!userTeams) return hasEquipment;
-
         // Если есть команды, дополнительно проверяем доступные места
-        const availableSlots = calculateAvailableSlotsInTeam(lab.id);
-        return hasEquipment || availableSlots > 0;
+        return hasEquipment || hasAnyTeamWithSpace;
       });
     };
 
@@ -286,13 +302,15 @@ const TIME_SLOTS = [
 
                       {isScheduled && (
                           <div className="text-xs text-yellow-600 mt-1">
-                            Вы уже записаны на этот временной слот
+                            Вы уже записаны на эту пару
                           </div>
                       )}
 
                       {!isAvailable && !isScheduled && (
                           <div className="text-xs text-red-500 mt-1">
-                            Нет свободного оборудования
+                            {userTeams?.length > 0
+                                ? "Не хватает оборудования, но можно присоединиться к существующей команде"
+                                : "Нет свободного оборудования"}
                           </div>
                       )}
                     </div>
@@ -305,13 +323,17 @@ const TIME_SLOTS = [
 
     const getDaysOfWeek = (weekIndex: number) => {
       const today = new Date();
+      // Устанавливаем начало недели (понедельник текущей недели)
       const startOfWeek = new Date(today);
-      startOfWeek.setDate(today.getDate() - today.getDay() + 1 + weekIndex * 7);
+      startOfWeek.setDate(today.getDate() - (today.getDay() || 7) + 1);
+
+      // Добавляем недели в зависимости от weekIndex
+      startOfWeek.setDate(startOfWeek.getDate() + weekIndex * 7);
 
       return Array(5).fill(null).map((_, i) => {
         const day = new Date(startOfWeek);
         day.setDate(startOfWeek.getDate() + i);
-        return day.toISOString().split('T')[0]; // Возвращаем только дату в формате YYYY-MM-DD
+        return day.toISOString().split('T')[0];
       });
     };
   
@@ -391,17 +413,17 @@ const TIME_SLOTS = [
               {  userLabs.
       filter(lab => {
       // Проверка оборудования для создания новой команды
-      const hasEnoughEquipment = 
-        lab.routersRequired <= (selectedSession?.routers || 0) &&
-        lab.switchesRequired <= (selectedSession?.switches || 0) &&
-        lab.wirelessRoutersRequired <= (selectedSession?.wirelessRouters || 0) &&
-        lab.hpRoutersRequired <= (selectedSession?.hpRouters || 0) &&
-        lab.hpSwitchesRequired <= (selectedSession?.hpSwitches || 0);
-
-      // Проверка наличия неполных команд
       const hasAvailableTeams = calculateAvailableSlotsInTeam(lab.id) > 0;
+      console.log(calculateAvailableSlotsInTeam(lab.id))
 
-      if (!userTeams?.length) return hasEnoughEquipment;
+      // Проверяем оборудование
+      const hasEnoughEquipment = (
+          (selectedSession?.hpRouters ?? 0) >= lab.hpRoutersRequired &&
+          (selectedSession?.hpSwitches ?? 0) >= lab.hpSwitchesRequired &&
+          (selectedSession?.wirelessRouters ?? 0) >= lab.wirelessRoutersRequired &&
+          (selectedSession?.switches ?? 0) >= lab.switchesRequired &&
+          (selectedSession?.routers ?? 0) >= lab.routersRequired
+      );
 
                 // Лабораторная работа отображается, если:
       // 1. Есть достаточно оборудования для создания новой команды, ИЛИ
@@ -444,11 +466,10 @@ const TIME_SLOTS = [
                 </DialogDescription>
               </DialogHeader>
               <div className="max-h-[60vh] overflow-y-auto pr-2">
-              {(userTeams as Team[]).
+              {((userTeams || [])).
               filter(team => {
                 // Можно ли добавить в команду
                 if (selectedLab) {
-                  console.log(430)
                   const canJoinTeam = team.members.length <= selectedLab.maxStudents;
 
                   const hasEquipment =
@@ -496,8 +517,3 @@ const TIME_SLOTS = [
 
 export default Schedule
   
-//nQG9am
-//zbPgbv
-//csB1pf
-//rvOOKP
-//1ARaT6

@@ -71,6 +71,7 @@ type LabInfo struct {
 	ID          uint   `json:"id"`
 	Number      string `json:"number"`
 	Description string `json:"description"`
+	MaxStudents int    `json:"maxStudents"`
 }
 
 type TeamInfo struct {

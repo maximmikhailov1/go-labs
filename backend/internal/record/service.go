@@ -182,7 +182,7 @@ func (s *Service) Enroll(userID uint, req EnrollRequest) (*EnrollResponse, error
 							return nil, errors.New("failed to add team members")
 						}
 						existingTeam = exTeam
-
+						break
 						//return nil, errors.New("not enough space in existing team for your whole team")
 					}
 				}
@@ -209,6 +209,7 @@ func (s *Service) Enroll(userID uint, req EnrollRequest) (*EnrollResponse, error
 							return nil, errors.New("failed to add user to team")
 						}
 						existingTeam = exTeam
+						break
 						//return nil, errors.New("not enough space in existing team for your whole team")
 					}
 				}
