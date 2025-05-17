@@ -35,7 +35,7 @@ export const TabsDemo: React.FC<TabsDemoProps> = ({ onLogin }) => {
     formData.append("password", loginData.password)
 
     try {
-      const response = await fetch("/api/signin", {
+      const response = await fetch("/api/auth/signin", {
         method: "POST",
         body: formData,
       })
@@ -63,7 +63,7 @@ export const TabsDemo: React.FC<TabsDemoProps> = ({ onLogin }) => {
     setRegisterError(null) // Сбрасываем ошибку перед отправкой
 
     try {
-      const response = await fetch("/api/signup", {
+      const response = await fetch("/api/auth/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(registerData),

@@ -9,23 +9,23 @@ import { BookOpen, FlaskConical, List } from "lucide-react"
 import { Skeleton } from "../ui/skeleton"
 
 interface Subject {
-  ID: number
-  Name: string
-  Description: string
+  id: number
+  name: string
+  description: string
 }
 
 interface Lab {
-  ID: number
-  Number: string
-  Description: string
-  MaxStudents: number
-  RoutersRequired: number
-  SwitchesRequired: number
-  WirelessRoutersRequired:number
-  HPRoutersRequired:number
-  HPSwitchesRequired:number
+  id: number
+  number: string
+  description: string
+  maxStudents: number
+  routersRequired: number
+  switchesRequired: number
+  wirelessRoutersRequired:number
+  hpRoutersRequired:number
+  hpSwitchesRequired:number
 
-  SubjectId: number
+  subjectId: number
 }
 
 
@@ -73,7 +73,7 @@ const SubjectManagement: React.FC = () => {
     const fetchLabs = async () => {
       try {
         setIsLoading(true)
-        const response = await fetch(`/api/labs?subjectId=${selectedSubject.ID}`)
+        const response = await fetch(`/api/labs?subjectId=${selectedSubject.id}`)
         if (!response.ok) throw new Error('Ошибка загрузки лабораторных')
         setLabs(await response.json())
       } catch (err) {
@@ -138,7 +138,7 @@ const SubjectManagement: React.FC = () => {
           wirelessRoutersRequired: Number(wirelessRoutersRequired),
           hpRoutersRequired:Number(hpRoutersRequired),
           hpSwitchesRequired:Number(hpSwitchesRequired),
-          subjectId: selectedSubject.ID
+          subjectId: selectedSubject.id
         })
       })
 
@@ -169,7 +169,7 @@ const SubjectManagement: React.FC = () => {
             <div className="flex items-center gap-3">
               <BookOpen className="h-6 w-6 text-blue-600" />
               <CardTitle className="text-2xl font-semibold text-gray-800">
-                {selectedSubject ? `Лабораторные для "${selectedSubject.Name}"` : "Создание нового предмета"}
+                {selectedSubject ? `Лабораторные для "${selectedSubject.name}"` : "Создание нового предмета"}
               </CardTitle>
             </div>
           </CardHeader>
@@ -336,17 +336,17 @@ const SubjectManagement: React.FC = () => {
               <div className="space-y-4 h-[700px] overflow-y-auto">
                 {subjects.map((subject) => (
                   <div 
-                    key={subject.ID}
+                    key={subject.id}
                     onClick={() => setSelectedSubject(subject)}
                     className={`p-4 border border-gray-200 rounded-lg hover:shadow-sm transition-shadow cursor-pointer ${
-                      selectedSubject?.ID === subject.ID ? 'bg-blue-50' : ''
+                      selectedSubject?.id === subject.id ? 'bg-blue-50' : ''
                     }`}
                   >
                     <div className="flex items-start gap-3">
                       <BookOpen className="h-5 w-5 text-blue-500 mt-1" />
                       <div>
-                        <h3 className="font-semibold text-gray-800 text-lg">{subject.Name}</h3>
-                        <p className="text-gray-600 text-sm mt-1">{subject.Description}</p>
+                        <h3 className="font-semibold text-gray-800 text-lg">{subject.name}</h3>
+                        <p className="text-gray-600 text-sm mt-1">{subject.description}</p>
                       </div>
                     </div>
                   </div>
@@ -386,21 +386,21 @@ const SubjectManagement: React.FC = () => {
                 <div className="space-y-4 h-[700px] overflow-y-auto">
                   {labs.map((lab) => (
                     <div 
-                      key={lab.ID}
+                      key={lab.id}
                       className="p-4 border border-gray-200 rounded-lg hover:shadow-sm transition-shadow"
                     >
                       <div className="flex items-start gap-3">
                         <FlaskConical className="h-5 w-5 text-green-500 mt-1" />
                         <div>
-                          <h3 className="font-semibold text-gray-800 text-lg">Лабораторная {lab.Number}</h3>
-                          <p className="text-gray-600 text-sm mt-1">{lab.Description}</p>
+                          <h3 className="font-semibold text-gray-800 text-lg">Лабораторная {lab.number}</h3>
+                          <p className="text-gray-600 text-sm mt-1">{lab.description}</p>
                           <div className="text-gray-500 text-sm mt-2">
-                            Макс. студентов: {lab.MaxStudents}
-                            {lab.RoutersRequired ?          (`  \| Роутеры: ${lab.RoutersRequired}`):""}
-                            {lab.SwitchesRequired ?         (`  \| Свитчи: ${lab.SwitchesRequired}`):""}
-                            {lab.WirelessRoutersRequired ?  (`  \| Беспроводные марши: ${lab.WirelessRoutersRequired}`):""}
-                            {lab.HPSwitchesRequired ?       (`  \| HP Свитчи: ${lab.HPSwitchesRequired}`):""}
-                            {lab.HPRoutersRequired ?        (`  \| HP Роутеры: ${lab.HPRoutersRequired}`):""}
+                            Макс. студентов: {lab.maxStudents}
+                            {lab.routersRequired ?          (`  \| Роутеры: ${lab.routersRequired}`):""}
+                            {lab.switchesRequired ?         (`  \| Свитчи: ${lab.switchesRequired}`):""}
+                            {lab.wirelessRoutersRequired ?  (`  \| Беспроводные роутеры: ${lab.wirelessRoutersRequired}`):""}
+                            {lab.hpSwitchesRequired ?       (`  \| HP Свитчи: ${lab.hpSwitchesRequired}`):""}
+                            {lab.hpRoutersRequired ?        (`  \| HP Роутеры: ${lab.hpRoutersRequired}`):""}
                           </div>
                         </div>
                       </div>

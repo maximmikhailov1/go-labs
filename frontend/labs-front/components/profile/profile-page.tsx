@@ -14,10 +14,10 @@ import { format } from "date-fns"
 import { ru } from "date-fns/locale"
 
 interface Team {
-  ID: string
-  Name: string
-  Code: string
-  Members: User[]
+  id: string
+  name: string
+  code: string
+  members: User[]
 }
 interface User {
   fullName: string
@@ -25,14 +25,14 @@ interface User {
 }
 interface Record {
     id:           number
-		lab_name:     string
-		lab_date:     string
-    lab_number:   string
-    class_number: number
-		audience:     number
-		status:       string
-		team_name:    string 
-		team_member:  number
+    labName:     string
+    labDate:     string
+    labNumber:   string
+    classNumber: number
+    audienceNumber:     number
+    status:       string
+    teamName:    string
+    teamMember:  number
 }
 
 const ProfilePage: React.FC = () => {
@@ -88,10 +88,10 @@ const ProfilePage: React.FC = () => {
   
   const fetchUser = async () => {
     const result = await getUser();
-    if (result.success && result.user) {
-      setUser(result.user);
+    if (result?.success && result?.user) {
+      setUser(result?.user);
       // Сохраняем в localStorage
-      localStorage.setItem('userProfile', JSON.stringify(result.user));
+      localStorage.setItem('userProfile', JSON.stringify(result?.user));
     }
   };
 
@@ -99,7 +99,7 @@ const ProfilePage: React.FC = () => {
     const teamName = formData.get("teamName")
   
     try {
-      const response = await fetch("/api/user/teams", {
+      const response = await fetch("/api/teams", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -122,12 +122,12 @@ const ProfilePage: React.FC = () => {
   
   async function updateTeamName(teamCode: string, newName: string) {
     try {
-      const response = await fetch(`/api/user/teams?code=${teamCode}`, {
+      const response = await fetch(`/api/teams?code=${teamCode}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ name: newName }),
+        body: JSON.stringify({ newName: newName }),
         credentials: "include",
       })
   
@@ -145,7 +145,7 @@ const ProfilePage: React.FC = () => {
   
   async function joinTeam(teamCode: string) {
     try {
-      const response = await fetch(`/api/user/teams?code=${teamCode}`, {
+      const response = await fetch(`/api/teams?code=${teamCode}`, {
         method: "PUT",
         credentials: "include",
       })
@@ -165,7 +165,7 @@ const ProfilePage: React.FC = () => {
   
   async function getUserTeams() {
     try {
-      const response = await fetch("/api/user/teams", {
+      const response = await fetch("/api/teams", {
         credentials: "include",
       })
   
@@ -177,14 +177,14 @@ const ProfilePage: React.FC = () => {
         return { error: errorData.message || "Ошибка при получении команд" }
       }
     } catch (error) {
-      console.error("Error fetching teams:", error)
+      console.error("Error fetching team:", error)
       return { error: "Произошла ошибка при получении команд" }
     }
   }
 
   async function getUserRecords(){
     try {
-      const response = await fetch("/api/user/records", {
+      const response = await fetch("/api/records", {
         credentials: "include",
       })
 
@@ -202,7 +202,7 @@ const ProfilePage: React.FC = () => {
   
   async function getUser(){
     try{
-      const response = await fetch("/api/user",{
+      const response = await fetch("/api/users",{
         method: "GET",
         credentials:"include"
       })
@@ -222,12 +222,13 @@ const ProfilePage: React.FC = () => {
   
   async function leaveTeam(teamCode: string) {
     try {
-      const response = await fetch(`/api/user/teams?code=${teamCode}`, {
+      const response = await fetch(`/api/teams?code=${teamCode}`, {
         method: "DELETE",
         credentials: "include",
       })
   
       if (response.ok) {
+        setTeams(prev => prev.filter(team => team.code !== teamCode));
         return { success: true }
       } else {
         const errorData = await response.json()
@@ -245,10 +246,10 @@ const ProfilePage: React.FC = () => {
     const formData = new FormData()
     formData.append("teamName", newTeamName)
     const result = await createTeam(formData)
-    if (result.success) {
+    if (result?.success) {
       setNewTeamName("")
       setShowCreateTeam(false)
-      fetchTeams()
+      await fetchTeams()
     }
   }
 
@@ -257,16 +258,19 @@ const ProfilePage: React.FC = () => {
     const result = await joinTeam(joinTeamCode)
     if (result.success) {
       setJoinTeamCode("")
-      fetchTeams()
+      await fetchTeams()
     }
   }
 
   const handleDeleteRecord = async (recordId: number) => {
     try {
-      const response = await fetch("/api/user/records", {
+      const response = await fetch("/api/schedules", {
         method: 'DELETE',
         credentials: 'include',
-        body:JSON.stringify({"EntryID": recordId})
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body:JSON.stringify({"entryId": recordId})
       });
   
       if (response.ok) {  
@@ -280,6 +284,7 @@ const ProfilePage: React.FC = () => {
   };
 
   const handleUpdateTeamName = async (teamCode: string) => {
+    console.log("Updating team:", teamCode, "New name:", editTeamName);
     const result = await updateTeamName(teamCode, editTeamName)
     if (result.success) {
       setEditingTeam(null)
@@ -318,9 +323,9 @@ const ProfilePage: React.FC = () => {
               </div>
             </div>
             <div className="space-y-1">
-              <Label className="text-sm text-gray-500">{user.groupName || <span>Должность</span>}</Label>
+              <Label className="text-sm text-gray-500">{user.groupName && <span>Группа</span> || <span>Должность</span>}</Label>
               <div className="font-medium text-gray-800 text-lg animate-fade-in">
-                {user.groupName || <span className="text-gray-800">Преподаватель</span>}
+                { user.groupName && <span className="text-gray-800">{user.groupName}</span> || <span className="text-gray-800">Преподаватель</span>}
               </div>
             </div>
           </div>
@@ -396,10 +401,10 @@ const ProfilePage: React.FC = () => {
               <div className="space-y-3">
                 {teams.map((team) => (
                   <div 
-                    key={team.ID} 
+                    key={team.id}
                     className="p-4 border border-gray-200 rounded-lg hover:shadow-sm transition-shadow"
                   >
-                    {editingTeam === team.Code ? (
+                    {editingTeam === team.code ? (
                       <div className="flex gap-2">
                         <Input
                           value={editTeamName}
@@ -408,8 +413,9 @@ const ProfilePage: React.FC = () => {
                           className="rounded-lg border-gray-300 focus:ring-2 focus:ring-blue-500"
                         />
                         <Button 
-                          size="sm" 
-                          onClick={() => handleUpdateTeamName(team.Code)}
+                          size="sm"
+                          type="submit"
+                          onClick={() => handleUpdateTeamName(team.code)}
                           className="rounded-lg bg-green-600 hover:bg-green-700 shadow-sm"
                         >
                           Сохранить
@@ -429,12 +435,12 @@ const ProfilePage: React.FC = () => {
                     ) : (
                       <div className="flex justify-between items-center gap-4">
                         <div className="flex-1">
-                          <div className="font-medium text-gray-800">{team.Name}</div>
+                          <div className="font-medium text-gray-800">{team.name}</div>
                           <div className="text-sm text-gray-500 mt-1">
-                            Код: <span className="font-mono">{team.Code}</span>
+                            Код: <span className="font-mono">{team.code}</span>
                           </div>
                           <div className="text-sm text-gray-500 mt-2">
-                            👥 Участники: {team.Members.map(user => user.fullName).join(", ")}
+                            👥 Участники: {team.members.map(user => user.fullName).join(", ")}
                           </div>
                         </div>
                         <div className="flex gap-2">
@@ -442,8 +448,8 @@ const ProfilePage: React.FC = () => {
                             variant="ghost"
                             size="sm"
                             onClick={() => {
-                              setEditingTeam(team.Code)
-                              setEditTeamName(team.Name)
+                              setEditingTeam(team.code)
+                              setEditTeamName(team.name)
                             }}
                             className="text-blue-600 hover:bg-blue-50 rounded-lg"
                           >
@@ -452,7 +458,7 @@ const ProfilePage: React.FC = () => {
                           <Button 
                             variant="destructive" 
                             size="sm" 
-                            onClick={() => handleLeaveTeam(team.Code)}
+                            onClick={() => handleLeaveTeam(team.code)}
                             className="rounded-lg shadow-sm"
                           >
                             Покинуть
@@ -492,10 +498,10 @@ const ProfilePage: React.FC = () => {
                       key={index} 
                       className="hover:bg-gray-50 transition-colors border-t border-gray-100"
                     >
-                      <TableCell className="font-medium text-gray-700">  {record.lab_date ? format(parseISO(record.lab_date), "d MMMM yyyy", { locale: ru }) : "Дата не указана"}</TableCell>
-                      <TableCell className="text-gray-600">{record.class_number}</TableCell>
-                      <TableCell className="text-gray-600">{record.lab_name}</TableCell>
-                      <TableCell className="text-gray-600">{record.audience}</TableCell>
+                      <TableCell className="font-medium text-gray-700">  {record.labDate ? format(parseISO(record.labDate), "d MMMM yyyy", { locale: ru }) : "Дата не указана"}</TableCell>
+                      <TableCell className="text-gray-600">{record.classNumber}</TableCell>
+                      <TableCell className="text-gray-600">{record.labName}</TableCell>
+                      <TableCell className="text-gray-600">{record.audienceNumber}</TableCell>
                       <TableCell>
                         <span 
                           className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
