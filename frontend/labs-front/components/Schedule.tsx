@@ -101,9 +101,7 @@ const TIME_SLOTS = [
           setUserLabs(userLabsData);
           setUserTeams(userTeamsData || []);
           setUser(user)
-          console.log('Current week data:', scheduleData[currentWeekIndex]);
-          console.log('User labs:', userLabs);
-          console.log('User:', user);
+
         } catch (error) {
           console.error("Ошибка загрузки данных:", error);
         }
@@ -130,16 +128,13 @@ const TIME_SLOTS = [
 
       const lab = userLabs.find(l => l.id === labId);
       if (!lab) return 0;
-      console.log("lab: ", lab)
 
       // Находим все записи для выбранной лабораторной
       const labEntries = selectedSession.entries?.filter(e => e.lab.id === labId) || [];
-      console.log("labEntries: ", labEntries)
       // Считаем общее количество занятых мест
       const totalUsed = labEntries.reduce((sum, e) => {
         return sum + (Array.isArray(e.team.members) ? e.team.members.length : 0);
       }, 0);
-      console.log("totalUsed: ", totalUsed)
 
       return lab.maxStudents * labEntries.length - totalUsed;
     };
@@ -416,7 +411,6 @@ const TIME_SLOTS = [
       filter(lab => {
       // Проверка оборудования для создания новой команды
       const hasAvailableTeams = calculateAvailableSlotsInTeam(lab.id) > 0;
-      console.log(calculateAvailableSlotsInTeam(lab.id))
 
       // Проверяем оборудование
       const hasEnoughEquipment = (
