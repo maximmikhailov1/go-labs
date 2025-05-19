@@ -162,7 +162,7 @@ const GroupSubjectAssignment: React.FC = () => {
             <AlertDialogHeader>
               <AlertDialogTitle>Вы уверены?</AlertDialogTitle>
               <AlertDialogDescription>
-                {`Вы собираетесь удалить группу "{groupToDelete?.name}". Это действие нельзя отменить.`}
+                Вы собираетесь удалить группу &quot;{groupToDelete?.name}&quot;. Это действие нельзя отменить.
                 Все связанные данные (студенты, записи) станут неактивны.
               </AlertDialogDescription>
             </AlertDialogHeader>
