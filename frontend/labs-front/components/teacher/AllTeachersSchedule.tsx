@@ -363,7 +363,13 @@ const AllTeachersSchedule = () => {
                     <CardFooter className="flex items-center gap-2 pt-2 border-t">
                       <Users className="h-4 w-4 text-gray-500" />
                       <span className="text-sm text-gray-600">
-                  {record.entries?.length} команд
+                  {record.entries ?
+                      record.entries.length <= 4 && record.entries.length >= 2 ?
+                          `${record.entries.length} команды`:
+                              record.entries.length == 1 ? "1 команда":
+                                  `${record.entries.length} команд`
+                      : "0 команд"
+                      }
                 </span>
                     </CardFooter>
                   </Card>
