@@ -1,5 +1,7 @@
 package group
 
+import "errors"
+
 type Service struct {
 	repo *Repository
 }
@@ -51,4 +53,11 @@ func (s *Service) GetAllGroups() ([]GroupWithSubjectResponse, error) {
 
 func (s *Service) UpdateGroupSubject(req UpdateSubjectRequest) error {
 	return s.repo.UpdateGroupSubject(req.GroupID, req.SubjectID)
+}
+
+func (s *Service) DeleteGroup(groupID uint) error {
+	if err := s.repo.DeleteGroup(groupID); err != nil {
+		return errors.New("failed to delete group")
+	}
+	return nil
 }

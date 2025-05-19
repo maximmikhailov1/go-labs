@@ -75,7 +75,7 @@ const SubjectManagement: React.FC = () => {
         setIsLoading(true)
         const response = await fetch(`/api/labs?subjectId=${selectedSubject.id}`)
         if (!response.ok) throw new Error('Ошибка загрузки лабораторных')
-        setLabs(await response.json())
+        setLabs(await response.json() || [])
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Ошибка загрузки лабораторных')
       } finally {
@@ -167,10 +167,20 @@ const SubjectManagement: React.FC = () => {
         <Card className="border-0 shadow-sm rounded-xl bg-white hover:shadow-md transition-shadow h-[800px]">
           <CardHeader className="border-b border-gray-200">
             <div className="flex items-center gap-3">
-              <BookOpen className="h-6 w-6 text-blue-600" />
-              <CardTitle className="text-2xl font-semibold text-gray-800">
-                {selectedSubject ? `Лабораторные для "${selectedSubject.name}"` : "Создание нового предмета"}
-              </CardTitle>
+              {selectedSubject ?
+              <>
+                <FlaskConical className="h-6 w-6 text-green-600" />
+                <CardTitle className="text-2xl font-semibold text-gray-800">
+                  {`Лабораторные для "${selectedSubject.name}"`}
+                </CardTitle>
+              </>:
+                  <>
+                    <BookOpen className="h-6 w-6 text-blue-600" />
+                    <CardTitle className="text-2xl font-semibold text-gray-800">
+                      Создание нового предмета
+                    </CardTitle>
+                  </>}
+
             </div>
           </CardHeader>
           <CardContent className="pt-6 space-y-5">
@@ -305,6 +315,61 @@ const SubjectManagement: React.FC = () => {
           </CardContent>
         </Card>
       </div>
+      {/* Список лабораторных */}
+      {selectedSubject && (
+          <Card className="border-0 shadow-sm rounded-xl bg-white hover:shadow-md transition-shadow h-[800px]">
+            <CardHeader className="border-b border-gray-200">
+              <div className="flex items-center gap-3">
+                <FlaskConical className="h-6 w-6 text-green-600" />
+                <CardTitle className="text-2xl font-semibold text-gray-800">
+                  Лабораторные работы
+                </CardTitle>
+              </div>
+            </CardHeader>
+            <CardContent className="pt-6">
+              {isLoading ? (
+                  <div className="space-y-4">
+                    {Array.from({ length: 5 }).map((_, index) => (
+                        <div key={index} className="p-4 border border-gray-200 rounded-lg">
+                          <Skeleton className="h-5 w-1/3 mb-2" />
+                          <Skeleton className="h-4 w-full" />
+                        </div>
+                    ))}
+                  </div>
+              ) : (
+                  <div className="space-y-4 h-[700px] overflow-y-auto">
+                    {labs.map((lab) => (
+                        <div
+                            key={lab.id}
+                            className="p-4 border border-gray-200 rounded-lg hover:shadow-sm transition-shadow"
+                        >
+                          <div className="flex items-start gap-3">
+                            <FlaskConical className="h-5 w-5 text-green-500 mt-1" />
+                            <div>
+                              <h3 className="font-semibold text-gray-800 text-lg">Лабораторная {lab.number}</h3>
+                              <p className="text-gray-600 text-sm mt-1">{lab.description}</p>
+                              <div className="text-gray-500 text-sm mt-2">
+                                Макс. студентов: {lab.maxStudents}
+                                {lab.routersRequired ?          (`  \| Роутеры: ${lab.routersRequired}`):""}
+                                {lab.switchesRequired ?         (`  \| Свитчи: ${lab.switchesRequired}`):""}
+                                {lab.wirelessRoutersRequired ?  (`  \| Беспроводные роутеры: ${lab.wirelessRoutersRequired}`):""}
+                                {lab.hpSwitchesRequired ?       (`  \| HP Свитчи: ${lab.hpSwitchesRequired}`):""}
+                                {lab.hpRoutersRequired ?        (`  \| HP Роутеры: ${lab.hpRoutersRequired}`):""}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                    ))}
+                    {labs.length === 0 && (
+                        <div className="text-center py-6 text-gray-500">
+                          Нет лабораторных для этого предмета
+                        </div>
+                    )}
+                  </div>
+              )}
+            </CardContent>
+          </Card>
+      )}
       <div className="space-y-8">
         {/* Список предметов */}
         <Card className="border-0 shadow-sm rounded-xl bg-white hover:shadow-md transition-shadow h-[800px]">
@@ -361,61 +426,7 @@ const SubjectManagement: React.FC = () => {
           </CardContent>
         </Card>
 
-        {/* Список лабораторных */}
-        {selectedSubject && (
-          <Card className="border-0 shadow-sm rounded-xl bg-white hover:shadow-md transition-shadow h-[800px]">
-            <CardHeader className="border-b border-gray-200">
-              <div className="flex items-center gap-3">
-                <FlaskConical className="h-6 w-6 text-green-600" />
-                <CardTitle className="text-2xl font-semibold text-gray-800">
-                  Лабораторные работы
-                </CardTitle>
-              </div>
-            </CardHeader>
-            <CardContent className="pt-6">
-              {isLoading ? (
-                <div className="space-y-4">
-                  {Array.from({ length: 5 }).map((_, index) => (
-                    <div key={index} className="p-4 border border-gray-200 rounded-lg">
-                      <Skeleton className="h-5 w-1/3 mb-2" />
-                      <Skeleton className="h-4 w-full" />
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="space-y-4 h-[700px] overflow-y-auto">
-                  {labs.map((lab) => (
-                    <div 
-                      key={lab.id}
-                      className="p-4 border border-gray-200 rounded-lg hover:shadow-sm transition-shadow"
-                    >
-                      <div className="flex items-start gap-3">
-                        <FlaskConical className="h-5 w-5 text-green-500 mt-1" />
-                        <div>
-                          <h3 className="font-semibold text-gray-800 text-lg">Лабораторная {lab.number}</h3>
-                          <p className="text-gray-600 text-sm mt-1">{lab.description}</p>
-                          <div className="text-gray-500 text-sm mt-2">
-                            Макс. студентов: {lab.maxStudents}
-                            {lab.routersRequired ?          (`  \| Роутеры: ${lab.routersRequired}`):""}
-                            {lab.switchesRequired ?         (`  \| Свитчи: ${lab.switchesRequired}`):""}
-                            {lab.wirelessRoutersRequired ?  (`  \| Беспроводные роутеры: ${lab.wirelessRoutersRequired}`):""}
-                            {lab.hpSwitchesRequired ?       (`  \| HP Свитчи: ${lab.hpSwitchesRequired}`):""}
-                            {lab.hpRoutersRequired ?        (`  \| HP Роутеры: ${lab.hpRoutersRequired}`):""}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                  {labs.length === 0 && (
-                    <div className="text-center py-6 text-gray-500">
-                      Нет лабораторных для этого предмета
-                    </div>
-                  )}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        )}
+
       </div>
     </div>
   )

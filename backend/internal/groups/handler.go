@@ -101,3 +101,28 @@ func (h *Handler) UpdateGroupSubject(c *fiber.Ctx) error {
 
 	return c.SendStatus(fiber.StatusNoContent)
 }
+
+// DeleteGroup godoc
+// @Summary Удалить группу
+// @Tags Group
+// @Security ApiKeyAuth
+// @Param id path int true "ID группы"
+// @Success 204
+// @Router /groups/{id} [delete]
+func (h *Handler) DeleteGroup(c *fiber.Ctx) error {
+	claims := c.Locals("user").(*middleware.AuthClaims)
+	if claims.Role != "tutor" {
+		return fiber.NewError(fiber.StatusForbidden, "only tutors can delete groups")
+	}
+
+	groupID, err := c.ParamsInt("id")
+	if err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, "invalid group ID")
+	}
+
+	if err := h.service.DeleteGroup(uint(groupID)); err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+	}
+
+	return c.SendStatus(fiber.StatusNoContent)
+}

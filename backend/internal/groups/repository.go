@@ -71,3 +71,9 @@ func (r *Repository) UpdateGroupSubject(groupID, subjectID uint) error {
 		return nil
 	})
 }
+func (r *Repository) DeleteGroup(groupID uint) error {
+	// Удаляем связи многие-ко-многим сначала
+
+	// Затем удаляем саму группу
+	return r.db.Delete(&models.Group{}, groupID).Error
+}
