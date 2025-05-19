@@ -10,7 +10,7 @@ type Lab struct {
 	Number                  string
 	Description             string
 	MaxStudents             int
-	RoutersRequired         int `gorm:"default:1"`
+	RoutersRequired         int `gorm:"default:0"`
 	SwitchesRequired        int `gorm:"default:0"`
 	WirelessRoutersRequired int `gorm:"default:0"`
 	HPRoutersRequired       int `gorm:"default:0"`
