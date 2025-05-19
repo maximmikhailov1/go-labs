@@ -2,11 +2,13 @@ package routes
 
 import (
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/log"
 	"github.com/maximmikhailov1/go-labs/backend/internal/auth"
 	group "github.com/maximmikhailov1/go-labs/backend/internal/groups"
 	"github.com/maximmikhailov1/go-labs/backend/internal/lab"
 	"github.com/maximmikhailov1/go-labs/backend/internal/middleware"
 	"github.com/maximmikhailov1/go-labs/backend/internal/record"
+	"github.com/maximmikhailov1/go-labs/backend/internal/report"
 	"github.com/maximmikhailov1/go-labs/backend/internal/schedule"
 	"github.com/maximmikhailov1/go-labs/backend/internal/subject"
 	team "github.com/maximmikhailov1/go-labs/backend/internal/team"
@@ -48,6 +50,13 @@ func SetupRoutes(app *fiber.App) {
 	groupRepo := group.NewRepository(database.DB)
 	groupService := group.NewService(groupRepo)
 	groupHandler := group.NewHandler(groupService)
+
+	reportRepo := report.NewRepository(database.DB)
+	reportService, err := report.NewService(reportRepo)
+	if err != nil {
+		log.Fatal(err)
+	}
+	reportHandler := report.NewHandler(reportService)
 
 	// Роуты авторизации
 	api := app.Group("/api/v1")
@@ -101,11 +110,15 @@ func SetupRoutes(app *fiber.App) {
 		records.Post("/enroll", middleware.RoleMiddleware("student"), recordHandler.Enroll)
 	}
 
-	groups := api.Group("/groups", middleware.AuthMiddleware(os.Getenv("SECRET")))
+	groups := api.Group("/groups", middleware.AuthMiddleware(os.Getenv("SECRET")), middleware.RoleMiddleware("tutor"))
 	{
-		groups.Post("/", middleware.RoleMiddleware("tutor"), groupHandler.CreateGroup)
-		groups.Get("/", middleware.RoleMiddleware("tutor"), groupHandler.GetAllGroups)
-		groups.Patch("/", middleware.RoleMiddleware("tutor"), groupHandler.UpdateGroupSubject)
+		groups.Post("/", groupHandler.CreateGroup)
+		groups.Get("/", groupHandler.GetAllGroups)
+		groups.Patch("/", groupHandler.UpdateGroupSubject)
+	}
+	reports := api.Group("/reports", middleware.AuthMiddleware(os.Getenv("SECRET")), middleware.RoleMiddleware("tutor"))
+	{
+		reports.Get("/", reportHandler.GenerateReport)
 	}
 	//new
 	//app.Get("/api/subjects", handlers.SubjectIndex)   //возвращает список предметов secure

@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from "react"
 import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Calendar, EthernetPort, Router, Route, Clock, User, Book, Home, Users, Filter, X } from "lucide-react"
+import {Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle} from "@/components/ui/dialog"
+import {Calendar, EthernetPort, Router, Route, Clock, User, Book, Home, Users, Filter, X, FileText} from "lucide-react"
 import { format, parseISO, isWithinInterval } from "date-fns"
 import { ru } from "date-fns/locale"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -50,6 +50,7 @@ type Record = {
   }[]
 }
 
+
 const AllTeachersSchedule = () => {
   const [scheduleData, setScheduleData] = useState<Record[]>([])
   const [filteredData, setFilteredData] = useState<Record[]>([])
@@ -78,7 +79,11 @@ const AllTeachersSchedule = () => {
 
     fetchSchedule()
   }, [])
-
+  function addDays(date: Date, days: number) {
+    const result = new Date(date);
+    result.setDate(result.getDate() + days);
+    return result;
+  }
   // Применение фильтров
   useEffect(() => {
     let result = [...scheduleData]
@@ -88,7 +93,7 @@ const AllTeachersSchedule = () => {
         const recordDate = new Date(record.labDate)
         return isWithinInterval(recordDate, {
           start: dateRange.from as Date,
-          end: dateRange.to as Date
+          end: addDays(dateRange.to as Date, 1),
         })
       })
     }
@@ -128,6 +133,7 @@ const AllTeachersSchedule = () => {
     ]
     return times[classNumber - 1]
   }
+
   const handleDeleteRecord = async (entryId: number, memberId: number) => {
     try {
       const response = await fetch("/api/schedules", {
@@ -224,6 +230,41 @@ const AllTeachersSchedule = () => {
     } catch (error) {
       console.error('Ошибка:', error);
       toast.error("Произошла ошибка при удалении записи");
+    }
+  };
+
+
+  const createReport = async (recordIds: number[]) => {
+    try {
+      const response = await fetch(`/api/reports`, {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify( {recordIds: recordIds})
+
+      });
+
+      if (!response.ok) {
+        throw new Error('Ошибка при загрузке отчета');
+      }
+
+      // Получаем blob и создаем ссылку для скачивания
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `report_${recordIds.join("_")}.docx`; // или другой формат
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      toast.success('Отчет успешно сгенерирован');
+    } catch (error) {
+      console.error('Ошибка:', error);
+      toast.error('Не удалось сгенерировать отчет');
     }
   };
 
@@ -379,14 +420,15 @@ const AllTeachersSchedule = () => {
 
       <Dialog open={!!selectedRecord} onOpenChange={() => setSelectedRecord(null)}>
         <DialogContent className="max-w-2xl">
+
           {selectedRecord && (
-            <>
-              <DialogHeader>
-                <DialogTitle className="flex items-center gap-2">
-                  <Book className="h-6 w-6" />
-                  Детали занятия
-                </DialogTitle>
-              </DialogHeader>
+              <>
+                <DialogHeader className="flex flex-row justify-between items-center">
+                  <DialogTitle className="flex items-center gap-2">
+                    <Book className="h-6 w-6" />
+                    Детали занятия
+                  </DialogTitle>
+                </DialogHeader>
 
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
@@ -475,8 +517,21 @@ const AllTeachersSchedule = () => {
                   </div>
                 </div>
               </div>
+                <DialogFooter className="flex flex-row justify-end gap-2 pt-4 border-t">
+                  <Button
+                      onClick={() => createReport([selectedRecord.id])}
+                      variant="outline"
+                  >
+                    <FileText className="h-4 w-4 mr-2" />
+                    Скачать отчёт
+                  </Button>
+                  <Button onClick={() => setSelectedRecord(null)}>
+                    Закрыть
+                  </Button>
+                </DialogFooter>
             </>
           )}
+
         </DialogContent>
       </Dialog>
     </div>

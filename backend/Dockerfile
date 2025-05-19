@@ -16,6 +16,7 @@ WORKDIR /app
 COPY --from=builder /app/.env .  
 COPY --from=builder /app/backend .
 COPY --from=builder /app/migrations ./migrations
+COPY --from=builder /app/internal/report/templates/report_template.docx /app/templates/report_template.docx
 
 
 EXPOSE 3000
