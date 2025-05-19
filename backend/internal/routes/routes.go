@@ -106,6 +106,8 @@ func SetupRoutes(app *fiber.App) {
 		groups.Post("/", middleware.RoleMiddleware("tutor"), groupHandler.CreateGroup)
 		groups.Get("/", middleware.RoleMiddleware("tutor"), groupHandler.GetAllGroups)
 		groups.Patch("/", middleware.RoleMiddleware("tutor"), groupHandler.UpdateGroupSubject)
+		groups.Delete("/:id", middleware.RoleMiddleware("tutor"), groupHandler.DeleteGroup)
+
 	}
 	//new
 	//app.Get("/api/subjects", handlers.SubjectIndex)   //возвращает список предметов secure
