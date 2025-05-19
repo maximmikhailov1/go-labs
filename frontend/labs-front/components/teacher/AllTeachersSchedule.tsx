@@ -37,9 +37,7 @@ type Record = {
       members: {
         id: number
         fullName: string
-        group: {
-          name: string
-        }
+        group: string
       }[]
     }
     lab: {
@@ -455,7 +453,7 @@ const AllTeachersSchedule = () => {
                                 >
                                   <User className="h-4 w-4 text-gray-400" />
                                   <span>{member.fullName}</span>
-                                  <span>{member.group.name}</span>
+                                  <span>{member.group}</span>
                                   <button
                                     onClick={() => handleDeleteRecord(entry.id, member.id)}
                                     className="text-red-600 hover:text-red-800 text-sm flex items-center gap-1"
