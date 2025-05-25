@@ -125,13 +125,15 @@ func (s *Service) Unsubscribe(userID uint, role string, req UnsubscribeRequest) 
 
 func (s *Service) GetWeekSchedule(weekNumber int) ([]WeekScheduleResponse, error) {
 	// Вычисляем даты начала и конца недели
+
 	currentTime := time.Now()
+	year, month, day := currentTime.Date()
+	currentDate := time.Date(year, month, day, 0, 0, 0, 0, time.UTC)
 	weekDuration := time.Hour * 24 * 7
-	offsetTime := currentTime.Add(time.Duration(weekNumber) * weekDuration)
-	currentWeekdayNumber := int(offsetTime.Weekday())
+	offsetTime := currentDate.Add(time.Duration(weekNumber) * weekDuration)
+	currentWeekdayNumber := (int(offsetTime.Weekday()) + 6) % 7
 	weekStart := offsetTime.Add(-time.Duration(currentWeekdayNumber * int(time.Hour) * 24))
 	weekEnd := weekStart.Add(time.Hour * 24 * 7)
-
 	// Получаем записи
 	records, err := s.repo.GetWeekSchedule(weekStart, weekEnd)
 	if err != nil {

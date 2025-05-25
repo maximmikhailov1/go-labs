@@ -44,6 +44,7 @@ type Record = {
       id: number
       number: string
       description: string
+      maxStudents: number
     }
   }[]
 }
@@ -444,7 +445,8 @@ const AllTeachersSchedule = () => {
                       <Card key={entry.id}>
                         <CardHeader className="pb-2">
                         <div className="text-sm text-gray-600">
-                            Лабораторная работа: {entry.lab.number} - {entry.lab.description}
+                          Лабораторная работа: {entry.lab.number} - {entry.lab.description}&nbsp;
+                          Максимум студентов: {entry.lab.maxStudents}
                           </div>
                         </CardHeader>
                         <CardContent>
