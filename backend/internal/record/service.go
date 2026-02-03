@@ -2,6 +2,7 @@ package record
 
 import (
 	"errors"
+
 	"github.com/maximmikhailov1/go-labs/backend/internal/models"
 )
 
@@ -14,7 +15,7 @@ func NewService(repo *Repository) *Service {
 }
 
 func (s *Service) GetUserRecords(userID uint, role string) (interface{}, error) {
-	if role == "student" {
+	if role == models.RoleStudent {
 		var records, err = s.repo.GetUserRecords(userID)
 		if err != nil {
 			return nil, err
@@ -23,7 +24,7 @@ func (s *Service) GetUserRecords(userID uint, role string) (interface{}, error) 
 			return []UserRecordDTO{}, nil
 		}
 		return records, nil
-	} else if role == "tutor" {
+	} else if role == models.RoleTutor {
 		records, err := s.repo.GetTutorRecords()
 		if err != nil {
 			return nil, err
@@ -188,13 +189,14 @@ func (s *Service) Enroll(userID uint, req EnrollRequest) (*EnrollResponse, error
 					}
 				}
 				if existingTeam != nil {
+					if err := tx.Commit().Error; err != nil {
+						return nil, errors.New("transaction failed")
+					}
 					return &EnrollResponse{
 						Success: true,
 						TeamID:  existingTeam.ID,
 					}, nil
 				}
-
-				// Добавляем всех членов команды в существующую команду
 			} else {
 				// Просто добавляем текущего пользователя в существующую команду
 				var user models.User
@@ -215,11 +217,13 @@ func (s *Service) Enroll(userID uint, req EnrollRequest) (*EnrollResponse, error
 					}
 				}
 				if existingTeam != nil {
+					if err := tx.Commit().Error; err != nil {
+						return nil, errors.New("transaction failed")
+					}
 					return &EnrollResponse{
 						Success: true,
 						TeamID:  existingTeam.ID,
 					}, nil
-
 				}
 			}
 		}

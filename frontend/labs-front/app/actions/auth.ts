@@ -1,11 +1,13 @@
 "use client"
 
+import { apiUrl } from "@/lib/api"
+
 export async function signIn(formData: FormData) {
   const username = formData.get("username")
   const password = formData.get("password")
 
   try {
-    const response = await fetch("/api/v1/auth/signin", {
+    const response = await fetch(apiUrl("/auth/signin"), {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -28,7 +30,7 @@ export async function signIn(formData: FormData) {
 
 export async function checkAuthAndRole() {
   try {
-    const response = await fetch("/api/v1/auth/check-auth", {
+    const response = await fetch(apiUrl("/auth/check-auth"), {
       method: "GET",
       headers: {
         "Content-Type" : "application/json",
@@ -79,7 +81,7 @@ export async function signUp(formData: FormData) {
 
 export async function logout() {
   try {
-    const response = await fetch("/api/v1/auth/logout", {
+    const response = await fetch(apiUrl("/auth/logout"), {
       method: "POST",
       credentials: "include",
     })
@@ -99,14 +101,24 @@ export function deleteCookie(name:string){
   document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
 };
 
-export async function enrollInClass(date: string, slotNumber: number, audienceNumber: number) {
+export type EnrollParams = {
+  recordId: number
+  labId: number
+  teamId?: number
+}
+
+export async function enrollInClass(params: EnrollParams) {
   try {
-    const response = await fetch("/api/records/enroll", {
+    const response = await fetch(apiUrl("/records/enroll"), {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ date, slotNumber, audienceNumber }),
+      body: JSON.stringify({
+        recordId: params.recordId,
+        labId: params.labId,
+        ...(params.teamId != null && { teamId: params.teamId }),
+      }),
       credentials: "include",
     })
 
@@ -123,7 +135,7 @@ export async function enrollInClass(date: string, slotNumber: number, audienceNu
 }
 export async function getUser(){
   try{
-    const response = await fetch("/api/users",{
+    const response = await fetch(apiUrl("/users"), {
       method: "GET",
       credentials:"include"
     })

@@ -1,0 +1,46 @@
+# Local development: backend, frontend, postgres without Traefik.
+# Usage: docker compose -f docker-compose.local.yml up --build
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-labs}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-labs}
+      POSTGRES_DB: ${POSTGRES_DB:-labs}
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data_local:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-labs} -d ${POSTGRES_DB:-labs}"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
+
+  backend:
+    build: ./backend
+    ports:
+      - "3000:3000"
+    environment:
+      PORT: "3000"
+      DB_URL: postgres://${POSTGRES_USER:-labs}:${POSTGRES_PASSWORD:-labs}@postgres:5432/${POSTGRES_DB:-labs}?sslmode=disable
+      SECRET: ${SECRET:-dev-secret-change-in-production}
+      TUTOR_SECRET: ${TUTOR_SECRET:-tutor-secret}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./frontend/labs-front
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: http://backend:3000
+    ports:
+      - "3001:8080"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data_local:

@@ -1,10 +1,10 @@
 package middleware
 
 import (
-	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/log"
-	"github.com/golang-jwt/jwt/v5"
 	"strconv"
+
+	"github.com/gofiber/fiber/v2"
+	"github.com/golang-jwt/jwt/v5"
 )
 
 type AuthClaims struct {
@@ -30,7 +30,6 @@ func AuthMiddleware(secret string) fiber.Handler {
 		if err != nil || !token.Valid {
 			return fiber.NewError(fiber.StatusUnauthorized, "invalid token")
 		}
-		log.Info(claims)
 		subIdStr, err := token.Claims.GetSubject()
 		if err != nil {
 			return fiber.NewError(fiber.StatusUnauthorized, "invalid token")

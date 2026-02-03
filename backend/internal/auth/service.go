@@ -2,18 +2,25 @@ package auth
 
 import (
 	"errors"
+	"os"
+
 	"github.com/maximmikhailov1/go-labs/backend/internal/models"
 	"golang.org/x/crypto/bcrypt"
-	"os"
 )
 
+type AuthRepositoryInterface interface {
+	FindUserByUsername(username string) (*models.User, error)
+	CreateUser(user *models.User) error
+	FindGroupByCode(code string) (*models.Group, error)
+}
+
 type AuthService struct {
-	repo        *AuthRepository
+	repo        AuthRepositoryInterface
 	jwtSecret   string
 	tutorSecret string
 }
 
-func NewAuthService(repo *AuthRepository) *AuthService {
+func NewAuthService(repo AuthRepositoryInterface) *AuthService {
 	return &AuthService{
 		repo:        repo,
 		jwtSecret:   os.Getenv("SECRET"),
@@ -38,13 +45,13 @@ func (s *AuthService) SignUp(req SignUpRequest) (*models.User, error) {
 	var groupID *uint
 
 	if req.SignUpCode == s.tutorSecret {
-		role = "tutor"
+		role = models.RoleTutor
 	} else {
 		group, err := s.repo.FindGroupByCode(req.SignUpCode)
 		if err != nil {
 			return nil, errors.New("invalid group code")
 		}
-		role = "student"
+		role = models.RoleStudent
 		groupID = &group.ID
 	}
 

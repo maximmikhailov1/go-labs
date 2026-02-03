@@ -1,10 +1,10 @@
 "use client"
 
-import {useEffect, useState} from "react"
-import {Button} from "@/components/ui/button"
-import {ChevronLeft, ChevronRight} from "lucide-react"
-
-import {Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle} from "@/components/ui/dialog"
+import { useEffect, useState } from "react"
+import { Button } from "@/components/ui/button"
+import { ChevronLeft, ChevronRight } from "lucide-react"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { apiUrl } from "@/lib/api"
 
 type Lab = {
   id: number
@@ -74,10 +74,10 @@ const TIME_SLOTS = [
       const loadData = async () => {
         try {
           const [scheduleRes, labsRes, teamsRes, userRes] = await Promise.all([
-            fetch(`/api/schedules/week?week=${currentWeekIndex}`),
-            fetch('/api/labs/my'),
-            fetch('/api/teams'),
-            fetch('/api/users')
+            fetch(apiUrl(`/schedules/week?week=${currentWeekIndex}`), { credentials: "include" }),
+            fetch(apiUrl("/labs/my"), { credentials: "include" }),
+            fetch(apiUrl("/teams"), { credentials: "include" }),
+            fetch(apiUrl("/users"), { credentials: "include" })
           ]);
     
           const scheduleData = await scheduleRes.json();
@@ -155,7 +155,7 @@ const TIME_SLOTS = [
         });
 
         if (response.ok) {
-          const updated = await fetch(`/api/schedules/week?week=${currentWeekIndex}`).then(r => r.json())
+          const updated = await fetch(apiUrl(`/schedules/week?week=${currentWeekIndex}`), { credentials: "include" }).then(r => r.json())
           setScheduleData(prev => {
             const newData = [...prev]
             newData[currentWeekIndex] = updated

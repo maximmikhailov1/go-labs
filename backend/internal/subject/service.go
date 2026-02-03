@@ -34,7 +34,7 @@ func (s *Service) GetAllSubjects() ([]SubjectResponse, error) {
 		return nil, err
 	}
 
-	var response []SubjectResponse
+	var response []SubjectResponse = []SubjectResponse{}
 	for _, s := range subjects {
 		var groups []GroupResponse
 		for _, g := range s.Groups {

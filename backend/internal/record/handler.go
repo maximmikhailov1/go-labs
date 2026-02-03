@@ -3,6 +3,7 @@ package record
 import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/maximmikhailov1/go-labs/backend/internal/middleware"
+	"github.com/maximmikhailov1/go-labs/backend/internal/models"
 )
 
 type Handler struct {
@@ -39,7 +40,7 @@ func (h *Handler) GetUserRecords(c *fiber.Ctx) error {
 // @Router /records/enroll [post]
 func (h *Handler) Enroll(c *fiber.Ctx) error {
 	claims := c.Locals("user").(*middleware.AuthClaims)
-	if claims.Role != "student" {
+	if claims.Role != models.RoleStudent {
 		return fiber.NewError(fiber.StatusForbidden, "only students can enroll")
 	}
 

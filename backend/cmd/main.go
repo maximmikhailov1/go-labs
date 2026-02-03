@@ -13,8 +13,12 @@ import (
 
 func init() {
 	utils.LoadEnvVariables()
+	if os.Getenv("SECRET") == "" {
+		panic("SECRET environment variable is required")
+	}
 	database.ConnectToDB()
 }
+
 func main() {
 	app := fiber.New(fiber.Config{})
 
