@@ -24,6 +24,11 @@ services:
     deploy:
       mode: replicated
       replicas: 2
+    environment:
+      PORT: "3000"
+      DB_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?sslmode=disable
+      SECRET: ${SECRET}
+      TUTOR_SECRET: ${TUTOR_SECRET}
     depends_on:
       postgres:
         condition: service_healthy
