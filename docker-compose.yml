@@ -36,9 +36,11 @@ services:
       - "3000"
 
   frontend:
-    build: 
+    build:
       context: ./frontend/labs-front
       dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: http://backend:3000
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.frontend.rule=Host(`spmulabs.ru`)"
@@ -47,8 +49,6 @@ services:
     deploy:
       mode: replicated
       replicas: 2
-    environment:
-      NEXT_PUBLIC_API_URL: "http://backend:3000" 
     depends_on:
       - backend
 
