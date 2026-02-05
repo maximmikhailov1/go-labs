@@ -20,6 +20,7 @@ function Calendar({
     return (
         <DayPicker
             timeZone="+03:00"
+            weekStartsOn={1}
             showOutsideDays={showOutsideDays}
             className={cn("p-3", className)}
             classNames={{

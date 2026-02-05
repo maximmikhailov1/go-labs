@@ -79,14 +79,15 @@ const AllTeachersSchedule = () => {
     fetchWeek()
   }, [weekIndex])
 
+  // Неделя с понедельника по пятницу, как у студента
   const getDaysOfWeek = (w: number) => {
     const today = new Date()
-    const start = new Date(today)
-    start.setDate(today.getDate() - (today.getDay() || 7) + 1)
-    start.setDate(start.getDate() + w * 7)
+    const startOfWeek = new Date(today)
+    startOfWeek.setDate(today.getDate() - (today.getDay() || 7) + 1)
+    startOfWeek.setDate(startOfWeek.getDate() + w * 7)
     return Array(5).fill(null).map((_, i) => {
-      const d = new Date(start)
-      d.setDate(start.getDate() + i)
+      const d = new Date(startOfWeek)
+      d.setDate(startOfWeek.getDate() + i)
       return d.toISOString().split("T")[0]
     })
   }
