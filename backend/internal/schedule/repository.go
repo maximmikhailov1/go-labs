@@ -29,6 +29,10 @@ func (r *Repository) UpdateRecordStatus(id uint, status string) error {
 	return r.db.Model(&models.Record{}).Where("id = ?", id).Update("status", status).Error
 }
 
+func (r *Repository) SetEntriesStatusByRecordID(recordID uint, status string) error {
+	return r.db.Model(&models.Entry{}).Where("record_id = ?", recordID).Update("status", status).Error
+}
+
 func (r *Repository) GetEntryWithDetails(id uint) (*models.Entry, error) {
 	var entry models.Entry
 	err := r.db.
@@ -76,10 +80,9 @@ func (r *Repository) GetWeekSchedule(start, end time.Time) ([]models.Record, err
 		Preload("Tutor", func(db *gorm.DB) *gorm.DB {
 			return db.Select("id, full_name")
 		}).
+		Preload("Audience").
 		Preload("Entries.Lab").
-		Preload("Entries.Team.Members", func(db *gorm.DB) *gorm.DB {
-			return db.Select("id")
-		}).
+		Preload("Entries.Team.Members.Group").
 		Where("lab_date BETWEEN ? AND ?", start, end).
 		Find(&records).Error
 	return records, err

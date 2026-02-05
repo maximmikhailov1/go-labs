@@ -4,6 +4,42 @@ import (
 	"gorm.io/datatypes"
 )
 
+type TutorRecordsFilters struct {
+	Page        int
+	Limit       int
+	GroupID     *uint
+	TutorID     *uint
+	Status      string
+	NeedsGrade  bool
+	LabDateFrom *datatypes.Date
+	LabDateTo   *datatypes.Date
+}
+
+type TutorRecordRow struct {
+	RecordID       uint           `json:"recordId"`
+	LabDate        datatypes.Date `json:"labDate"`
+	ClassNumber    int            `json:"classNumber"`
+	AudienceNumber int            `json:"audienceNumber"`
+	TutorID        uint           `json:"tutorId"`
+	TutorFullName  string         `json:"tutorFullName"`
+	EntryID        uint           `json:"entryId"`
+	LabID          uint           `json:"labId"`
+	LabNumber      string         `json:"labNumber"`
+	LabDescription string         `json:"labDescription"`
+	LabMaxStudents int            `json:"labMaxStudents"`
+	TeamID         uint           `json:"teamId"`
+	TeamName       string         `json:"teamName"`
+	MemberID       uint           `json:"memberId"`
+	MemberFullName string         `json:"memberFullName"`
+	GroupName      string         `json:"groupName"`
+	Status         string         `json:"status"`
+}
+
+type TutorRecordsPaginatedResponse struct {
+	Data       interface{} `json:"data"`
+	TotalCount int64       `json:"totalCount"`
+}
+
 type UserRecordDTO struct {
 	ID             uint           `json:"id"`
 	LabName        string         `json:"labName"`
@@ -58,6 +94,7 @@ type Member struct {
 	ID       uint   `json:"id"`
 	FullName string `json:"fullName"`
 	Group    string `json:"group"`
+	Status   string `json:"status,omitempty"`
 }
 
 type EnrollRequest struct {
@@ -73,5 +110,6 @@ type EnrollResponse struct {
 }
 
 type PatchEntryStatusRequest struct {
-	Status string `json:"status" validate:"required,oneof=scheduled completed defended"`
+	Status string `json:"status" validate:"required,oneof=scheduled completed defended no_show cancelled"`
+	UserID *uint  `json:"userId,omitempty"`
 }

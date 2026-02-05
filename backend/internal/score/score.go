@@ -35,20 +35,31 @@ func IncrementDefended(ctx context.Context, userID, subjectID, groupID uint) err
 	return redis.Client.Incr(ctx, k).Err()
 }
 
-func DecrementCompleted(ctx context.Context, userID, subjectID, groupID uint) error {
+func decrementNonNegative(ctx context.Context, key string) error {
 	if redis.Client == nil {
 		return nil
 	}
+	if err := redis.Client.Decr(ctx, key).Err(); err != nil {
+		return err
+	}
+	val, err := redis.Client.Get(ctx, key).Int64()
+	if err == redisv9.Nil || val >= 0 {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	return redis.Client.Set(ctx, key, 0, 0).Err()
+}
+
+func DecrementCompleted(ctx context.Context, userID, subjectID, groupID uint) error {
 	k := keyCompleted(userID, subjectID, groupID)
-	return redis.Client.Decr(ctx, k).Err()
+	return decrementNonNegative(ctx, k)
 }
 
 func DecrementDefended(ctx context.Context, userID, subjectID, groupID uint) error {
-	if redis.Client == nil {
-		return nil
-	}
 	k := keyDefended(userID, subjectID, groupID)
-	return redis.Client.Decr(ctx, k).Err()
+	return decrementNonNegative(ctx, k)
 }
 
 func GetScore(ctx context.Context, userID, subjectID, groupID uint) (completed, defended int64, err error) {

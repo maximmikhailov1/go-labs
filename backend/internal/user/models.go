@@ -14,6 +14,7 @@ type UserResponse struct {
 type ProfileResponse struct {
 	ID          uint   `json:"id"`
 	FullName    string `json:"fullName"`
+	Role        string `json:"role"`
 	GroupName   string `json:"groupName"`
 	SubjectID   uint   `json:"subjectId,omitempty"`
 	SubjectName string `json:"subjectName,omitempty"`

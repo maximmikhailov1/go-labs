@@ -2,7 +2,7 @@
 
 import type React from "react"
 import { Button } from "@/components/ui/button"
-import { User, Book, Calendar, Users, HomeIcon, ClipboardList, Building2, Trophy } from "lucide-react"
+import { User, Book, Users, HomeIcon, ClipboardList, Building2, Trophy } from "lucide-react"
 
 interface NavigationProps {
   isLoggedIn: boolean
@@ -14,7 +14,7 @@ interface NavigationProps {
 
 const Navigation: React.FC<NavigationProps> = ({ isLoggedIn, onLogout, setCurrentPage, userRole, currentPage }) => {
   return (
-<nav className="w-full mt-0 pt-4 transition-all duration-300">
+<nav className="w-full my-0 pt-4 transition-all duration-300">
       <div className="container mx-auto px-4">
         <div className="flex justify-center items-center h-14">
           <div className="flex items-center gap-1 bg-gray-100 rounded-full p-1 shadow-inner">
@@ -61,17 +61,6 @@ const Navigation: React.FC<NavigationProps> = ({ isLoggedIn, onLogout, setCurren
                       title="Расписание преподавателей"
                     >
                       <HomeIcon className="h-5 w-5" />
-                    </Button>
-
-                    <Button 
-                      variant={currentPage === "lab-scheduling" ? "default" : "ghost"}
-                      className={`rounded-full h-10 w-10 p-0 ${
-                        currentPage === "lab-scheduling" ? "hover:bg-gray-700" : "bg-white shadow-sm hover:bg-gray-400"
-                      }`}
-                      onClick={() => setCurrentPage("lab-scheduling")}
-                      title="Планирование занятий"
-                    >
-                      <Calendar className="h-5 w-5" />
                     </Button>
 
                     <Button 

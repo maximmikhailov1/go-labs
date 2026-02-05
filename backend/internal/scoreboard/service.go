@@ -67,7 +67,14 @@ func (s *Service) GetScoreboard(ctx context.Context, userID uint) ([]EntryRespon
 	rows := make([]row, 0, len(users))
 	for _, u := range users {
 		sc := scores[u.ID]
-		rows = append(rows, row{u.ID, u.FullName, sc.Completed, sc.Defended})
+		c, d := sc.Completed, sc.Defended
+		if c < 0 {
+			c = 0
+		}
+		if d < 0 {
+			d = 0
+		}
+		rows = append(rows, row{u.ID, u.FullName, c, d})
 	}
 	sort.Slice(rows, func(i, j int) bool {
 		if rows[i].d != rows[j].d {

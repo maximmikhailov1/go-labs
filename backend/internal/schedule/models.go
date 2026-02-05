@@ -11,6 +11,7 @@ type CreateRequest struct {
 	ClassNumber    int       `json:"classNumber" validate:"required,min=1,max=8"`
 	AudienceNumber int       `json:"audienceNumber"`
 	AudienceID     *uint     `json:"audienceId"`
+	TutorID        *uint     `json:"tutorId"`
 }
 
 type PatchRecordStatusRequest struct {
@@ -47,11 +48,17 @@ type WeekScheduleRequest struct {
 	WeekNumber int `json:"weekNumber" validate:"required"`
 }
 
+type AudienceInfo struct {
+	ID     uint   `json:"id"`
+	Number string `json:"number"`
+}
+
 type WeekScheduleResponse struct {
 	ID             uint           `json:"id"`
 	LabDate        datatypes.Date `json:"labDate"`
 	ClassNumber    int            `json:"classNumber"`
 	AudienceNumber int            `json:"audienceNumber"`
+	Audience       *AudienceInfo  `json:"audience,omitempty"`
 	Status         string         `json:"status"`
 	Tutor          TutorInfo      `json:"tutor"`
 	Entries        []EntryInfo    `json:"entries"`
@@ -83,7 +90,13 @@ type LabInfo struct {
 }
 
 type TeamInfo struct {
-	ID      uint   `json:"id"`
-	Name    string `json:"name"`
-	Members []uint `json:"members"`
+	ID      uint     `json:"id"`
+	Name    string   `json:"name"`
+	Members []Member `json:"members"`
+}
+
+type Member struct {
+	ID       uint   `json:"id"`
+	FullName string `json:"fullName"`
+	Group    string `json:"group"`
 }

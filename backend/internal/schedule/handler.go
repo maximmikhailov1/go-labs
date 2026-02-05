@@ -33,7 +33,7 @@ func (h *Handler) CreateSchedule(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, "invalid request body")
 	}
 
-	response, err := h.service.CreateRecord(req, claims.UserID)
+	response, err := h.service.CreateRecord(req, claims.UserID, claims.Role)
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, "failed to create schedule record")
 	}

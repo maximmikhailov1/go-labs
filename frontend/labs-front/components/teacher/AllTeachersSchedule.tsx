@@ -3,20 +3,23 @@
 import { useState, useEffect } from "react"
 import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Calendar, EthernetPort, Router, Route, Clock, User, Book, Home } from "lucide-react"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Calendar, EthernetPort, Router, Route, Clock, User, Book, Home, XCircle } from "lucide-react"
 import { format, parseISO } from "date-fns"
 import { ru } from "date-fns/locale"
 import { Skeleton } from "@/components/ui/skeleton"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { apiUrl } from "@/lib/api"
+import { getUser } from "@/app/actions/auth"
 
 type ScheduleRecord = {
   id: number
   labDate: string
   classNumber: number
   audienceNumber: number
+  audience?: { id: number; number: string }
+  status?: string
   hpRouters: number
   hpSwitches: number
   routers: number
@@ -56,7 +59,10 @@ const AllTeachersSchedule = () => {
   const [addDialogOpen, setAddDialogOpen] = useState(false)
   const [addSlotDate, setAddSlotDate] = useState("")
   const [addSlotNumber, setAddSlotNumber] = useState(0)
-  const [addAudience, setAddAudience] = useState("")
+  const [addAudienceId, setAddAudienceId] = useState("")
+  const [addTutorId, setAddTutorId] = useState("")
+  const [audiences, setAudiences] = useState<{ id: number; number: string }[]>([])
+  const [tutors, setTutors] = useState<{ id: number; fullName: string }[]>([])
 
   useEffect(() => {
     const fetchWeek = async () => {
@@ -96,29 +102,50 @@ const AllTeachersSchedule = () => {
     return g
   }
 
-  const openAddDialog = (date: string, classNumber: number) => {
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const [audRes, tutRes] = await Promise.all([
+          fetch(apiUrl("/audiences"), { credentials: "include" }),
+          fetch(apiUrl("/users/tutors"), { credentials: "include" })
+        ])
+        if (audRes.ok) setAudiences((await audRes.json()) ?? [])
+        if (tutRes.ok) setTutors((await tutRes.json()) ?? [])
+      } catch {
+        // optional
+      }
+    }
+    load()
+  }, [])
+
+  const openAddDialog = async (date: string, classNumber: number) => {
     setAddSlotDate(date)
     setAddSlotNumber(classNumber)
-    setAddAudience("")
+    setAddAudienceId("")
+    const user = await getUser()
+    if (user?.success && user?.user?.id) setAddTutorId(String(user.user.id))
+    else setAddTutorId("")
     setAddDialogOpen(true)
   }
 
   const handleAddSchedule = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!addAudience.trim()) {
-      toast.error("Укажите номер аудитории")
+    if (!addAudienceId) {
+      toast.error("Выберите аудиторию")
       return
     }
     try {
+      const body: { labDate: string; classNumber: number; audienceId?: number; tutorId?: number } = {
+        labDate: addSlotDate + "T12:00:00.000Z",
+        classNumber: addSlotNumber
+      }
+      body.audienceId = Number(addAudienceId)
+      if (addTutorId) body.tutorId = Number(addTutorId)
       const res = await fetch(apiUrl("/schedules"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({
-          labDate: addSlotDate + "T12:00:00.000Z",
-          classNumber: addSlotNumber,
-          audienceNumber: Number(addAudience)
-        })
+        body: JSON.stringify(body)
       })
       if (res.ok) {
         toast.success("Занятие добавлено")
@@ -145,6 +172,29 @@ const AllTeachersSchedule = () => {
     ]
     return times[classNumber - 1]
   }
+  const handleCancelRecord = async () => {
+    if (!selectedRecord) return
+    try {
+      const res = await fetch(apiUrl(`/schedules/records/${selectedRecord.id}`), {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ status: "cancelled" })
+      })
+      if (res.ok) {
+        toast.success("Занятие отменено")
+        setSelectedRecord(null)
+        const refetch = await fetch(apiUrl(`/schedules/week?week=${weekIndex}`), { credentials: "include" })
+        if (refetch.ok) setWeekData(await refetch.json())
+      } else {
+        const err = await res.json().catch(() => ({}))
+        toast.error(err?.message || "Ошибка отмены")
+      }
+    } catch {
+      toast.error("Ошибка отмены занятия")
+    }
+  }
+
   const handleDeleteRecord = async (entryId: number, memberId: number) => {
     try {
       const response = await fetch(apiUrl("/schedules"), {
@@ -168,6 +218,11 @@ const AllTeachersSchedule = () => {
 
   const days = getDaysOfWeek(weekIndex)
   const grouped = groupBySlot(weekData)
+  const todayStr = new Date().toISOString().split("T")[0]
+
+  const isToday = (dateStr: string) => dateStr === todayStr
+  const weekdayFull = (dateStr: string) => format(parseISO(dateStr), "EEEE", { locale: ru })
+  const dateDdMmYyyy = (dateStr: string) => format(parseISO(dateStr), "dd.MM.yyyy")
 
   return (
       <div className="container mx-auto p-4">
@@ -185,7 +240,6 @@ const AllTeachersSchedule = () => {
           >
             Пред. неделя
           </Button>
-          <span className="text-sm text-muted-foreground">Неделя {weekIndex + 1}</span>
           <Button
             variant="outline"
             size="sm"
@@ -209,8 +263,14 @@ const AllTeachersSchedule = () => {
                 <tr className="border-b">
                   <th className="text-left p-2 w-24">Время</th>
                   {days.map((d) => (
-                    <th key={d} className="text-left p-2 border-l">
-                      {format(parseISO(d), "dd MMM", { locale: ru })}
+                    <th
+                      key={d}
+                      className={`text-left p-2 border-l ${isToday(d) ? "bg-green-100 font-medium" : ""}`}
+                    >
+                      <span className="flex flex-col gap-0.5">
+                        <span>{weekdayFull(d)}</span>
+                        <span className={`text-xs ${isToday(d) ? "text-green-700 font-semibold" : "text-muted-foreground"}`}>{dateDdMmYyyy(d)}</span>
+                      </span>
                     </th>
                   ))}
                 </tr>
@@ -229,20 +289,27 @@ const AllTeachersSchedule = () => {
                         const key = `${date}-${slotNum}`
                         const records = grouped[key] ?? []
                         return (
-                          <td key={key} className="p-2 border-l align-top min-w-[180px]">
+                          <td
+                            key={key}
+                            className={`p-2 border-l align-top min-w-[180px] ${isToday(date) ? "bg-green-50" : ""}`}
+                          >
                             <div className="space-y-2">
                               {records.map((r) => (
                                 <div
                                   key={r.id}
-                                  className="p-2 rounded-lg bg-muted/50 hover:bg-muted cursor-pointer text-left"
+                                  className={`p-2 rounded-lg cursor-pointer text-left ${
+                                    r.status === "cancelled"
+                                      ? "bg-red-100 hover:bg-red-200 border border-red-200 text-red-900"
+                                      : "bg-muted/50 hover:bg-muted"
+                                  }`}
                                   onClick={() => setSelectedRecord(r)}
                                 >
-                                  <div className="font-medium">Ауд. {r.audienceNumber}</div>
-                                  <div className="text-xs text-muted-foreground truncate">
+                                  <div className="font-medium">Ауд. {r.audience?.number ?? r.audienceNumber}</div>
+                                  <div className={`text-xs truncate ${r.status === "cancelled" ? "text-red-700" : "text-muted-foreground"}`}>
                                     {r.tutor.fullName}
                                   </div>
-                                  <div className="text-xs">
-                                    {(r.entries ?? []).length} запис.
+                                  <div className={`text-xs ${r.status === "cancelled" ? "text-red-600" : ""}`}>
+                                    {r.status === "cancelled" ? "Отменено" : `${(r.entries ?? []).length} запис.`}
                                   </div>
                                 </div>
                               ))}
@@ -280,12 +347,29 @@ const AllTeachersSchedule = () => {
               </div>
               <div>
                 <label className="text-sm font-medium mb-1 block">Аудитория *</label>
-                <Input
-                  type="number"
-                  placeholder="Номер аудитории"
-                  value={addAudience}
-                  onChange={(e) => setAddAudience(e.target.value)}
-                />
+                <Select value={addAudienceId} onValueChange={setAddAudienceId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Выберите аудиторию" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {audiences.map((a) => (
+                      <SelectItem key={a.id} value={String(a.id)}>{a.number}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-1 block">Преподаватель</label>
+                <Select value={addTutorId} onValueChange={setAddTutorId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Выберите преподавателя" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {tutors.map((t) => (
+                      <SelectItem key={t.id} value={String(t.id)}>{t.fullName}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="flex gap-2 justify-end">
                 <Button type="button" variant="outline" onClick={() => setAddDialogOpen(false)}>
@@ -302,15 +386,26 @@ const AllTeachersSchedule = () => {
           {selectedRecord && (
             <>
               <DialogHeader className="px-6 pt-6 pb-2 shrink-0">
-                <DialogTitle className="flex items-center gap-2">
+                <DialogTitle className="flex items-center gap-2 flex-wrap">
                   <Book className="h-6 w-6" />
                   Детали занятия
+                  {selectedRecord.status === "cancelled" && (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-destructive/15 text-destructive">
+                      <XCircle className="h-3.5 w-3.5" />
+                      Отменено
+                    </span>
+                  )}
                 </DialogTitle>
               </DialogHeader>
 
               <div className="flex flex-1 min-h-0 px-6 pb-6 gap-6">
                 {/* Левая панель: инфо о занятии */}
                 <div className="shrink-0 w-64 space-y-4">
+                  {selectedRecord.status !== "cancelled" && (
+                    <Button variant="destructive" size="sm" onClick={handleCancelRecord}>
+                      Отменить занятие
+                    </Button>
+                  )}
                   <div className="space-y-2 text-sm">
                     <div className="flex items-center gap-2">
                       <Calendar className="h-4 w-4 text-muted-foreground" />
@@ -322,7 +417,7 @@ const AllTeachersSchedule = () => {
                     </div>
                     <div className="flex items-center gap-2">
                       <Home className="h-4 w-4 text-muted-foreground" />
-                      Аудитория {selectedRecord.audienceNumber}
+                      Аудитория {selectedRecord.audience?.number ?? selectedRecord.audienceNumber}
                     </div>
                     <div className="flex items-center gap-2">
                       <User className="h-4 w-4 text-muted-foreground" />
@@ -400,17 +495,19 @@ const AllTeachersSchedule = () => {
                                       <span className="truncate">{member.fullName}</span>
                                       <span className="shrink-0 text-muted-foreground">{member.group}</span>
                                     </div>
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      className="text-destructive hover:text-destructive shrink-0 h-8"
-                                      onClick={(e) => {
-                                        e.stopPropagation()
-                                        handleDeleteRecord(member.entryId, member.id)
-                                      }}
-                                    >
-                                      Удалить
-                                    </Button>
+                                    {selectedRecord.status !== "cancelled" && (
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="text-destructive hover:text-destructive shrink-0 h-8"
+                                        onClick={(e) => {
+                                          e.stopPropagation()
+                                          handleDeleteRecord(member.entryId, member.id)
+                                        }}
+                                      >
+                                        Удалить
+                                      </Button>
+                                    )}
                                   </div>
                                 ))}
                                 {Array.from({ length: emptySlots }).map((_, i) => (
@@ -423,7 +520,13 @@ const AllTeachersSchedule = () => {
                       })
                     })()}
                     {(!selectedRecord.entries || selectedRecord.entries.length === 0) && (
-                      <p className="text-sm text-muted-foreground">Нет записей</p>
+                      <Card className="overflow-hidden border-dashed">
+                        <CardContent className="py-8 px-6 text-center">
+                          <p className="text-muted-foreground">
+                            На лабораторную пока никто не записался =(
+                          </p>
+                        </CardContent>
+                      </Card>
                     )}
                   </div>
                 </div>

@@ -32,21 +32,34 @@ func (s *Service) GetUserRecords(userID uint, role string) (interface{}, error) 
 		if err != nil {
 			return nil, err
 		}
+		var allEntryIDs []uint
+		for _, r := range records {
+			for _, e := range r.Entries {
+				allEntryIDs = append(allEntryIDs, e.ID)
+			}
+		}
+		memberStatusMap, _ := s.repo.GetEntryMemberStatusMap(allEntryIDs)
 
 		var response []TutorRecordResponse
 		for _, r := range records {
 			var entries []EntryInfo
 			for _, e := range r.Entries {
+				entryStatusMap := memberStatusMap[e.ID]
 				var members []Member
 				for _, m := range e.Team.Members {
 					groupName := ""
 					if m.Group != nil {
 						groupName = m.Group.Name
 					}
+					memStatus := e.Status
+					if entryStatusMap != nil && entryStatusMap[m.ID] != "" {
+						memStatus = entryStatusMap[m.ID]
+					}
 					members = append(members, Member{
 						ID:       m.ID,
 						FullName: m.FullName,
 						Group:    groupName,
+						Status:   memStatus,
 					})
 				}
 
@@ -95,6 +108,16 @@ func (s *Service) GetUserRecords(userID uint, role string) (interface{}, error) 
 	return nil, errors.New("invalid user role")
 }
 
+func (s *Service) GetTutorRecordsPaginated(ctx context.Context, f TutorRecordsFilters) ([]TutorRecordRow, int64, error) {
+	if f.Page < 1 {
+		f.Page = 1
+	}
+	if f.Limit < 1 || f.Limit > 100 {
+		f.Limit = 50
+	}
+	return s.repo.GetTutorRecordsPaginated(f)
+}
+
 func (s *Service) Enroll(userID uint, req EnrollRequest) (*EnrollResponse, error) {
 	// Начинаем транзакцию
 	tx := s.repo.db.Begin()
@@ -109,6 +132,10 @@ func (s *Service) Enroll(userID uint, req EnrollRequest) (*EnrollResponse, error
 	if err != nil {
 		tx.Rollback()
 		return nil, errors.New("record not found")
+	}
+	if record.Status == "cancelled" {
+		tx.Rollback()
+		return nil, errors.New("запись на отменённое занятие недоступна")
 	}
 
 	// 2. Проверка даты: запись только на занятия в пределах 3 недель и не в прошлом
@@ -338,23 +365,82 @@ func (s *Service) Enroll(userID uint, req EnrollRequest) (*EnrollResponse, error
 	}, nil
 }
 
-func (s *Service) UpdateEntryStatus(ctx context.Context, entryID uint, newStatus string) error {
-	if newStatus != "scheduled" && newStatus != "completed" && newStatus != "defended" {
+func (s *Service) UpdateEntryStatus(ctx context.Context, entryID uint, newStatus string, userID *uint) error {
+	allowed := map[string]bool{"scheduled": true, "completed": true, "defended": true, "no_show": true, "cancelled": true}
+	if !allowed[newStatus] {
 		return errors.New("invalid status")
 	}
 	entry, err := s.repo.GetEntryWithTeamAndMembers(entryID)
 	if err != nil {
 		return errors.New("entry not found")
 	}
+
+	if userID != nil {
+		var inTeam bool
+		for _, m := range entry.Team.Members {
+			if m.ID == *userID {
+				inTeam = true
+				break
+			}
+		}
+		if !inTeam {
+			return errors.New("user is not in this entry's team")
+		}
+		memberStatusMap, _ := s.repo.GetEntryMemberStatusMap([]uint{entryID})
+		oldStatus := entry.Status
+		if memberStatusMap != nil && memberStatusMap[entryID] != nil && memberStatusMap[entryID][*userID] != "" {
+			oldStatus = memberStatusMap[entryID][*userID]
+		}
+		if oldStatus == "" {
+			oldStatus = "scheduled"
+		}
+		if err := s.repo.SetEntryMemberStatus(entryID, *userID, newStatus); err != nil {
+			return err
+		}
+		if newStatus == "no_show" || newStatus == "cancelled" {
+			return nil
+		}
+		var targetUser *models.User
+		for i := range entry.Team.Members {
+			if entry.Team.Members[i].ID == *userID {
+				targetUser = &entry.Team.Members[i]
+				break
+			}
+		}
+		if targetUser != nil && targetUser.Group != nil && targetUser.Group.ID != 0 {
+			groupID := targetUser.Group.ID
+			subjectID := uint(0)
+			if targetUser.Group.SubjectID != nil {
+				subjectID = *targetUser.Group.SubjectID
+			}
+			if oldStatus == "completed" && newStatus != "completed" {
+				_ = score.DecrementCompleted(ctx, targetUser.ID, subjectID, groupID)
+			}
+			if oldStatus == "defended" && newStatus != "defended" {
+				_ = score.DecrementDefended(ctx, targetUser.ID, subjectID, groupID)
+			}
+			if newStatus == "completed" {
+				_ = score.IncrementCompleted(ctx, targetUser.ID, subjectID, groupID)
+			}
+			if newStatus == "defended" {
+				_ = score.IncrementDefended(ctx, targetUser.ID, subjectID, groupID)
+			}
+		}
+		return nil
+	}
+
 	oldStatus := entry.Status
 	if oldStatus == "" {
 		oldStatus = "scheduled"
 	}
-
 	if err := s.repo.UpdateEntryStatus(entryID, newStatus); err != nil {
 		return err
 	}
+	_ = s.repo.DeleteEntryMemberStatusesForEntry(entryID)
 
+	if newStatus == "no_show" || newStatus == "cancelled" {
+		return nil
+	}
 	for _, m := range entry.Team.Members {
 		if m.Group == nil || m.Group.ID == 0 {
 			continue

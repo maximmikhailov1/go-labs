@@ -205,8 +205,7 @@ const SubjectManagement: React.FC = () => {
   }
 
   return (
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 max-w-7xl mx-auto p-4">
-        {/* Диалог подтверждения удаления */}
+      <div className="flex flex-col lg:flex-row gap-4 max-w-7xl mx-auto p-4 min-h-[calc(100vh-12rem)]">
         <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
           <AlertDialogContent>
             <AlertDialogHeader>
@@ -228,7 +227,6 @@ const SubjectManagement: React.FC = () => {
           </AlertDialogContent>
         </AlertDialog>
 
-        {/* Диалог создания предмета */}
         <Dialog open={createSubjectDialogOpen} onOpenChange={setCreateSubjectDialogOpen}>
           <DialogContent>
             <DialogHeader>
@@ -265,108 +263,125 @@ const SubjectManagement: React.FC = () => {
           </DialogContent>
         </Dialog>
 
-        {/* Левая колонка - лабораторные по выбранному предмету */}
-        <div className="space-y-8">
-          <Card className="border-0 shadow-sm rounded-xl bg-white hover:shadow-md transition-shadow h-[800px]">
-            <CardHeader className="border-b border-gray-200">
-              <div className="flex items-center gap-3">
-                <FlaskConical className="h-6 w-6 text-green-600" />
-                <CardTitle className="text-2xl font-semibold text-gray-800">
-                  {selectedSubject ? `Лабораторные для "${selectedSubject.name}"` : "Лабораторные"}
-                </CardTitle>
+        {/* Боковая панель: список предметов */}
+        <aside className="lg:w-64 shrink-0 flex flex-col border border-gray-200 rounded-xl bg-white shadow-sm overflow-hidden">
+          <div className="flex items-center justify-between gap-2 p-4 border-b border-gray-200">
+            <span className="font-semibold text-gray-800 flex items-center gap-2">
+              <List className="h-5 w-5 text-purple-600" />
+              Предметы
+            </span>
+            <Button
+              size="icon"
+              className="h-9 w-9 shrink-0 bg-blue-600 hover:bg-blue-700"
+              onClick={() => setCreateSubjectDialogOpen(true)}
+              title="Создать предмет"
+            >
+              <Plus className="h-4 w-4" />
+            </Button>
+          </div>
+          {error && (
+            <div className="mx-4 mt-2 text-red-600 text-sm bg-red-50 p-2 rounded-lg">{error}</div>
+          )}
+          <div className="flex-1 overflow-y-auto p-2 min-h-0">
+            {isLoading ? (
+              <div className="space-y-2">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <Skeleton key={i} className="h-16 w-full rounded-lg" />
+                ))}
               </div>
+            ) : (
+              <div className="space-y-1">
+                {subjects.map((subject) => (
+                  <button
+                    key={subject.id}
+                    type="button"
+                    onClick={() => setSelectedSubject(subject)}
+                    className={`w-full text-left p-3 rounded-lg transition-colors ${
+                      selectedSubject?.id === subject.id ? "bg-blue-50 ring-1 ring-blue-200" : "hover:bg-gray-50"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      <BookOpen className="h-4 w-4 text-blue-500 shrink-0" />
+                      <span className="font-medium text-gray-800 truncate">{subject.name}</span>
+                    </div>
+                    {subject.description && (
+                      <p className="text-xs text-gray-500 mt-0.5 truncate pl-6">{subject.description}</p>
+                    )}
+                  </button>
+                ))}
+                {subjects.length === 0 && (
+                  <p className="text-center py-6 text-gray-500 text-sm">Нет предметов</p>
+                )}
+              </div>
+            )}
+          </div>
+        </aside>
+
+        {/* Основная зона: форма добавления лабы + список лаб */}
+        <main className="flex-1 min-w-0 flex flex-col gap-4">
+          <Card className="border-0 shadow-sm rounded-xl bg-white">
+            <CardHeader className="border-b border-gray-200">
+              <CardTitle className="text-xl font-semibold text-gray-800 flex items-center gap-2">
+                <FlaskConical className="h-5 w-5 text-green-600" />
+                {selectedSubject ? `Лабораторные: ${selectedSubject.name}` : "Лабораторные"}
+              </CardTitle>
             </CardHeader>
-            <CardContent className="pt-6 space-y-5">
+            <CardContent className="pt-6">
               {selectedSubject ? (
-                  <form onSubmit={handleLabSubmit} className="space-y-5">
-                    {/* Форма создания лабораторной */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <>
+                  <form onSubmit={handleLabSubmit} className="space-y-4 mb-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <label className="text-sm font-medium text-gray-700">Номер работы *</label>
                         <Input
-                            placeholder="Номер лабораторной"
-                            value={labNumber}
-                            onChange={(e) => setLabNumber(e.target.value)}
-                            className="rounded-lg focus:ring-2 focus:ring-blue-500 border-gray-300 h-12"
+                          placeholder="Номер лабораторной"
+                          value={labNumber}
+                          onChange={(e) => setLabNumber(e.target.value)}
+                          className="rounded-lg h-10"
                         />
                       </div>
-
                       <div className="space-y-2">
                         <label className="text-sm font-medium text-gray-700">Макс. студентов *</label>
                         <Input
-                            type="number"
-                            placeholder="Максимальное количество"
-                            value={maxStudents}
-                            onChange={(e) => setMaxStudents(e.target.value)}
-                            className="rounded-lg focus:ring-2 focus:ring-blue-500 border-gray-300 h-12"
+                          type="number"
+                          placeholder="Максимум"
+                          value={maxStudents}
+                          onChange={(e) => setMaxStudents(e.target.value)}
+                          className="rounded-lg h-10"
                         />
                       </div>
                     </div>
-
                     <div className="space-y-2">
-                      <label className="text-sm font-medium text-gray-700">Описание работы *</label>
+                      <label className="text-sm font-medium text-gray-700">Описание *</label>
                       <Textarea
-                          placeholder="Подробное описание лабораторной"
-                          value={labDescription}
-                          onChange={(e) => setLabDescription(e.target.value)}
-                          className="rounded-lg focus:ring-2 focus:ring-blue-500 border-gray-300 min-h-[120px]"
+                        placeholder="Описание лабораторной"
+                        value={labDescription}
+                        onChange={(e) => setLabDescription(e.target.value)}
+                        className="rounded-lg min-h-[100px]"
                       />
                     </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium text-gray-700">Роутеры *</label>
-                        <Input
-                            type="number"
-                            placeholder="Количество роутеров"
-                            value={routersRequired}
-                            onChange={(e) => setRoutersRequired(e.target.value)}
-                            className="rounded-lg focus:ring-2 focus:ring-blue-500 border-gray-300 h-12"
-                        />
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
+                      <div className="space-y-1">
+                        <label className="text-xs font-medium text-gray-600">Роутеры</label>
+                        <Input type="number" value={routersRequired} onChange={(e) => setRoutersRequired(e.target.value)} className="h-9" />
                       </div>
-
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium text-gray-700">Свитчи *</label>
-                        <Input
-                            type="number"
-                            placeholder="Количество свитчей"
-                            value={switchesRequired}
-                            onChange={(e) => setSwitchesRequired(e.target.value)}
-                            className="rounded-lg focus:ring-2 focus:ring-blue-500 border-gray-300 h-12"
-                        />
+                      <div className="space-y-1">
+                        <label className="text-xs font-medium text-gray-600">Свитчи</label>
+                        <Input type="number" value={switchesRequired} onChange={(e) => setSwitchesRequired(e.target.value)} className="h-9" />
                       </div>
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium text-gray-700">Беспроводные маршрутизаторы *</label>
-                        <Input
-                            type="number"
-                            placeholder="Количество беспроводных маршрутизаторов"
-                            value={wirelessRoutersRequired}
-                            onChange={(e) => setWirelessRouterRequired(e.target.value)}
-                            className="rounded-lg focus:ring-2 focus:ring-blue-500 border-gray-300 h-12"
-                        />
+                      <div className="space-y-1">
+                        <label className="text-xs font-medium text-gray-600">Беспроводные</label>
+                        <Input type="number" value={wirelessRoutersRequired} onChange={(e) => setWirelessRouterRequired(e.target.value)} className="h-9" />
                       </div>
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium text-gray-700">HP маршрутизаторы</label>
-                        <Input
-                            type="number"
-                            placeholder="Количество"
-                            value={hpRoutersRequired}
-                            onChange={(e) => setHpRoutersRequired(e.target.value)}
-                            className="rounded-lg focus:ring-2 focus:ring-blue-500 border-gray-300 h-12"
-                        />
+                      <div className="space-y-1">
+                        <label className="text-xs font-medium text-gray-600">HP роутеры</label>
+                        <Input type="number" value={hpRoutersRequired} onChange={(e) => setHpRoutersRequired(e.target.value)} className="h-9" />
                       </div>
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium text-gray-700">HP коммутаторы</label>
-                        <Input
-                            type="number"
-                            placeholder="Количество"
-                            value={hpSwitchesRequired}
-                            onChange={(e) => setHpSwitchesRequired(e.target.value)}
-                            className="rounded-lg focus:ring-2 focus:ring-blue-500 border-gray-300 h-12"
-                        />
+                      <div className="space-y-1">
+                        <label className="text-xs font-medium text-gray-600">HP свитчи</label>
+                        <Input type="number" value={hpSwitchesRequired} onChange={(e) => setHpSwitchesRequired(e.target.value)} className="h-9" />
                       </div>
                     </div>
-
                     <div className="flex items-center gap-2">
                       <input
                         type="checkbox"
@@ -375,164 +390,67 @@ const SubjectManagement: React.FC = () => {
                         onChange={(e) => setLabIsMandatory(e.target.checked)}
                         className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                       />
-                      <label htmlFor="lab-mandatory" className="text-sm font-medium text-gray-700">
-                        Обязательная лабораторная
-                      </label>
+                      <label htmlFor="lab-mandatory" className="text-sm font-medium text-gray-700">Обязательная</label>
                     </div>
-
-                    <Button
-                        type="submit"
-                        className="w-full rounded-lg bg-green-600 hover:bg-green-700 h-12 text-lg shadow-sm"
-                    >
-                      Создать лабораторную
+                    <Button type="submit" className="bg-green-600 hover:bg-green-700">
+                      Добавить лабораторную
                     </Button>
                   </form>
-              ) : (
-                  <div className="flex flex-col items-center justify-center py-12 text-gray-500">
-                    <BookOpen className="h-12 w-12 mb-3 opacity-50" />
-                    <p className="text-center">Выберите предмет в списке справа или создайте новый.</p>
-                  </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
 
-        {/* Правая колонка - список лабораторных (всегда видимый блок) */}
-        <Card className="border-0 shadow-sm rounded-xl bg-white hover:shadow-md transition-shadow h-[800px]">
-          <CardHeader className="border-b border-gray-200">
-            <div className="flex items-center gap-3">
-              <FlaskConical className="h-6 w-6 text-green-600" />
-              <CardTitle className="text-2xl font-semibold text-gray-800">
-                Лабораторные работы
-              </CardTitle>
-            </div>
-          </CardHeader>
-          <CardContent className="pt-6">
-            {!selectedSubject ? (
-              <div className="flex flex-col items-center justify-center py-12 text-gray-500">
-                <FlaskConical className="h-12 w-12 mb-3 opacity-50" />
-                <p className="text-center">Выберите предмет для просмотра лабораторных.</p>
-              </div>
-            ) : isLoading ? (
-              <div className="space-y-4">
-                {Array.from({ length: 5 }).map((_, index) => (
-                  <div key={index} className="p-4 border border-gray-200 rounded-lg">
-                    <Skeleton className="h-5 w-1/3 mb-2" />
-                    <Skeleton className="h-4 w-full" />
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="space-y-4 h-[700px] overflow-y-auto">
-                {labs.map((lab) => (
-                  <div
-                    key={lab.id}
-                    className="p-4 border border-gray-200 rounded-lg hover:shadow-sm transition-shadow relative"
-                  >
-                    <div className="flex items-start gap-3">
-                      <FlaskConical className="h-5 w-5 text-green-500 mt-1" />
-                      <div className="flex-1">
-                        <h3 className="font-semibold text-gray-800 text-lg">
-                          Лабораторная {lab.number}
-                          {lab.isMandatory === false && (
-                            <span className="ml-2 text-xs font-normal text-gray-400">(необязательная)</span>
-                          )}
-                        </h3>
-                        <p className="text-gray-600 text-sm mt-1">{lab.description}</p>
-                        <div className="text-gray-500 text-sm mt-2">
-                          Макс. студентов: {lab.maxStudents}
-                          {lab.routersRequired ? `  | Роутеры: ${lab.routersRequired}` : ""}
-                          {lab.switchesRequired ? `  | Свитчи: ${lab.switchesRequired}` : ""}
-                          {lab.wirelessRoutersRequired ? `  | Беспроводные: ${lab.wirelessRoutersRequired}` : ""}
-                          {lab.hpSwitchesRequired ? `  | HP Свитчи: ${lab.hpSwitchesRequired}` : ""}
-                          {lab.hpRoutersRequired ? `  | HP Роутеры: ${lab.hpRoutersRequired}` : ""}
-                        </div>
+                  <div className="border-t pt-4">
+                    <h3 className="font-medium text-gray-800 mb-3">Список лабораторных</h3>
+                    {isLoading ? (
+                      <div className="space-y-2">
+                        {Array.from({ length: 3 }).map((_, i) => (
+                          <Skeleton key={i} className="h-20 w-full rounded-lg" />
+                        ))}
                       </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-red-600 hover:text-red-800 absolute top-2 right-2"
-                        onClick={() => confirmDeleteLab(lab)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-                {labs.length === 0 && (
-                  <div className="text-center py-6 text-gray-500">Нет лабораторных для этого предмета</div>
-                )}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Список предметов */}
-        <div className="space-y-8">
-          <Card className="border-0 shadow-sm rounded-xl bg-white hover:shadow-md transition-shadow h-[800px]">
-            <CardHeader className="border-b border-gray-200">
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-3">
-                  <List className="h-6 w-6 text-purple-600" />
-                  <CardTitle className="text-2xl font-semibold text-gray-800">
-                    Список предметов
-                  </CardTitle>
-                </div>
-                <Button
-                  size="sm"
-                  className="rounded-full h-9 w-9 p-0 bg-blue-600 hover:bg-blue-700"
-                  onClick={() => setCreateSubjectDialogOpen(true)}
-                  title="Создать предмет"
-                >
-                  <Plus className="h-4 w-4" />
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent className="pt-6">
-              {error && (
-                  <div className="text-red-600 bg-red-50 p-3 rounded-lg mb-4">
-                    {error}
-                  </div>
-              )}
-
-              {isLoading ? (
-                  <div className="space-y-4">
-                    {Array.from({ length: 5 }).map((_, index) => (
-                        <div key={index} className="p-4 border border-gray-200 rounded-lg">
-                          <Skeleton className="h-5 w-1/3 mb-2" />
-                          <Skeleton className="h-4 w-full" />
-                        </div>
-                    ))}
-                  </div>
-              ) : (
-                  <div className="space-y-4 h-[700px] overflow-y-auto">
-                    {subjects.map((subject) => (
-                        <div
-                            key={subject.id}
-                            onClick={() => setSelectedSubject(subject)}
-                            className={`p-4 border border-gray-200 rounded-lg hover:shadow-sm transition-shadow cursor-pointer ${
-                                selectedSubject?.id === subject.id ? 'bg-blue-50' : ''
-                            }`}
-                        >
-                          <div className="flex items-start gap-3">
-                            <BookOpen className="h-5 w-5 text-blue-500 mt-1" />
-                            <div>
-                              <h3 className="font-semibold text-gray-800 text-lg">{subject.name}</h3>
-                              <p className="text-gray-600 text-sm mt-1">{subject.description}</p>
+                    ) : (
+                      <div className="space-y-2 max-h-[400px] overflow-y-auto">
+                        {labs.map((lab) => (
+                          <div
+                            key={lab.id}
+                            className="p-4 border border-gray-200 rounded-lg hover:shadow-sm transition-shadow relative flex items-start gap-3"
+                          >
+                            <FlaskConical className="h-5 w-5 text-green-500 mt-0.5 shrink-0" />
+                            <div className="flex-1 min-w-0">
+                              <h3 className="font-semibold text-gray-800">
+                                Лабораторная {lab.number}
+                                {lab.isMandatory === false && <span className="text-gray-400 text-sm font-normal ml-1">(необяз.)</span>}
+                              </h3>
+                              <p className="text-gray-600 text-sm mt-0.5">{lab.description}</p>
+                              <p className="text-gray-500 text-xs mt-1">
+                                Макс. студентов: {lab.maxStudents}
+                                {[lab.routersRequired, lab.switchesRequired, lab.wirelessRoutersRequired].some(Boolean) &&
+                                  ` · Роутеры: ${lab.routersRequired} · Свитчи: ${lab.switchesRequired}`}
+                              </p>
                             </div>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-red-600 hover:text-red-800 shrink-0"
+                              onClick={() => confirmDeleteLab(lab)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
                           </div>
-                        </div>
-                    ))}
-                    {subjects.length === 0 && (
-                        <div className="text-center py-6 text-gray-500">
-                          Нет созданных предметов
-                        </div>
+                        ))}
+                        {labs.length === 0 && (
+                          <p className="text-center py-6 text-gray-500 text-sm">Нет лабораторных для этого предмета</p>
+                        )}
+                      </div>
                     )}
                   </div>
+                </>
+              ) : (
+                <div className="flex flex-col items-center justify-center py-16 text-gray-500">
+                  <BookOpen className="h-12 w-12 mb-3 opacity-50" />
+                  <p className="text-center">Выберите предмет слева или создайте новый.</p>
+                </div>
               )}
             </CardContent>
           </Card>
-        </div>
+        </main>
       </div>
   )
 }

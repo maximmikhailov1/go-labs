@@ -2,12 +2,13 @@ package auth
 
 import (
 	"fmt"
+	"time"
+
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/log"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/maximmikhailov1/go-labs/backend/internal/models"
 	"github.com/maximmikhailov1/go-labs/backend/pkg/jwtutils"
-	"time"
 )
 
 type AuthHandler struct {
@@ -52,6 +53,7 @@ func (h *AuthHandler) SignIn(c *fiber.Ctx) error {
 		Name:     "token",
 		Value:    token,
 		Expires:  time.Now().Add(time.Hour * 24 * 30),
+		Path:     "/",
 		HTTPOnly: true,
 	})
 
@@ -77,7 +79,13 @@ func (h *AuthHandler) SignUp(c *fiber.Ctx) error {
 }
 
 func (h *AuthHandler) Logout(c *fiber.Ctx) error {
-	c.ClearCookie("token")
+	c.Cookie(&fiber.Cookie{
+		Name:     "token",
+		Value:    "",
+		Expires:  time.Now().Add(-time.Hour),
+		Path:     "/",
+		HTTPOnly: true,
+	})
 	return c.SendStatus(fiber.StatusOK)
 }
 

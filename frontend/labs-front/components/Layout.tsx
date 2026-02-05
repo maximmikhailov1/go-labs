@@ -1,22 +1,19 @@
 "use client"
 
 import type React from "react"
-import { useState, useEffect } from "react"
-import { useRouter, usePathname} from "next/navigation"
+import { useState, useEffect, useRef } from "react"
+import { useRouter, usePathname } from "next/navigation"
 import Navigation from "./Navigation"
 import Home from "./Home"
-import {getUser} from "@/app/actions/auth"
+import { getUser, logout } from "@/app/actions/auth"
 import ProfilePage from "./profile/profile-page"
 import AuthPage from "./AuthPage"
 import SubjectManagement from "./teacher/SubjectManagement"
-import LabScheduling from "./teacher/LabScheduling"
 import GroupSubjectAssignment from "./teacher/GroupSubjectAssignment"
 import AllTeachersSchedule from "./teacher/AllTeachersSchedule"
 import TeacherGrades from "./teacher/TeacherGrades"
 import AudienceManagement from "./teacher/AudienceManagement"
 import Scoreboard from "./Scoreboard"
-import Spinner from "./Spinner"
-
 
 interface LayoutProps {
   searchParams?: string;
@@ -26,50 +23,85 @@ interface LayoutProps {
 const Layout: React.FC<LayoutProps> = ({ searchParams }) => {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [currentPage, setCurrentPage] = useState("home")
-  const [isLoading, setIsLoading] = useState(true)
   const [userRole, setUserRole] = useState<"student" | "tutor" | null>(null)
   
   const router = useRouter()
   const pathname = usePathname()
+  const hasVerifiedAuth = useRef(false)
 
   useEffect(() => {
-    const initialize = async () => {
-      const loggedInStatus = localStorage.getItem("isLoggedIn")
-      const storedUserRole = localStorage.getItem("userRole") as "student" | "tutor" | null
-      const lastPage = localStorage.getItem("lastPage")
-  
-      if (loggedInStatus === "true" && storedUserRole) {
-        setIsLoggedIn(true)
-        setUserRole(storedUserRole)
+    const page = pathname === "/" ? "home" : pathname.slice(1).split("?")[0] ?? "home"
+    setCurrentPage(page)
 
-        // Перенаправление преподавателей на страницу расписания
-        if (storedUserRole === "tutor" && (pathname === "/" || pathname === "/home")) {
-          router.replace("/all-teachers-schedule")
-          setCurrentPage("all-teachers-schedule")
-          return
-        }
+    const hasToken = typeof document !== "undefined" && document.cookie.includes("token=")
 
-        if (pathname === "/auth") {
-          const params = new URLSearchParams(searchParams)
-          const callbackUrl = params.get("callbackUrl")
-          router.replace(callbackUrl || lastPage || (storedUserRole === "tutor" ? "/all-teachers-schedule" : "/"))
-        }
-      } else {
-        if (pathname !== "/auth") {
-          localStorage.setItem("lastPage", pathname)
+    if (pathname === "/auth") {
+      setIsLoggedIn(false)
+      setUserRole(null)
+      if (hasToken) {
+        const lastPage = localStorage.getItem("lastPage")
+        const params = new URLSearchParams(searchParams ?? "")
+        const callbackUrl = params.get("callbackUrl")
+        router.replace(callbackUrl || lastPage || "/")
+      }
+      return
+    }
+
+    if (!hasToken) {
+      hasVerifiedAuth.current = false
+      setIsLoggedIn(false)
+      setUserRole(null)
+      localStorage.setItem("lastPage", pathname)
+      router.replace("/auth")
+      return
+    }
+
+    setIsLoggedIn(true)
+    const storedRole = localStorage.getItem("userRole") as "student" | "tutor" | null
+    if (storedRole) setUserRole(storedRole)
+
+    if (storedRole === "tutor" && (pathname === "/" || pathname === "/home")) {
+      router.replace("/all-teachers-schedule")
+      setCurrentPage("all-teachers-schedule")
+    }
+
+    if (hasVerifiedAuth.current) return
+
+    const verify = async () => {
+      try {
+        const result = await getUser()
+        hasVerifiedAuth.current = true
+        if (result?.success && result?.user) {
+          const role = (result.user.role === "tutor" ? "tutor" : "student") as "student" | "tutor"
+          setUserRole(role)
+          localStorage.setItem("isLoggedIn", "true")
+          localStorage.setItem("userRole", role)
+          localStorage.setItem("userProfile", JSON.stringify(result.user))
+          if (role === "tutor" && (pathname === "/" || pathname === "/home")) {
+            router.replace("/all-teachers-schedule")
+            setCurrentPage("all-teachers-schedule")
+          }
+        } else {
+          hasVerifiedAuth.current = false
+          setIsLoggedIn(false)
+          setUserRole(null)
+          localStorage.removeItem("isLoggedIn")
+          localStorage.removeItem("userRole")
+          localStorage.removeItem("userProfile")
           router.replace("/auth")
         }
+      } catch {
+        hasVerifiedAuth.current = false
         setIsLoggedIn(false)
         setUserRole(null)
+        localStorage.removeItem("isLoggedIn")
+        localStorage.removeItem("userRole")
+        localStorage.removeItem("userProfile")
+        router.replace("/auth")
       }
-  
-      const page = pathname === "/" ? "home" : pathname.slice(1)
-      setCurrentPage(page)
-      setIsLoading(false)
     }
-  
-    initialize()
-  }, [pathname, router, searchParams])
+    verify()
+  }, [pathname, searchParams])
 
   const handleLogin = async (role: "student" | "tutor") => {
     setIsLoggedIn(true)
@@ -99,12 +131,18 @@ const Layout: React.FC<LayoutProps> = ({ searchParams }) => {
   const handleLogout = async () => {
     setIsLoggedIn(false)
     setUserRole(null)
-    document.cookie = `token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
+    hasVerifiedAuth.current = false
     localStorage.removeItem("isLoggedIn")
     localStorage.removeItem("userRole")
     localStorage.removeItem("lastPage")
     localStorage.removeItem("userProfile")
-    router.replace("/auth", {scroll: false})
+    try {
+      await logout()
+    } catch {
+      // очищаем cookie локально на случай если бэкенд недоступен
+      document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;"
+    }
+    router.replace("/auth", { scroll: false })
   }
 
   const handlePageChange = (page: string) => {
@@ -136,7 +174,6 @@ const Layout: React.FC<LayoutProps> = ({ searchParams }) => {
 
     const tutorPages = [
       "subject-management",
-      "lab-scheduling",
       "group-subject-assignment",
       "all-teachers-schedule",
       "grades",
@@ -162,8 +199,6 @@ const Layout: React.FC<LayoutProps> = ({ searchParams }) => {
         return <Scoreboard />
       case "subject-management":
         return <SubjectManagement />
-      case "lab-scheduling":
-        return <LabScheduling />
       case "group-subject-assignment":
         return <GroupSubjectAssignment />
       case "all-teachers-schedule":
@@ -178,33 +213,27 @@ const Layout: React.FC<LayoutProps> = ({ searchParams }) => {
   }
 
   return (
-    <>
-      {isLoading ? (
-        <div className="flex justify-center items-center min-h-[400px]">
-          <Spinner size="lg" />
-        </div>
-      ) : (
-        <div className="space-y-8 h-full mx-auto p-0">
-            <div className=" bg-gray-50 min-h-full">
-              <Navigation
-                isLoggedIn={isLoggedIn}
-                onLogout={handleLogout}
-                setCurrentPage={handlePageChange}
-                userRole={userRole}
-                currentPage={currentPage} />
-              <main 
-                className={`
-                  mx-auto 
-                  ${currentPage === "auth" ? "px-0 max-w-md" : "container px-4 sm:px-6 lg:px-8"}
-                  pt-6 pb-8 transition-all duration-300`}>
-                  <div className={currentPage === "auth" ? "" : "bg-white rounded-lg shadow-sm p-6"}>
-                    {renderContent()}
-                  </div>
-              </main>
-            </div>
-        </div>
-      )}
-    </>
+    <div className="space-y-8 h-full mx-auto p-0">
+      <div className="bg-gray-50 min-h-full">
+        <Navigation
+          isLoggedIn={isLoggedIn}
+          onLogout={handleLogout}
+          setCurrentPage={handlePageChange}
+          userRole={userRole}
+          currentPage={currentPage}
+        />
+        <main
+          className={`
+            mx-auto
+            ${currentPage === "auth" ? "px-0 max-w-md" : "container px-4 sm:px-6 lg:px-8"}
+            pt-6 pb-8 transition-all duration-300`}
+        >
+          <div className={currentPage === "auth" ? "" : "bg-white rounded-lg shadow-sm p-6"}>
+            {renderContent()}
+          </div>
+        </main>
+      </div>
+    </div>
   );
 
  

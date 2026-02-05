@@ -61,6 +61,7 @@ func (s *UserService) GetUserProfile(userID uint) (*ProfileResponse, error) {
 	return &ProfileResponse{
 		ID:          user.ID,
 		FullName:    user.FullName,
+		Role:        user.Role,
 		GroupName:   group.Name,
 		SubjectID:   subjectID,
 		SubjectName: subjectName,

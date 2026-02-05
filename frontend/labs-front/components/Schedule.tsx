@@ -159,7 +159,7 @@ const TIME_SLOTS = [
 
         if (!response.ok) {
           const err = await response.json().catch(() => ({}))
-          const msg = err?.message || err?.error || "Ошибка записи"
+          const msg = err?.message ?? err?.error ?? (typeof err === "string" ? err : "Ошибка записи")
           if (typeof window !== "undefined" && window.alert) window.alert(msg)
           return
         }
@@ -240,6 +240,28 @@ const TIME_SLOTS = [
         // Если есть команды, дополнительно проверяем доступные места
         return hasEquipment || hasAnyTeamWithSpace;
       });
+    };
+
+    const teamMemberCount = (team: Team) =>
+      Array.isArray(team?.members) ? team.members.length : 0;
+
+    const canEnrollWithTeam = (team: Team): boolean => {
+      if (!selectedLab || !selectedSession) return false;
+      const size = teamMemberCount(team);
+      if (size > selectedLab.maxStudents) return false;
+      const hasEquipment =
+        selectedLab.routersRequired <= (selectedSession.routers ?? 0) &&
+        selectedLab.switchesRequired <= (selectedSession.switches ?? 0) &&
+        selectedLab.wirelessRoutersRequired <= (selectedSession.wirelessRouters ?? 0) &&
+        selectedLab.hpRoutersRequired <= (selectedSession.hpRouters ?? 0) &&
+        selectedLab.hpSwitchesRequired <= (selectedSession.hpSwitches ?? 0);
+      const labEntries = selectedSession.entries?.filter(e => e.lab.id === selectedLab.id) ?? [];
+      for (const entry of labEntries) {
+        const used = teamMemberCount(entry.team);
+        const free = selectedLab.maxStudents - used;
+        if (size <= free) return true;
+      }
+      return hasEquipment;
     };
 
     const isUserScheduled = (record: ScheduleItem) => {
@@ -514,38 +536,28 @@ const TIME_SLOTS = [
                 </DialogDescription>
               </DialogHeader>
               <div className="max-h-[60vh] overflow-y-auto pr-2">
-              {((userTeams || [])).
-              filter(team => {
-                // Можно ли добавить в команду
-                if (selectedLab) {
-                  const canJoinTeam = team.members.length <= selectedLab.maxStudents;
-
-                  const hasEquipment =
-                      selectedLab.routersRequired <= (selectedSession?.routers || 0) &&
-                      selectedLab.switchesRequired <= (selectedSession?.switches || 0) &&
-                      selectedLab.wirelessRoutersRequired <= (selectedSession?.wirelessRouters || 0) &&
-                      selectedLab.hpRoutersRequired <= (selectedSession?.hpRouters || 0) &&
-                      selectedLab.hpSwitchesRequired <= (selectedSession?.hpSwitches || 0);
-                  return canJoinTeam || hasEquipment;
-
-                }
-
-              })
-              .map(team => (
+              {(userTeams || []).map(team => {
+                const canEnroll = canEnrollWithTeam(team);
+                const membersCnt = teamMemberCount(team);
+                return (
                   <Button
                     key={team.id}
-                    onClick={() => handleEnroll(selectedLab?.id, team.id)}
-                    className="w-full mb-2 justify-start bg-gray-50 hover:bg-gray-100"
+                    disabled={!canEnroll}
+                    onClick={() => canEnroll && handleEnroll(selectedLab?.id, team.id)}
+                    className={`w-full mb-2 justify-start ${canEnroll ? "bg-gray-50 hover:bg-gray-100" : "opacity-60 cursor-not-allowed bg-gray-100"}`}
                   >
-                    <span className="flex-1 text-left text-blue-500">
-                      {team.name} 
+                    <span className={`flex-1 text-left ${canEnroll ? "text-blue-500" : "text-gray-400"}`}>
+                      {team.name}
                       <span className="ml-2 text-gray-500">
-                        ({team?.members.length} участников)
+                        ({membersCnt} участников)
                       </span>
+                      {!canEnroll && (
+                        <span className="ml-2 text-xs text-gray-400">— нет мест</span>
+                      )}
                     </span>
                   </Button>
-                ))
-                }
+                );
+              })}
                 
               
               <Button 

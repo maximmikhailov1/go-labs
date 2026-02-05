@@ -20,9 +20,15 @@ func NewService(repo *Repository, audienceRepo *audience.Repository) *Service {
 	return &Service{repo: repo, audienceRepo: audienceRepo}
 }
 
-func (s *Service) CreateRecord(req CreateRequest, tutorID uint) (*RecordResponse, error) {
+func (s *Service) CreateRecord(req CreateRequest, claimsUserID uint, claimsRole string) (*RecordResponse, error) {
+	tutorID := claimsUserID
+	if req.TutorID != nil && claimsRole == "tutor" {
+		tutorID = *req.TutorID
+	}
+
 	audienceNumber := req.AudienceNumber
 	switches, routers, wireless, hpRouters, hpSwitches := 6, 6, 2, 2, 2
+	var audienceID *uint
 
 	if req.AudienceID != nil {
 		aud, err := s.audienceRepo.GetByID(*req.AudienceID)
@@ -37,6 +43,7 @@ func (s *Service) CreateRecord(req CreateRequest, tutorID uint) (*RecordResponse
 		wireless = aud.WirelessRouters
 		hpRouters = aud.HPRouters
 		hpSwitches = aud.HPSwitches
+		audienceID = req.AudienceID
 	}
 
 	record := models.Record{
@@ -44,6 +51,7 @@ func (s *Service) CreateRecord(req CreateRequest, tutorID uint) (*RecordResponse
 		ClassNumber:              req.ClassNumber,
 		AudienceNumber:           audienceNumber,
 		TutorID:                  tutorID,
+		AudienceID:               audienceID,
 		Status:                   "planned",
 		SwitchesRemaining:        switches,
 		RoutersRemaining:         routers,
@@ -170,9 +178,17 @@ func (s *Service) GetWeekSchedule(weekNumber int) ([]WeekScheduleResponse, error
 	for _, r := range records {
 		var entries []EntryInfo
 		for _, e := range r.Entries {
-			var members []uint
+			var members []Member
 			for _, m := range e.Team.Members {
-				members = append(members, m.ID)
+				groupName := ""
+				if m.Group != nil {
+					groupName = m.Group.Name
+				}
+				members = append(members, Member{
+					ID:       m.ID,
+					FullName: m.FullName,
+					Group:    groupName,
+				})
 			}
 
 			entries = append(entries, EntryInfo{
@@ -196,11 +212,16 @@ func (s *Service) GetWeekSchedule(weekNumber int) ([]WeekScheduleResponse, error
 		if status == "" {
 			status = "planned"
 		}
+		var aud *AudienceInfo
+		if r.Audience != nil {
+			aud = &AudienceInfo{ID: r.Audience.ID, Number: r.Audience.Number}
+		}
 		response = append(response, WeekScheduleResponse{
 			ID:             r.ID,
 			LabDate:        r.LabDate,
 			ClassNumber:    r.ClassNumber,
 			AudienceNumber: r.AudienceNumber,
+			Audience:       aud,
 			Status:         status,
 			Tutor: TutorInfo{
 				ID:       r.Tutor.ID,
@@ -223,5 +244,11 @@ func (s *Service) UpdateRecordStatus(recordID uint, status string) error {
 	if status != "planned" && status != "cancelled" && status != "passed" {
 		return errors.New("invalid status")
 	}
-	return s.repo.UpdateRecordStatus(recordID, status)
+	if err := s.repo.UpdateRecordStatus(recordID, status); err != nil {
+		return err
+	}
+	if status == "cancelled" {
+		_ = s.repo.SetEntriesStatusByRecordID(recordID, "cancelled")
+	}
+	return nil
 }

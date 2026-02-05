@@ -6,7 +6,7 @@ type Lab struct {
 	ID uint `gorm:"primarykey"`
 	gorm.Model
 	Subject                 Subject
-	SubjectID               uint // Ссылка на предмет
+	SubjectID               uint
 	Number                  string
 	Description             string
 	MaxStudents             int

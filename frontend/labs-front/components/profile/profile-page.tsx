@@ -75,12 +75,19 @@ function LabsBySubjectDialog({
       .finally(() => setLoading(false))
   }, [open, subjectId])
 
+  const STATUS_LABELS: { [key: string]: string } = {
+    scheduled: "Записан",
+    completed: "Выполнена",
+    defended: "Защищена",
+    no_show: "Неявка",
+    cancelled: "Отменено",
+  }
   const statusByLab: { [labNum: string]: string } = {}
   ;(records ?? []).forEach((r: Record) => {
     const prev = statusByLab[r.labNumber]
-    const order = { defended: 3, completed: 2, scheduled: 1 }
-    const currOrder = order[r.status as keyof typeof order] ?? 0
-    const prevOrder = prev ? (order[prev as keyof typeof order] ?? 0) : 0
+    const order: { [key: string]: number } = { defended: 4, completed: 3, scheduled: 2, no_show: 1, cancelled: 0 }
+    const currOrder = order[r.status] ?? 0
+    const prevOrder = prev ? (order[prev] ?? 0) : -1
     if (currOrder > prevOrder) statusByLab[r.labNumber] = r.status
   })
 
@@ -107,14 +114,7 @@ function LabsBySubjectDialog({
               <TableBody>
                 {labs.map((lab) => {
                   const status = statusByLab[lab.number]
-                  const statusLabel =
-                    status === "defended"
-                      ? "Защищено"
-                      : status === "completed"
-                        ? "Выполнено"
-                        : status === "scheduled"
-                          ? "Записан"
-                          : "Не начато"
+                  const statusLabel = status ? (STATUS_LABELS[status] ?? "Не начато") : "Не начато"
                   return (
                     <TableRow key={lab.id}>
                       <TableCell className="font-medium text-gray-800">
@@ -648,25 +648,39 @@ const ProfilePage: React.FC = () => {
                       <TableCell className="text-gray-600">{record.labName}</TableCell>
                       <TableCell className="text-gray-600">{record.audienceNumber}</TableCell>
                       <TableCell>
-                        <span 
+                        <span
                           className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                            record.status 
-                              ? "bg-green-100 text-green-800" 
-                              : "bg-yellow-100 text-yellow-800"
+                            record.status === "defended"
+                              ? "bg-green-100 text-green-800"
+                              : record.status === "completed"
+                                ? "bg-blue-100 text-blue-800"
+                                : record.status === "cancelled" || record.status === "no_show"
+                                  ? "bg-gray-100 text-gray-700"
+                                  : "bg-yellow-100 text-yellow-800"
                           }`}
                         >
-                          {(record.status == "active") ? "✅ Выполнено" : "🕒 Записан"}
+                          {record.status === "defended"
+                            ? "Защищена"
+                            : record.status === "completed"
+                              ? "Выполнена"
+                              : record.status === "no_show"
+                                ? "Неявка"
+                                : record.status === "cancelled"
+                                  ? "Отменено"
+                                  : "Записан"}
                         </span>
                       </TableCell>
                       <TableCell>
-                      <Button 
-                        variant="destructive" 
-                        size="sm"
-                        onClick={() => handleDeleteRecord(record.id)}
-                        className="rounded-lg shadow-sm"
-                      >
-                        Отписаться
-                      </Button>
+                      {record.status !== "cancelled" && (
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => handleDeleteRecord(record.id)}
+                          className="rounded-lg shadow-sm"
+                        >
+                          Отписаться
+                        </Button>
+                      )}
                     </TableCell>
                     </TableRow>
                   ))}

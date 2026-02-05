@@ -19,6 +19,7 @@ services:
     volumes:
       - letsencrypt:/letsencrypt
       - /var/run/docker.sock:/var/run/docker.sock
+
   backend:
     build: ./backend
     deploy:
@@ -37,6 +38,7 @@ services:
         condition: service_healthy
     expose:
       - "3000"
+    restart: unless-stopped
 
   frontend:
     build:
@@ -54,6 +56,7 @@ services:
       replicas: 2
     depends_on:
       - backend
+    restart: unless-stopped
 
   redis:
     image: redis:7-alpine
@@ -62,6 +65,7 @@ services:
       interval: 5s
       timeout: 3s
       retries: 5
+    restart: unless-stopped
 
   postgres:
     image: postgres:16-alpine
@@ -76,6 +80,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+    restart: unless-stopped
 
 volumes:
   letsencrypt:

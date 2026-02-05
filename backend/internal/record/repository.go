@@ -151,3 +151,109 @@ func (r *Repository) GetEntryWithTeamAndMembers(entryID uint) (*models.Entry, er
 func (r *Repository) UpdateEntryStatus(entryID uint, status string) error {
 	return r.db.Model(&models.Entry{}).Where("id = ?", entryID).Update("status", status).Error
 }
+
+func (r *Repository) GetEntryMemberStatusMap(entryIDs []uint) (map[uint]map[uint]string, error) {
+	if len(entryIDs) == 0 {
+		return nil, nil
+	}
+	var rows []struct {
+		EntryID uint
+		UserID  uint
+		Status  string
+	}
+	err := r.db.Model(&models.EntryMemberStatus{}).
+		Select("entry_id, user_id, status").
+		Where("entry_id IN ?", entryIDs).
+		Find(&rows).Error
+	if err != nil {
+		return nil, err
+	}
+	out := make(map[uint]map[uint]string)
+	for _, row := range rows {
+		if out[row.EntryID] == nil {
+			out[row.EntryID] = make(map[uint]string)
+		}
+		out[row.EntryID][row.UserID] = row.Status
+	}
+	return out, nil
+}
+
+func (r *Repository) SetEntryMemberStatus(entryID, userID uint, status string) error {
+	res := r.db.Model(&models.EntryMemberStatus{}).Where("entry_id = ? AND user_id = ?", entryID, userID).Update("status", status)
+	if res.Error != nil {
+		return res.Error
+	}
+	if res.RowsAffected > 0 {
+		return nil
+	}
+	return r.db.Create(&models.EntryMemberStatus{EntryID: entryID, UserID: userID, Status: status}).Error
+}
+
+func (r *Repository) DeleteEntryMemberStatusesForEntry(entryID uint) error {
+	return r.db.Where("entry_id = ?", entryID).Delete(&models.EntryMemberStatus{}).Error
+}
+
+type tutorRecordRowScan struct {
+	TutorRecordRow
+	TotalCount int64
+}
+
+func (r *Repository) GetTutorRecordsPaginated(f TutorRecordsFilters) ([]TutorRecordRow, int64, error) {
+	q := r.db.Table("entries").
+		Select(`
+			records.id as record_id, records.lab_date, records.class_number, records.audience_number,
+			records.tutor_id, tutor_u.full_name as tutor_full_name,
+			entries.id as entry_id, labs.id as lab_id, labs.number as lab_number, labs.description as lab_description, labs.max_students as lab_max_students,
+			teams.id as team_id, teams.name as team_name,
+			member_u.id as member_id, member_u.full_name as member_full_name, COALESCE(g.name, '') as group_name,
+			COALESCE(ems.status, entries.status, 'scheduled') as status,
+			COUNT(*) OVER() as total_count
+		`).
+		Joins("JOIN records ON entries.record_id = records.id").
+		Joins("JOIN labs ON entries.lab_id = labs.id").
+		Joins("JOIN teams ON entries.team_id = teams.id").
+		Joins("JOIN users_teams ON teams.id = users_teams.team_id").
+		Joins("JOIN users member_u ON users_teams.user_id = member_u.id").
+		Joins("LEFT JOIN groups g ON member_u.group_id = g.id").
+		Joins("LEFT JOIN entry_member_statuses ems ON ems.entry_id = entries.id AND ems.user_id = member_u.id").
+		Joins("LEFT JOIN users tutor_u ON records.tutor_id = tutor_u.id")
+
+	if f.TutorID != nil && *f.TutorID != 0 {
+		q = q.Where("records.tutor_id = ?", *f.TutorID)
+	}
+	if f.GroupID != nil && *f.GroupID != 0 {
+		q = q.Where("member_u.group_id = ?", *f.GroupID)
+	}
+	if f.Status != "" {
+		q = q.Where("COALESCE(ems.status, entries.status, 'scheduled') = ?", f.Status)
+	}
+	if f.NeedsGrade {
+		q = q.Where("records.lab_date < CURRENT_DATE AND COALESCE(ems.status, entries.status, 'scheduled') = 'scheduled'")
+	}
+	if f.LabDateFrom != nil {
+		q = q.Where("records.lab_date >= ?", *f.LabDateFrom)
+	}
+	if f.LabDateTo != nil {
+		q = q.Where("records.lab_date <= ?", *f.LabDateTo)
+	}
+
+	q = q.Order("records.lab_date DESC, records.id, entries.id, member_u.id")
+
+	var scanRows []tutorRecordRowScan
+	offset := (f.Page - 1) * f.Limit
+	if offset < 0 {
+		offset = 0
+	}
+	err := q.Offset(offset).Limit(f.Limit).Find(&scanRows).Error
+	if err != nil {
+		return nil, 0, err
+	}
+
+	rows := make([]TutorRecordRow, len(scanRows))
+	var totalCount int64
+	for i := range scanRows {
+		rows[i] = scanRows[i].TutorRecordRow
+		totalCount = scanRows[i].TotalCount
+	}
+	return rows, totalCount, nil
+}
