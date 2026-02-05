@@ -365,21 +365,24 @@ const TIME_SLOTS = [
       });
     };
 
+    const toLocalYYYYMMDD = (d: Date) => {
+      const y = d.getFullYear()
+      const m = String(d.getMonth() + 1).padStart(2, "0")
+      const day = String(d.getDate()).padStart(2, "0")
+      return `${y}-${m}-${day}`
+    }
+
     const getDaysOfWeek = (weekIndex: number) => {
-      const today = new Date();
-      // Устанавливаем начало недели (понедельник текущей недели)
-      const startOfWeek = new Date(today);
-      startOfWeek.setDate(today.getDate() - (today.getDay() || 7) + 1);
-
-      // Добавляем недели в зависимости от weekIndex
-      startOfWeek.setDate(startOfWeek.getDate() + weekIndex * 7);
-
+      const today = new Date()
+      const startOfWeek = new Date(today)
+      startOfWeek.setDate(today.getDate() - (today.getDay() || 7) + 1)
+      startOfWeek.setDate(startOfWeek.getDate() + weekIndex * 7)
       return Array(5).fill(null).map((_, i) => {
-        const day = new Date(startOfWeek);
-        day.setDate(startOfWeek.getDate() + i);
-        return day.toISOString().split('T')[0];
-      });
-    };
+        const day = new Date(startOfWeek)
+        day.setDate(startOfWeek.getDate() + i)
+        return toLocalYYYYMMDD(day)
+      })
+    }
   
 
     return (

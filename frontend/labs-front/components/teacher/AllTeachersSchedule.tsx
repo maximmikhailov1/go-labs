@@ -79,7 +79,14 @@ const AllTeachersSchedule = () => {
     fetchWeek()
   }, [weekIndex])
 
-  // Неделя с понедельника по пятницу, как у студента
+  const toLocalYYYYMMDD = (d: Date) => {
+    const y = d.getFullYear()
+    const m = String(d.getMonth() + 1).padStart(2, "0")
+    const day = String(d.getDate()).padStart(2, "0")
+    return `${y}-${m}-${day}`
+  }
+
+  // Неделя: понедельник — первый столбец, пятница — последний (локальная дата, без сдвига UTC)
   const getDaysOfWeek = (w: number) => {
     const today = new Date()
     const startOfWeek = new Date(today)
@@ -88,7 +95,7 @@ const AllTeachersSchedule = () => {
     return Array(5).fill(null).map((_, i) => {
       const d = new Date(startOfWeek)
       d.setDate(startOfWeek.getDate() + i)
-      return d.toISOString().split("T")[0]
+      return toLocalYYYYMMDD(d)
     })
   }
 
