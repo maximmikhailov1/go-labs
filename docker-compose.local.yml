@@ -18,6 +18,16 @@ services:
       timeout: 3s
       retries: 10
 
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6380:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 3s
+      timeout: 3s
+      retries: 5
+
   backend:
     build: ./backend
     ports:
@@ -25,10 +35,13 @@ services:
     environment:
       PORT: "3000"
       DB_URL: postgres://${POSTGRES_USER:-labs}:${POSTGRES_PASSWORD:-labs}@postgres:5432/${POSTGRES_DB:-labs}?sslmode=disable
+      REDIS_URL: redis://redis:6379
       SECRET: ${SECRET:-dev-secret-change-in-production}
       TUTOR_SECRET: ${TUTOR_SECRET:-tutor-secret}
     depends_on:
       postgres:
+        condition: service_healthy
+      redis:
         condition: service_healthy
 
   frontend:

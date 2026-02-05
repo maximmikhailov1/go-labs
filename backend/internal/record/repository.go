@@ -138,3 +138,16 @@ func (r *Repository) CheckExistingEntries(recordID, userID uint) (bool, error) {
 
 	return count > 0, err
 }
+
+func (r *Repository) GetEntryWithTeamAndMembers(entryID uint) (*models.Entry, error) {
+	var entry models.Entry
+	err := r.db.
+		Preload("Team.Members.Group").
+		Preload("Lab").
+		First(&entry, entryID).Error
+	return &entry, err
+}
+
+func (r *Repository) UpdateEntryStatus(entryID uint, status string) error {
+	return r.db.Model(&models.Entry{}).Where("id = ?", entryID).Update("status", status).Error
+}

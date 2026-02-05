@@ -1,14 +1,20 @@
 package schedule
 
 import (
-	"gorm.io/datatypes"
 	"time"
+
+	"gorm.io/datatypes"
 )
 
 type CreateRequest struct {
 	LabDate        time.Time `json:"labDate" validate:"required"`
 	ClassNumber    int       `json:"classNumber" validate:"required,min=1,max=8"`
-	AudienceNumber int       `json:"audienceNumber" validate:"required"`
+	AudienceNumber int       `json:"audienceNumber"`
+	AudienceID     *uint     `json:"audienceId"`
+}
+
+type PatchRecordStatusRequest struct {
+	Status string `json:"status" validate:"required,oneof=planned cancelled passed"`
 }
 
 type RecordResponse struct {
@@ -17,6 +23,7 @@ type RecordResponse struct {
 	ClassNumber     int            `json:"classNumber"`
 	AudienceNumber  int            `json:"audienceNumber"`
 	TutorID         uint           `json:"tutorId"`
+	Status          string         `json:"status"`
 	CreatedAt       time.Time      `json:"createdAt"`
 	Switches        int            `json:"switches"`
 	Routers         int            `json:"routers"`
@@ -45,6 +52,7 @@ type WeekScheduleResponse struct {
 	LabDate        datatypes.Date `json:"labDate"`
 	ClassNumber    int            `json:"classNumber"`
 	AudienceNumber int            `json:"audienceNumber"`
+	Status         string         `json:"status"`
 	Tutor          TutorInfo      `json:"tutor"`
 	Entries        []EntryInfo    `json:"entries"`
 

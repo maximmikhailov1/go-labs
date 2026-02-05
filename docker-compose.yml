@@ -27,10 +27,13 @@ services:
     environment:
       PORT: "3000"
       DB_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?sslmode=disable
+      REDIS_URL: redis://redis:6379
       SECRET: ${SECRET}
       TUTOR_SECRET: ${TUTOR_SECRET}
     depends_on:
       postgres:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     expose:
       - "3000"
@@ -51,6 +54,14 @@ services:
       replicas: 2
     depends_on:
       - backend
+
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
 
   postgres:
     image: postgres:16-alpine

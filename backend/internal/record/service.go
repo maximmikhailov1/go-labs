@@ -1,9 +1,12 @@
 package record
 
 import (
+	"context"
 	"errors"
+	"time"
 
 	"github.com/maximmikhailov1/go-labs/backend/internal/models"
+	"github.com/maximmikhailov1/go-labs/backend/internal/score"
 )
 
 type Service struct {
@@ -108,7 +111,21 @@ func (s *Service) Enroll(userID uint, req EnrollRequest) (*EnrollResponse, error
 		return nil, errors.New("record not found")
 	}
 
-	// 2. Проверяем, не записан ли уже пользователь на эту запись
+	// 2. Проверка даты: запись только на занятия в пределах 3 недель и не в прошлом
+	now := time.Now().UTC()
+	today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
+	labDate := time.Time(record.LabDate).UTC()
+	if labDate.Before(today) {
+		tx.Rollback()
+		return nil, errors.New("запись на прошедшее занятие недоступна")
+	}
+	limit := today.AddDate(0, 0, 21)
+	if labDate.After(limit) {
+		tx.Rollback()
+		return nil, errors.New("запись на это занятие недоступна: занятие более чем через 3 недели")
+	}
+
+	// 3. Проверяем, не записан ли уже пользователь на эту запись
 	alreadyEnrolled, err := s.repo.CheckExistingEntries(req.RecordID, userID)
 	if err != nil {
 		tx.Rollback()
@@ -119,14 +136,14 @@ func (s *Service) Enroll(userID uint, req EnrollRequest) (*EnrollResponse, error
 		return nil, errors.New("user already enrolled for this record")
 	}
 
-	// 3. Находим лабораторную работу
+	// 4. Находим лабораторную работу
 	lab, err := s.repo.GetLab(req.LabID)
 	if err != nil {
 		tx.Rollback()
 		return nil, errors.New("lab not found")
 	}
 
-	// 4. Проверяем, есть ли другие записи на эту же лабораторную в этом слоте
+	// 5. Проверяем, есть ли другие записи на эту же лабораторную в этом слоте
 	var existingTeams []*models.Team
 	var existingTeam *models.Team
 	var team *models.Team
@@ -136,7 +153,7 @@ func (s *Service) Enroll(userID uint, req EnrollRequest) (*EnrollResponse, error
 		return nil, errors.New("failed to check existing lab entries")
 	}
 
-	// 5. Если есть записи на эту лабораторную
+	// 6. Если есть записи на эту лабораторную
 	if len(entries) > 0 {
 		// Проверяем все команды, записанные на эту лабу
 		for _, entry := range entries {
@@ -229,7 +246,7 @@ func (s *Service) Enroll(userID uint, req EnrollRequest) (*EnrollResponse, error
 		}
 	}
 
-	// 6. Если нет подходящей существующей команды
+	// 7. Если нет подходящей существующей команды
 	if existingTeam == nil {
 		// Если пользователь хочет записаться со своей командой
 		if req.TeamID != nil {
@@ -319,4 +336,46 @@ func (s *Service) Enroll(userID uint, req EnrollRequest) (*EnrollResponse, error
 		Success: true,
 		TeamID:  team.ID,
 	}, nil
+}
+
+func (s *Service) UpdateEntryStatus(ctx context.Context, entryID uint, newStatus string) error {
+	if newStatus != "scheduled" && newStatus != "completed" && newStatus != "defended" {
+		return errors.New("invalid status")
+	}
+	entry, err := s.repo.GetEntryWithTeamAndMembers(entryID)
+	if err != nil {
+		return errors.New("entry not found")
+	}
+	oldStatus := entry.Status
+	if oldStatus == "" {
+		oldStatus = "scheduled"
+	}
+
+	if err := s.repo.UpdateEntryStatus(entryID, newStatus); err != nil {
+		return err
+	}
+
+	for _, m := range entry.Team.Members {
+		if m.Group == nil || m.Group.ID == 0 {
+			continue
+		}
+		groupID := m.Group.ID
+		subjectID := uint(0)
+		if m.Group.SubjectID != nil {
+			subjectID = *m.Group.SubjectID
+		}
+		if oldStatus == "completed" && newStatus != "completed" {
+			_ = score.DecrementCompleted(ctx, m.ID, subjectID, groupID)
+		}
+		if oldStatus == "defended" && newStatus != "defended" {
+			_ = score.DecrementDefended(ctx, m.ID, subjectID, groupID)
+		}
+		if newStatus == "completed" {
+			_ = score.IncrementCompleted(ctx, m.ID, subjectID, groupID)
+		}
+		if newStatus == "defended" {
+			_ = score.IncrementDefended(ctx, m.ID, subjectID, groupID)
+		}
+	}
+	return nil
 }

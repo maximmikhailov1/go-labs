@@ -1,9 +1,10 @@
 package schedule
 
 import (
+	"time"
+
 	"github.com/maximmikhailov1/go-labs/backend/internal/models"
 	"gorm.io/gorm"
-	"time"
 )
 
 type Repository struct {
@@ -16,6 +17,16 @@ func NewRepository(db *gorm.DB) *Repository {
 
 func (r *Repository) Create(record *models.Record) error {
 	return r.db.Create(record).Error
+}
+
+func (r *Repository) GetRecordByID(id uint) (*models.Record, error) {
+	var record models.Record
+	err := r.db.First(&record, id).Error
+	return &record, err
+}
+
+func (r *Repository) UpdateRecordStatus(id uint, status string) error {
+	return r.db.Model(&models.Record{}).Where("id = ?", id).Update("status", status).Error
 }
 
 func (r *Repository) GetEntryWithDetails(id uint) (*models.Entry, error) {

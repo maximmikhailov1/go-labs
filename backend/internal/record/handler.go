@@ -56,3 +56,31 @@ func (h *Handler) Enroll(c *fiber.Ctx) error {
 
 	return c.JSON(response)
 }
+
+func (h *Handler) PatchEntryStatus(c *fiber.Ctx) error {
+	claims := c.Locals("user").(*middleware.AuthClaims)
+	if claims.Role != models.RoleTutor {
+		return fiber.NewError(fiber.StatusForbidden, "only tutors can update entry status")
+	}
+
+	entryID, err := c.ParamsInt("id")
+	if err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, "invalid entry id")
+	}
+
+	var req PatchEntryStatusRequest
+	if err := c.BodyParser(&req); err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, "invalid request body")
+	}
+	if req.Status != "scheduled" && req.Status != "completed" && req.Status != "defended" {
+		return fiber.NewError(fiber.StatusBadRequest, "status must be scheduled, completed or defended")
+	}
+
+	if err := h.service.UpdateEntryStatus(c.Context(), uint(entryID), req.Status); err != nil {
+		if err.Error() == "entry not found" {
+			return fiber.NewError(fiber.StatusNotFound, err.Error())
+		}
+		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+	}
+	return c.SendStatus(fiber.StatusNoContent)
+}

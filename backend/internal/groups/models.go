@@ -33,3 +33,10 @@ type SubjectInfo struct {
 	ID   uint   `json:"id"`
 	Name string `json:"name"`
 }
+
+type GroupMemberResponse struct {
+	FullName       string `json:"fullName"`
+	GroupName      string `json:"groupName"`
+	CompletedCount int64  `json:"completedCount"`
+	DefendedCount  int64  `json:"defendedCount"`
+}

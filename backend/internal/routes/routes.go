@@ -1,19 +1,22 @@
 package routes
 
 import (
+	"os"
+
 	"github.com/gofiber/fiber/v2"
+	"github.com/maximmikhailov1/go-labs/backend/internal/audience"
 	"github.com/maximmikhailov1/go-labs/backend/internal/auth"
 	group "github.com/maximmikhailov1/go-labs/backend/internal/groups"
 	"github.com/maximmikhailov1/go-labs/backend/internal/lab"
 	"github.com/maximmikhailov1/go-labs/backend/internal/middleware"
+	"github.com/maximmikhailov1/go-labs/backend/internal/models"
 	"github.com/maximmikhailov1/go-labs/backend/internal/record"
 	"github.com/maximmikhailov1/go-labs/backend/internal/schedule"
+	"github.com/maximmikhailov1/go-labs/backend/internal/scoreboard"
 	"github.com/maximmikhailov1/go-labs/backend/internal/subject"
 	team "github.com/maximmikhailov1/go-labs/backend/internal/team"
 	"github.com/maximmikhailov1/go-labs/backend/internal/user"
-	"github.com/maximmikhailov1/go-labs/backend/internal/models"
 	"github.com/maximmikhailov1/go-labs/backend/pkg/database"
-	"os"
 )
 
 func SetupRoutes(app *fiber.App) {
@@ -31,7 +34,8 @@ func SetupRoutes(app *fiber.App) {
 	subjectHandler := subject.NewHandler(subjectService)
 
 	scheduleRepo := schedule.NewRepository(database.DB)
-	scheduleService := schedule.NewService(scheduleRepo)
+	audienceRepo := audience.NewRepository(database.DB)
+	scheduleService := schedule.NewService(scheduleRepo, audienceRepo)
 	scheduleHandler := schedule.NewHandler(scheduleService)
 
 	teamRepo := team.NewRepository(database.DB)
@@ -49,6 +53,12 @@ func SetupRoutes(app *fiber.App) {
 	groupRepo := group.NewRepository(database.DB)
 	groupService := group.NewService(groupRepo)
 	groupHandler := group.NewHandler(groupService)
+
+	audienceService := audience.NewService(audienceRepo)
+	audienceHandler := audience.NewHandler(audienceService)
+
+	scoreboardService := scoreboard.NewService(database.DB)
+	scoreboardHandler := scoreboard.NewHandler(scoreboardService)
 
 	// Роуты авторизации
 	api := app.Group("/api/v1")
@@ -77,6 +87,7 @@ func SetupRoutes(app *fiber.App) {
 		schedules.Post("/", middleware.RoleMiddleware(models.RoleTutor), scheduleHandler.CreateSchedule)
 		schedules.Delete("/", scheduleHandler.Unsubscribe)
 		schedules.Get("/week", scheduleHandler.GetWeekSchedule)
+		schedules.Patch("/records/:id", middleware.RoleMiddleware(models.RoleTutor), scheduleHandler.PatchRecordStatus)
 	}
 
 	teams := api.Group("/teams", middleware.AuthMiddleware(os.Getenv("SECRET")))
@@ -101,14 +112,26 @@ func SetupRoutes(app *fiber.App) {
 	{
 		records.Get("/", recordHandler.GetUserRecords)
 		records.Post("/enroll", middleware.RoleMiddleware(models.RoleStudent), recordHandler.Enroll)
+		records.Patch("/entries/:id", middleware.RoleMiddleware(models.RoleTutor), recordHandler.PatchEntryStatus)
 	}
+
+	api.Get("/scoreboard", middleware.AuthMiddleware(os.Getenv("SECRET")), middleware.RoleMiddleware(models.RoleStudent), scoreboardHandler.Get)
 
 	groups := api.Group("/groups", middleware.AuthMiddleware(os.Getenv("SECRET")))
 	{
 		groups.Post("/", middleware.RoleMiddleware(models.RoleTutor), groupHandler.CreateGroup)
 		groups.Get("/", middleware.RoleMiddleware(models.RoleTutor), groupHandler.GetAllGroups)
+		groups.Get("/:id/members", middleware.RoleMiddleware(models.RoleTutor), groupHandler.GetGroupMembers)
 		groups.Patch("/subject", middleware.RoleMiddleware(models.RoleTutor), groupHandler.UpdateGroupSubject)
 		groups.Delete("/:id", middleware.RoleMiddleware(models.RoleTutor), groupHandler.DeleteGroup)
+	}
 
+	audiences := api.Group("/audiences", middleware.AuthMiddleware(os.Getenv("SECRET")))
+	{
+		audiences.Get("/", middleware.RoleMiddleware(models.RoleTutor), audienceHandler.List)
+		audiences.Post("/", middleware.RoleMiddleware(models.RoleTutor), audienceHandler.Create)
+		audiences.Get("/:id", middleware.RoleMiddleware(models.RoleTutor), audienceHandler.Get)
+		audiences.Patch("/:id", middleware.RoleMiddleware(models.RoleTutor), audienceHandler.Update)
+		audiences.Delete("/:id", middleware.RoleMiddleware(models.RoleTutor), audienceHandler.Delete)
 	}
 }

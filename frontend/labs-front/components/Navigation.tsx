@@ -2,7 +2,7 @@
 
 import type React from "react"
 import { Button } from "@/components/ui/button"
-import { User, Book, Calendar, Users, HomeIcon } from "lucide-react"
+import { User, Book, Calendar, Users, HomeIcon, ClipboardList, Building2, Trophy } from "lucide-react"
 
 interface NavigationProps {
   isLoggedIn: boolean
@@ -38,6 +38,15 @@ const Navigation: React.FC<NavigationProps> = ({ isLoggedIn, onLogout, setCurren
                   title="Профиль"
                 >
                   <User className="h-5 w-5" />
+                </Button>
+
+                <Button 
+                  variant={currentPage === "scoreboard" ? "default" : "ghost"}
+                  className={`rounded-full h-10 w-10 p-0 ${currentPage === "scoreboard" ? "hover:bg-gray-700" : "bg-white shadow-sm hover:bg-gray-400"}`}
+                  onClick={() => setCurrentPage("scoreboard")}
+                  title="Скорборд"
+                >
+                  <Trophy className="h-5 w-5" />
                 </Button>
                 </>
               )}
@@ -78,9 +87,27 @@ const Navigation: React.FC<NavigationProps> = ({ isLoggedIn, onLogout, setCurren
                       variant={currentPage === "group-subject-assignment" ? "default" : "ghost"}
                       className={`rounded-full h-10 w-10 p-0 ${currentPage === "group-subject-assignment" ? "hover:bg-gray-700" : "bg-white shadow-sm hover:bg-gray-400"}`}
                       onClick={() => setCurrentPage("group-subject-assignment")}
-                      title="Назначение предметов"
+                      title="Управление группами"
                     >
                       <Users className="h-5 w-5" />
+                    </Button>
+
+                    <Button 
+                      variant={currentPage === "grades" ? "default" : "ghost"}
+                      className={`rounded-full h-10 w-10 p-0 ${currentPage === "grades" ? "hover:bg-gray-700" : "bg-white shadow-sm hover:bg-gray-400"}`}
+                      onClick={() => setCurrentPage("grades")}
+                      title="Журнал оценок"
+                    >
+                      <ClipboardList className="h-5 w-5" />
+                    </Button>
+
+                    <Button 
+                      variant={currentPage === "audience-management" ? "default" : "ghost"}
+                      className={`rounded-full h-10 w-10 p-0 ${currentPage === "audience-management" ? "hover:bg-gray-700" : "bg-white shadow-sm hover:bg-gray-400"}`}
+                      onClick={() => setCurrentPage("audience-management")}
+                      title="Управление аудиториями"
+                    >
+                      <Building2 className="h-5 w-5" />
                     </Button>
 
                   </>

@@ -1,9 +1,10 @@
 package schedule
 
 import (
+	"strconv"
+
 	"github.com/gofiber/fiber/v2"
 	"github.com/maximmikhailov1/go-labs/backend/internal/middleware"
-	"strconv"
 )
 
 type Handler struct {
@@ -75,4 +76,29 @@ func (h *Handler) GetWeekSchedule(c *fiber.Ctx) error {
 	}
 
 	return c.JSON(schedule)
+}
+
+func (h *Handler) PatchRecordStatus(c *fiber.Ctx) error {
+	claims := c.Locals("user").(*middleware.AuthClaims)
+	if claims.Role != "tutor" {
+		return fiber.NewError(fiber.StatusForbidden, "only tutors can update record status")
+	}
+
+	id, err := strconv.ParseUint(c.Params("id"), 10, 32)
+	if err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, "invalid record id")
+	}
+
+	var req PatchRecordStatusRequest
+	if err := c.BodyParser(&req); err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, "invalid request body")
+	}
+	if req.Status != "planned" && req.Status != "cancelled" && req.Status != "passed" {
+		return fiber.NewError(fiber.StatusBadRequest, "status must be planned, cancelled or passed")
+	}
+
+	if err := h.service.UpdateRecordStatus(uint(id), req.Status); err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+	}
+	return c.SendStatus(fiber.StatusNoContent)
 }

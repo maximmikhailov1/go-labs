@@ -2,6 +2,7 @@ package group
 
 import (
 	"errors"
+
 	"github.com/maximmikhailov1/go-labs/backend/internal/models"
 	"github.com/maximmikhailov1/go-labs/backend/pkg/utils"
 	"gorm.io/gorm"
@@ -72,8 +73,11 @@ func (r *Repository) UpdateGroupSubject(groupID, subjectID uint) error {
 	})
 }
 func (r *Repository) DeleteGroup(groupID uint) error {
-	// Удаляем связи многие-ко-многим сначала
-
-	// Затем удаляем саму группу
 	return r.db.Delete(&models.Group{}, groupID).Error
+}
+
+func (r *Repository) GetGroupWithStudents(id uint) (*models.Group, error) {
+	var group models.Group
+	err := r.db.Preload("Students").Preload("Subject").First(&group, id).Error
+	return &group, err
 }

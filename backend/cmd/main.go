@@ -2,13 +2,14 @@ package main
 
 import (
 	"fmt"
-	"github.com/maximmikhailov1/go-labs/backend/internal/routes"
-	"github.com/maximmikhailov1/go-labs/backend/migrations"
-	"github.com/maximmikhailov1/go-labs/backend/pkg/database"
-	"github.com/maximmikhailov1/go-labs/backend/pkg/utils"
 	"os"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/maximmikhailov1/go-labs/backend/internal/routes"
+	"github.com/maximmikhailov1/go-labs/backend/migrations"
+	"github.com/maximmikhailov1/go-labs/backend/pkg/database"
+	"github.com/maximmikhailov1/go-labs/backend/pkg/redis"
+	"github.com/maximmikhailov1/go-labs/backend/pkg/utils"
 )
 
 func init() {
@@ -17,6 +18,7 @@ func init() {
 		panic("SECRET environment variable is required")
 	}
 	database.ConnectToDB()
+	redis.Init()
 }
 
 func main() {

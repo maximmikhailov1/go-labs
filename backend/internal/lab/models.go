@@ -5,6 +5,7 @@ type LabResponse struct {
 	Number                  string `json:"number"`
 	Description             string `json:"description"`
 	MaxStudents             int    `json:"maxStudents"`
+	IsMandatory             bool   `json:"isMandatory"`
 	SwitchesRequired        int    `json:"switchesRequired"`
 	RoutersRequired         int    `json:"routersRequired"`
 	WirelessRoutersRequired int    `json:"wirelessRoutersRequired"`
@@ -17,6 +18,7 @@ type CreateRequest struct {
 	Number                  string `json:"number" validate:"required"`
 	Description             string `json:"description"`
 	MaxStudents             int    `json:"maxStudents" validate:"min=1"`
+	IsMandatory             *bool  `json:"isMandatory"`
 	SwitchesRequired        int    `json:"switchesRequired"`
 	RoutersRequired         int    `json:"routersRequired"`
 	WirelessRoutersRequired int    `json:"wirelessRoutersRequired"`

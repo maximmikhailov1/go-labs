@@ -1,21 +1,18 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card"
+import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Calendar, EthernetPort, Router, Route, Clock, User, Book, Home, Users, Filter, X } from "lucide-react"
-import { format, parseISO, isWithinInterval } from "date-fns"
+import { Calendar, EthernetPort, Router, Route, Clock, User, Book, Home } from "lucide-react"
+import { format, parseISO } from "date-fns"
 import { ru } from "date-fns/locale"
 import { Skeleton } from "@/components/ui/skeleton"
 import { toast } from "sonner"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Calendar as CalendarPicker } from "@/components/ui/calendar"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import {DateRange} from "react-day-picker";
+import { apiUrl } from "@/lib/api"
 
-type Record = {
+type ScheduleRecord = {
   id: number
   labDate: string
   classNumber: number
@@ -49,72 +46,93 @@ type Record = {
   }[]
 }
 
-const AllTeachersSchedule = () => {
-  const [scheduleData, setScheduleData] = useState<Record[]>([])
-  const [filteredData, setFilteredData] = useState<Record[]>([])
-  const [selectedRecord, setSelectedRecord] = useState<Record | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
+const TIME_SLOTS = ["08:50-10:20", "10:35-12:05", "12:35-14:05", "14:15-15:45", "15:55-17:20", "17:30-19:00"]
 
-  // Фильтры
-  const [dateRange, setDateRange] = useState<DateRange | undefined>()
-  const [tutorFilter, setTutorFilter] = useState("")
-  const [audienceFilter, setAudienceFilter] = useState("")
-  const [timeSlotFilter, setTimeSlotFilter] = useState("")
+const AllTeachersSchedule = () => {
+  const [weekIndex, setWeekIndex] = useState(0)
+  const [weekData, setWeekData] = useState<ScheduleRecord[]>([])
+  const [selectedRecord, setSelectedRecord] = useState<ScheduleRecord | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [addDialogOpen, setAddDialogOpen] = useState(false)
+  const [addSlotDate, setAddSlotDate] = useState("")
+  const [addSlotNumber, setAddSlotNumber] = useState(0)
+  const [addAudience, setAddAudience] = useState("")
 
   useEffect(() => {
-    const fetchSchedule = async () => {
+    const fetchWeek = async () => {
       try {
-        const response = await fetch('/api/records')
-        const data = await response.json()
-        setScheduleData(data)
-        setFilteredData(data)
-      } catch (error) {
-        console.error("Ошибка загрузки расписания:", error)
+        const res = await fetch(apiUrl(`/schedules/week?week=${weekIndex}`), { credentials: "include" })
+        if (res.ok) setWeekData(await res.json())
+        else setWeekData([])
+      } catch {
+        setWeekData([])
       } finally {
         setIsLoading(false)
       }
     }
+    fetchWeek()
+  }, [weekIndex])
 
-    fetchSchedule()
-  }, [])
+  const getDaysOfWeek = (w: number) => {
+    const today = new Date()
+    const start = new Date(today)
+    start.setDate(today.getDate() - (today.getDay() || 7) + 1)
+    start.setDate(start.getDate() + w * 7)
+    return Array(5).fill(null).map((_, i) => {
+      const d = new Date(start)
+      d.setDate(start.getDate() + i)
+      return d.toISOString().split("T")[0]
+    })
+  }
 
-  // Применение фильтров
-  useEffect(() => {
-    let result = [...scheduleData]
+  const groupBySlot = (records: ScheduleRecord[] | null | undefined) => {
+    const g: Record<string, ScheduleRecord[]> = {}
+    ;(records ?? []).forEach((r) => {
+      const datePart = r.labDate.split("T")[0]
+      const key = `${datePart}-${r.classNumber}`
+      if (!g[key]) g[key] = []
+      g[key].push(r)
+    })
+    return g
+  }
 
-    if (dateRange?.from && dateRange?.to) {
-      result = result.filter(record => {
-        const recordDate = new Date(record.labDate)
-        return isWithinInterval(recordDate, {
-          start: dateRange.from as Date,
-          end: dateRange.to as Date
+  const openAddDialog = (date: string, classNumber: number) => {
+    setAddSlotDate(date)
+    setAddSlotNumber(classNumber)
+    setAddAudience("")
+    setAddDialogOpen(true)
+  }
+
+  const handleAddSchedule = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!addAudience.trim()) {
+      toast.error("Укажите номер аудитории")
+      return
+    }
+    try {
+      const res = await fetch(apiUrl("/schedules"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          labDate: addSlotDate + "T12:00:00.000Z",
+          classNumber: addSlotNumber,
+          audienceNumber: Number(addAudience)
         })
       })
+      if (res.ok) {
+        toast.success("Занятие добавлено")
+        setAddDialogOpen(false)
+        const refetch = await fetch(apiUrl(`/schedules/week?week=${weekIndex}`), { credentials: "include" })
+        if (refetch.ok) setWeekData(await refetch.json())
+      } else {
+        const err = await res.json().catch(() => ({}))
+        toast.error(err?.message || "Ошибка создания")
+      }
+    } catch {
+      toast.error("Ошибка создания занятия")
     }
-
-    // Фильтр по преподавателю
-    if (tutorFilter) {
-      result = result.filter(record =>
-          record.tutor.fullName.toLowerCase().includes(tutorFilter.toLowerCase())
-      )
-    }
-
-    // Фильтр по аудитории
-    if (audienceFilter) {
-      result = result.filter(record =>
-          record.audienceNumber == Number(audienceFilter)
-      )
-    }
-
-    // Фильтр по временному слоту
-    if (timeSlotFilter) {
-      result = result.filter(record =>
-          record.classNumber.toString() === timeSlotFilter
-      )
-    }
-
-    setFilteredData(result)
-  }, [dateRange, tutorFilter, audienceFilter, timeSlotFilter, scheduleData])
+  }
 
   const formatTime = (classNumber: number) => {
     const times = [
@@ -129,355 +147,284 @@ const AllTeachersSchedule = () => {
   }
   const handleDeleteRecord = async (entryId: number, memberId: number) => {
     try {
-      const response = await fetch("/api/schedules", {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify({ "entryId": entryId, "studentId": memberId })
-      });
-
+      const response = await fetch(apiUrl("/schedules"), {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ entryId, studentId: memberId })
+      })
       if (response.ok) {
-        toast.success("Успешно отписан");
-
-        // Обновляем данные в интерфейсе - удаляем только конкретного пользователя
-        setScheduleData(prevData => {
-          return prevData.map(record => {
-            // Обновляем записи в основном расписании
-            const updatedEntries = (record.entries || []).map(entry => {
-              if (entry.id === entryId) {
-                // Фильтруем участников команды, удаляя только нужного пользователя
-                const updatedMembers = (entry.team.members || []).filter(
-                    member => member.id !== memberId
-                );
-                return {
-                  ...entry,
-                  team: {
-                    ...entry.team,
-                    members: updatedMembers
-                  }
-                };
-              }
-              return entry;
-            });
-
-            // Если это текущая выбранная запись, обновляем и её
-            if (selectedRecord && selectedRecord.id === record.id) {
-              setSelectedRecord({
-                ...selectedRecord,
-                entries: (selectedRecord.entries || []).map(entry => {
-                  if (entry.id === entryId) {
-                    const updatedMembers = (entry.team.members || []).filter(
-                        member => member.id !== memberId
-                    );
-                    return {
-                      ...entry,
-                      team: {
-                        ...entry.team,
-                        members: updatedMembers
-                      }
-                    };
-                  }
-                  return entry;
-                })
-              });
-            }
-
-            return {
-              ...record,
-              entries: updatedEntries
-            };
-          });
-        });
-
-        // Также обновляем отфильтрованные данные
-        setFilteredData(prevData => {
-          return prevData.map(record => {
-            const updatedEntries = (record.entries || []).map(entry => {
-              if (entry.id === entryId) {
-                const updatedMembers = (entry.team.members || []).filter(
-                    member => member.id !== memberId
-                );
-                return {
-                  ...entry,
-                  team: {
-                    ...entry.team,
-                    members: updatedMembers
-                  }
-                };
-              }
-              return entry;
-            });
-            return {
-              ...record,
-              entries: updatedEntries
-            };
-          });
-        });
-
+        toast.success("Успешно отписан")
+        setSelectedRecord(null)
+        const res = await fetch(apiUrl(`/schedules/week?week=${weekIndex}`), { credentials: "include" })
+        if (res.ok) setWeekData(await res.json())
       } else {
-        toast.error("Ошибка при отмене записи");
-        console.error('Ошибка при удалении записи');
+        toast.error("Ошибка при отмене записи")
       }
-    } catch (error) {
-      console.error('Ошибка:', error);
-      toast.error("Произошла ошибка при удалении записи");
+    } catch {
+      toast.error("Произошла ошибка при удалении записи")
     }
-  };
-
-  const clearFilters = () => {
-    setDateRange(undefined)
-    setTutorFilter("")
-    setAudienceFilter("")
-    setTimeSlotFilter("")
   }
+
+  const days = getDaysOfWeek(weekIndex)
+  const grouped = groupBySlot(weekData)
 
   return (
       <div className="container mx-auto p-4">
         <h1 className="text-2xl font-bold mb-6 flex items-center gap-2">
           <Calendar className="h-6 w-6 text-blue-600" />
-          Расписание преподавателей
+          Расписание
         </h1>
 
-        {/* Панель фильтров */}
-        <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <Filter className="h-5 w-5 text-gray-600" />
-              <h3 className="font-medium">Фильтры</h3>
-            </div>
-            <Button
-                variant="ghost"
-                size="sm"
-                onClick={clearFilters}
-                className="text-gray-500 hover:text-gray-700"
-            >
-              <X className="h-4 w-4 mr-1" />
-              Сбросить
-            </Button>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {/* Фильтр по дате */}
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                    variant="outline"
-                    className="justify-start text-left font-normal"
-                >
-                  <Calendar className="h-4 w-4 mr-2" />
-                  {dateRange?.from ? (
-                      <>
-                        {format(dateRange.from, "dd.MM.yyyy")}
-                        {dateRange?.to ? ` - ${format(dateRange.to, "dd.MM.yyyy")}` : ''}
-                      </>
-                  ) : (
-                      <span>Выберите даты</span>
-                  )}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0">
-                <CalendarPicker
-                    mode="range"
-                    selected={dateRange}
-                    onSelect={setDateRange}
-                    initialFocus
-                />
-              </PopoverContent>
-            </Popover>
-
-            {/* Фильтр по преподавателю */}
-            <Input
-                placeholder="Фильтр по преподавателю"
-                value={tutorFilter}
-                onChange={(e) => setTutorFilter(e.target.value)}
-                className="max-w-xs"
-            />
-
-            {/* Фильтр по аудитории */}
-            <Input
-                placeholder="Фильтр по аудитории"
-                value={audienceFilter}
-                onChange={(e) => setAudienceFilter(e.target.value)}
-                className="max-w-xs"
-            />
-
-            {/* Фильтр по времени */}
-            <Select value={timeSlotFilter} onValueChange={setTimeSlotFilter}>
-              <SelectTrigger className="max-w-xs">
-                <SelectValue placeholder="Выберите время" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="1">08:50-10:20</SelectItem>
-                <SelectItem value="2">10:35-12:05</SelectItem>
-                <SelectItem value="3">12:35-14:05</SelectItem>
-                <SelectItem value="4">14:15-15:45</SelectItem>
-                <SelectItem value="5">15:55-17:20</SelectItem>
-                <SelectItem value="6">17:30-19:00</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+        <div className="flex justify-between items-center mb-4 gap-4">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setWeekIndex((i) => Math.max(0, i - 1))}
+            disabled={weekIndex === 0}
+          >
+            Пред. неделя
+          </Button>
+          <span className="text-sm text-muted-foreground">Неделя {weekIndex + 1}</span>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setWeekIndex((i) => i + 1)}
+            disabled={weekIndex >= 2}
+          >
+            След. неделя
+          </Button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {isLoading ? (
-              Array.from({ length: 6 }).map((_, index) => (
-                  <Card key={index} className="hover:shadow-md transition-shadow">
-                    <CardHeader>
-                      <Skeleton className="h-6 w-3/4" />
-                    </CardHeader>
-                    <CardContent className="space-y-2">
-                      <Skeleton className="h-4 w-full" />
-                      <Skeleton className="h-4 w-full" />
-                      <Skeleton className="h-4 w-full" />
-                    </CardContent>
-                  </Card>
-              ))
-          ) : filteredData.length > 0 ? (
-              filteredData.map(record => (
-                  <Card
-                      key={record.id}
-                      className="hover:shadow-md transition-shadow cursor-pointer"
-                      onClick={() => setSelectedRecord(record)}
-                  >
-                    <CardHeader className="pb-2">
-                      <div className="flex items-center gap-2">
-                        <User className="h-5 w-5 text-gray-600" />
-                        <span className="font-semibold">{record.tutor.fullName}</span>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <Calendar className="h-4 w-4 text-gray-500" />
-                        <span>{format(parseISO(record.labDate), "d MMMM yyyy", { locale: ru })}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Clock className="h-4 w-4 text-gray-500" />
-                        <span>{formatTime(record.classNumber)}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Home className="h-4 w-4 text-gray-500" />
-                        <span>Аудитория {record.audienceNumber}</span>
-                      </div>
-                    </CardContent>
-                    <CardFooter className="flex items-center gap-2 pt-2 border-t">
-                      <Users className="h-4 w-4 text-gray-500" />
-                      <span className="text-sm text-gray-600">
-                  {record.entries ?
-                      record.entries.length <= 4 && record.entries.length >= 2 ?
-                          `${record.entries.length} команды`:
-                              record.entries.length == 1 ? "1 команда":
-                                  `${record.entries.length} команд`
-                      : "0 команд"
-                      }
-                </span>
-                    </CardFooter>
-                  </Card>
-              ))
-          ) : (
-              <div className="col-span-full text-center py-8 text-gray-500">
-                Ничего не найдено по выбранным фильтрам
+        {isLoading ? (
+          <div className="space-y-2">
+            {[1, 2, 3, 4, 5].map((i) => (
+              <Skeleton key={i} className="h-24 w-full" />
+            ))}
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse text-sm">
+              <thead>
+                <tr className="border-b">
+                  <th className="text-left p-2 w-24">Время</th>
+                  {days.map((d) => (
+                    <th key={d} className="text-left p-2 border-l">
+                      {format(parseISO(d), "dd MMM", { locale: ru })}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {TIME_SLOTS.map((slot, idx) => {
+                  const slotNum = idx + 1
+                  return (
+                    <tr key={slotNum} className="border-b">
+                      <td className="p-2 align-top text-muted-foreground whitespace-nowrap">
+                        {slot}
+                        <br />
+                        <span className="text-xs">Пара {slotNum}</span>
+                      </td>
+                      {days.map((date) => {
+                        const key = `${date}-${slotNum}`
+                        const records = grouped[key] ?? []
+                        return (
+                          <td key={key} className="p-2 border-l align-top min-w-[180px]">
+                            <div className="space-y-2">
+                              {records.map((r) => (
+                                <div
+                                  key={r.id}
+                                  className="p-2 rounded-lg bg-muted/50 hover:bg-muted cursor-pointer text-left"
+                                  onClick={() => setSelectedRecord(r)}
+                                >
+                                  <div className="font-medium">Ауд. {r.audienceNumber}</div>
+                                  <div className="text-xs text-muted-foreground truncate">
+                                    {r.tutor.fullName}
+                                  </div>
+                                  <div className="text-xs">
+                                    {(r.entries ?? []).length} запис.
+                                  </div>
+                                </div>
+                              ))}
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                className="w-full h-8"
+                                onClick={() => openAddDialog(date, slotNum)}
+                              >
+                                +
+                              </Button>
+                            </div>
+                          </td>
+                        )
+                      })}
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* Диалог добавления занятия в слот */}
+        <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Добавить занятие</DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleAddSchedule} className="space-y-4">
+              <div className="text-sm text-muted-foreground bg-muted/50 p-3 rounded-lg">
+                <div>Дата: {addSlotDate ? format(parseISO(addSlotDate), "d MMMM yyyy", { locale: ru }) : ""}</div>
+                <div>Пара: {addSlotNumber} ({TIME_SLOTS[addSlotNumber - 1]})</div>
               </div>
-          )}
-        </div>
+              <div>
+                <label className="text-sm font-medium mb-1 block">Аудитория *</label>
+                <Input
+                  type="number"
+                  placeholder="Номер аудитории"
+                  value={addAudience}
+                  onChange={(e) => setAddAudience(e.target.value)}
+                />
+              </div>
+              <div className="flex gap-2 justify-end">
+                <Button type="button" variant="outline" onClick={() => setAddDialogOpen(false)}>
+                  Отмена
+                </Button>
+                <Button type="submit">Создать</Button>
+              </div>
+            </form>
+          </DialogContent>
+        </Dialog>
 
       <Dialog open={!!selectedRecord} onOpenChange={() => setSelectedRecord(null)}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col p-0 gap-0">
           {selectedRecord && (
             <>
-              <DialogHeader>
+              <DialogHeader className="px-6 pt-6 pb-2 shrink-0">
                 <DialogTitle className="flex items-center gap-2">
                   <Book className="h-6 w-6" />
                   Детали занятия
                 </DialogTitle>
               </DialogHeader>
 
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="flex items-center gap-2">
-                    <Calendar className="h-5 w-5" />
-                    {format(parseISO(selectedRecord.labDate), "d MMMM yyyy", { locale: ru })}
+              <div className="flex flex-1 min-h-0 px-6 pb-6 gap-6">
+                {/* Левая панель: инфо о занятии */}
+                <div className="shrink-0 w-64 space-y-4">
+                  <div className="space-y-2 text-sm">
+                    <div className="flex items-center gap-2">
+                      <Calendar className="h-4 w-4 text-muted-foreground" />
+                      {format(parseISO(selectedRecord.labDate), "d MMMM yyyy", { locale: ru })}
+                    </div>
+                    <div className="flex items-center gap-2 font-medium">
+                      <Clock className="h-4 w-4 text-muted-foreground" />
+                      Пара {selectedRecord.classNumber} ({formatTime(selectedRecord.classNumber)})
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Home className="h-4 w-4 text-muted-foreground" />
+                      Аудитория {selectedRecord.audienceNumber}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <User className="h-4 w-4 text-muted-foreground" />
+                      {selectedRecord.tutor.fullName}
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Clock className="h-5 w-5" />
-                    {formatTime(selectedRecord.classNumber)}
+                  <div className="border-t pt-3 space-y-1.5 text-sm text-muted-foreground">
+                    <div className="flex items-center gap-2">
+                      <Route className="h-4 w-4" />
+                      Роутеры: {selectedRecord.routers}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <EthernetPort className="h-4 w-4" />
+                      Коммутаторы: {selectedRecord.switches}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Router className="h-4 w-4" />
+                      Беспроводные: {selectedRecord.wirelessRouters}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Route className="h-4 w-4" />
+                      HP роутеры: {selectedRecord.hpRouters}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <EthernetPort className="h-4 w-4" />
+                      HP коммутаторы: {selectedRecord.hpSwitches}
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Home className="h-5 w-5" />
-                    Аудитория {selectedRecord.audienceNumber}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <User className="h-5 w-5" />
-                    {selectedRecord.tutor.fullName}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Route className="h-5 w-5" />
-                    Свободных маршрутизаторов {selectedRecord.routers}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <EthernetPort className="h-5 w-5" />
-                    Свободных коммутаторов {selectedRecord.switches}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Route className="h-5 w-5" />
-                    Свободных HP маршрутизаторов {selectedRecord.hpRouters}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <EthernetPort className="h-5 w-5" />
-                    Свободных HP коммутаторов {selectedRecord.hpSwitches}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Router className="h-5 w-5" />
-                    Свободных беспроводных маршрутизаторов {selectedRecord.wirelessRouters}
-                  </div>
-                  
-                  
                 </div>
 
-                <div className="border-t pt-4">
-                  <h3 className="font-medium mb-2 flex items-center gap-2">
-                    <Users className="h-5 w-5" />
-                    Записавшиеся команды:
-                  </h3>
-                  <div className="space-y-3">
-                    {selectedRecord.entries?.map(entry => (
-                      <Card key={entry.id}>
-                        <CardHeader className="pb-2">
-                        <div className="text-sm text-gray-600">
-                          Лабораторная работа: {entry.lab.number} - {entry.lab.description}&nbsp;
-                          Максимум студентов: {entry.lab.maxStudents}
-                          </div>
-                        </CardHeader>
-                        <CardContent>
-
-                          <div className="mt-2">
-                            <div className="text-xs text-gray-500 mb-1">Участники:</div>
-                            <div className="space-y-1">
-                              {entry.team.members?.map(member => (
-                                <div 
-                                  key={member.id}
-                                  className="flex items-center gap-2 px-2 py-1 bg-gray-50 rounded"
-                                >
-                                  <User className="h-4 w-4 text-gray-400" />
-                                  <span>{member.fullName}</span>
-                                  <span>{member.group}</span>
-                                  <button
-                                    onClick={() => handleDeleteRecord(entry.id, member.id)}
-                                    className="text-red-600 hover:text-red-800 text-sm flex items-center gap-1"
+                {/* Правая панель: карточки по лабораторным (скролл) */}
+                <div className="flex-1 min-w-0 flex flex-col border-l pl-6">
+                  <h3 className="text-sm font-medium text-muted-foreground mb-3">Записи по лабораторным</h3>
+                  <div className="overflow-y-auto space-y-4 pr-2">
+                    {(() => {
+                      const entries = selectedRecord.entries ?? []
+                      const byLab = new Map<number, typeof entries>()
+                      entries.forEach((entry) => {
+                        const labId = entry.lab.id
+                        if (!byLab.has(labId)) byLab.set(labId, [])
+                        byLab.get(labId)!.push(entry)
+                      })
+                      return Array.from(byLab.entries()).map(([labId, labEntries]) => {
+                        const lab = labEntries[0]!.lab
+                        const totalEnrolled = labEntries.reduce(
+                          (sum, e) => sum + (e.team.members?.length ?? 0),
+                          0
+                        )
+                        const totalMax = labEntries.reduce((sum, e) => sum + e.lab.maxStudents, 0)
+                        const allMembers = labEntries.flatMap((e) =>
+                          (e.team.members ?? []).map((m) => ({ ...m, entryId: e.id }))
+                        )
+                        const emptySlots = Math.max(0, totalMax - totalEnrolled)
+                        return (
+                          <Card key={labId} className="overflow-hidden">
+                            <CardHeader className="py-3 px-4 flex flex-row items-center justify-between space-y-0">
+                              <div>
+                                <CardTitle className="text-base">
+                                  Лабораторная {lab.number}
+                                </CardTitle>
+                                <p className="text-sm text-muted-foreground mt-0.5">
+                                  {totalEnrolled}/{totalMax}
+                                </p>
+                              </div>
+                            </CardHeader>
+                            <CardContent className="px-4 pb-4 pt-0">
+                              <div className="space-y-1.5">
+                                {allMembers.map((member) => (
+                                  <div
+                                    key={`${member.entryId}-${member.id}`}
+                                    className="flex items-center justify-between gap-2 px-3 py-2 rounded-md bg-muted/50 text-sm"
                                   >
-                                    <span>Удалить запись</span>
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                                      <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
-                                    </svg>
-                                  </button>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
+                                    <div className="flex items-center gap-2 min-w-0">
+                                      <User className="h-4 w-4 shrink-0 text-muted-foreground" />
+                                      <span className="truncate">{member.fullName}</span>
+                                      <span className="shrink-0 text-muted-foreground">{member.group}</span>
+                                    </div>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="text-destructive hover:text-destructive shrink-0 h-8"
+                                      onClick={(e) => {
+                                        e.stopPropagation()
+                                        handleDeleteRecord(member.entryId, member.id)
+                                      }}
+                                    >
+                                      Удалить
+                                    </Button>
+                                  </div>
+                                ))}
+                                {Array.from({ length: emptySlots }).map((_, i) => (
+                                  <Skeleton key={`empty-${labId}-${i}`} className="h-10 w-full rounded-md" />
+                                ))}
+                              </div>
+                            </CardContent>
+                          </Card>
+                        )
+                      })
+                    })()}
+                    {(!selectedRecord.entries || selectedRecord.entries.length === 0) && (
+                      <p className="text-sm text-muted-foreground">Нет записей</p>
+                    )}
                   </div>
                 </div>
               </div>

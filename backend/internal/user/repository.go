@@ -23,7 +23,7 @@ func (r *UserRepository) GetAll() ([]models.User, error) {
 
 func (r *UserRepository) GetByID(id uint) (*models.User, error) {
 	var user models.User
-	if err := r.db.Preload("Group").First(&user, id).Error; err != nil {
+	if err := r.db.Preload("Group.Subject").First(&user, id).Error; err != nil {
 		return nil, err
 	}
 	return &user, nil

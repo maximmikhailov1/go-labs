@@ -12,6 +12,9 @@ import SubjectManagement from "./teacher/SubjectManagement"
 import LabScheduling from "./teacher/LabScheduling"
 import GroupSubjectAssignment from "./teacher/GroupSubjectAssignment"
 import AllTeachersSchedule from "./teacher/AllTeachersSchedule"
+import TeacherGrades from "./teacher/TeacherGrades"
+import AudienceManagement from "./teacher/AudienceManagement"
+import Scoreboard from "./Scoreboard"
 import Spinner from "./Spinner"
 
 
@@ -135,10 +138,12 @@ const Layout: React.FC<LayoutProps> = ({ searchParams }) => {
       "subject-management",
       "lab-scheduling",
       "group-subject-assignment",
-      "all-teachers-schedule"
+      "all-teachers-schedule",
+      "grades",
+      "audience-management"
     ]
 
-    const studentPages = ["home", "profile"]
+    const studentPages = ["home", "profile", "scoreboard"]
 
     if (
       (userRole === "tutor" && !tutorPages.includes(currentPage)) ||
@@ -153,6 +158,8 @@ const Layout: React.FC<LayoutProps> = ({ searchParams }) => {
         return <Home />
       case "profile":
         return <ProfilePage />
+      case "scoreboard":
+        return <Scoreboard />
       case "subject-management":
         return <SubjectManagement />
       case "lab-scheduling":
@@ -161,6 +168,10 @@ const Layout: React.FC<LayoutProps> = ({ searchParams }) => {
         return <GroupSubjectAssignment />
       case "all-teachers-schedule":
         return <AllTeachersSchedule />
+      case "grades":
+        return <TeacherGrades />
+      case "audience-management":
+        return <AudienceManagement />
       default:
         return <Home />
     }

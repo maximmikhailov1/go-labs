@@ -12,6 +12,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { CalendarIcon, Clock, Users, User } from "lucide-react"
 import { format } from "date-fns"
 import { cn } from "@/lib/utils"
+import { apiUrl } from "@/lib/api"
 import { Skeleton } from "@/components/ui/skeleton"
 import { toast } from "sonner"
 
@@ -34,11 +35,12 @@ const LabScheduling: React.FC = () => {
   useEffect(() => {
     const fetchTutors = async () => {
       try {
-        const response = await fetch('/api/users/tutors')
+        const response = await fetch(apiUrl("/users/tutors"), { credentials: "include" })
         if (!response.ok) {
           throw new Error('Ошибка загрузки преподавателей')
         }
-        setTutors(await response.json())
+        const data = await response.json()
+        setTutors(Array.isArray(data) ? data : [])
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Неизвестная ошибка')
       } finally {
@@ -75,11 +77,10 @@ const LabScheduling: React.FC = () => {
     if (!validateForm()) return
 
     try {
-      const response = await fetch('/api/schedules', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+      const response = await fetch(apiUrl("/schedules"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({
           "labDate": date,
           "classNumber": Number(classNumber),
@@ -219,7 +220,7 @@ const LabScheduling: React.FC = () => {
                     </SelectValue>
                   </SelectTrigger>
                   <SelectContent className="rounded-lg shadow-lg border border-gray-200">
-                    {tutors.map((tutor) => (
+                    {(tutors ?? []).map((tutor) => (
                       <SelectItem 
                         key={tutor.id}
                         value={tutor.id}

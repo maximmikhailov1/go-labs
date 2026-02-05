@@ -20,5 +20,6 @@ func Migrate() {
 		&models2.Team{},
 		&models2.Record{},
 		&models2.Entry{},
+		&models2.Audience{},
 	)
 }

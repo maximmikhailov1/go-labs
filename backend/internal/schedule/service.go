@@ -2,30 +2,54 @@ package schedule
 
 import (
 	"errors"
+	"strconv"
+
+	"time"
+
+	"github.com/maximmikhailov1/go-labs/backend/internal/audience"
 	"github.com/maximmikhailov1/go-labs/backend/internal/models"
 	"gorm.io/datatypes"
-	"time"
 )
 
 type Service struct {
-	repo *Repository
+	repo         *Repository
+	audienceRepo *audience.Repository
 }
 
-func NewService(repo *Repository) *Service {
-	return &Service{repo: repo}
+func NewService(repo *Repository, audienceRepo *audience.Repository) *Service {
+	return &Service{repo: repo, audienceRepo: audienceRepo}
 }
 
 func (s *Service) CreateRecord(req CreateRequest, tutorID uint) (*RecordResponse, error) {
+	audienceNumber := req.AudienceNumber
+	switches, routers, wireless, hpRouters, hpSwitches := 6, 6, 2, 2, 2
+
+	if req.AudienceID != nil {
+		aud, err := s.audienceRepo.GetByID(*req.AudienceID)
+		if err != nil {
+			return nil, errors.New("audience not found")
+		}
+		if n, err := strconv.Atoi(aud.Number); err == nil {
+			audienceNumber = n
+		}
+		switches = aud.Switches
+		routers = aud.Routers
+		wireless = aud.WirelessRouters
+		hpRouters = aud.HPRouters
+		hpSwitches = aud.HPSwitches
+	}
+
 	record := models.Record{
 		LabDate:                  datatypes.Date(req.LabDate),
 		ClassNumber:              req.ClassNumber,
-		AudienceNumber:           req.AudienceNumber,
+		AudienceNumber:           audienceNumber,
 		TutorID:                  tutorID,
-		SwitchesRemaining:        6,
-		RoutersRemaining:         6,
-		WirelessRoutersRemaining: 2,
-		HPRoutersRemaining:       2,
-		HPSwitchesRemaining:      2,
+		Status:                   "planned",
+		SwitchesRemaining:        switches,
+		RoutersRemaining:         routers,
+		WirelessRoutersRemaining: wireless,
+		HPRoutersRemaining:       hpRouters,
+		HPSwitchesRemaining:      hpSwitches,
 	}
 
 	if err := s.repo.Create(&record); err != nil {
@@ -38,6 +62,7 @@ func (s *Service) CreateRecord(req CreateRequest, tutorID uint) (*RecordResponse
 		ClassNumber:     record.ClassNumber,
 		AudienceNumber:  record.AudienceNumber,
 		TutorID:         record.TutorID,
+		Status:          record.Status,
 		CreatedAt:       record.CreatedAt,
 		Switches:        record.SwitchesRemaining,
 		Routers:         record.RoutersRemaining,
@@ -167,11 +192,16 @@ func (s *Service) GetWeekSchedule(weekNumber int) ([]WeekScheduleResponse, error
 			})
 		}
 
+		status := r.Status
+		if status == "" {
+			status = "planned"
+		}
 		response = append(response, WeekScheduleResponse{
 			ID:             r.ID,
 			LabDate:        r.LabDate,
 			ClassNumber:    r.ClassNumber,
 			AudienceNumber: r.AudienceNumber,
+			Status:         status,
 			Tutor: TutorInfo{
 				ID:       r.Tutor.ID,
 				FullName: r.Tutor.FullName,
@@ -187,4 +217,11 @@ func (s *Service) GetWeekSchedule(weekNumber int) ([]WeekScheduleResponse, error
 	}
 
 	return response, nil
+}
+
+func (s *Service) UpdateRecordStatus(recordID uint, status string) error {
+	if status != "planned" && status != "cancelled" && status != "passed" {
+		return errors.New("invalid status")
+	}
+	return s.repo.UpdateRecordStatus(recordID, status)
 }

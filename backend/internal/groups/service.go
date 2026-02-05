@@ -1,6 +1,11 @@
 package group
 
-import "errors"
+import (
+	"context"
+	"errors"
+
+	"github.com/maximmikhailov1/go-labs/backend/internal/score"
+)
 
 type Service struct {
 	repo *Repository
@@ -60,4 +65,41 @@ func (s *Service) DeleteGroup(groupID uint) error {
 		return errors.New("failed to delete group")
 	}
 	return nil
+}
+
+func (s *Service) GetGroupMembers(ctx context.Context, groupID uint) ([]GroupMemberResponse, error) {
+	group, err := s.repo.GetGroupWithStudents(groupID)
+	if err != nil {
+		return nil, errors.New("group not found")
+	}
+	subjectID := uint(0)
+	if group.SubjectID != nil {
+		subjectID = *group.SubjectID
+	}
+	groupName := group.Name
+
+	userIDs := make([]uint, 0)
+	if group.Students != nil {
+		for _, u := range *group.Students {
+			userIDs = append(userIDs, u.ID)
+		}
+	}
+	scores, err := score.GetScoresForUsers(ctx, userIDs, subjectID, groupID)
+	if err != nil {
+		return nil, err
+	}
+
+	out := make([]GroupMemberResponse, 0)
+	if group.Students != nil {
+		for _, u := range *group.Students {
+			sc := scores[u.ID]
+			out = append(out, GroupMemberResponse{
+				FullName:       u.FullName,
+				GroupName:      groupName,
+				CompletedCount: sc.Completed,
+				DefendedCount:  sc.Defended,
+			})
+		}
+	}
+	return out, nil
 }

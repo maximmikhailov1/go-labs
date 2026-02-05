@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
-import { ChevronLeft, ChevronRight } from "lucide-react"
+import { ChevronLeft, ChevronRight, Route, EthernetPort, Router } from "lucide-react"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { apiUrl } from "@/lib/api"
 
@@ -11,6 +11,7 @@ type Lab = {
   number: string
   description: string
   maxStudents: number
+  isMandatory?: boolean
   routersRequired: number
   switchesRequired: number
   wirelessRoutersRequired: number
@@ -142,36 +143,41 @@ const TIME_SLOTS = [
 
     const handleEnroll = async (labId: number | undefined, teamId?: number) => {
       if (!selectedSession) return;
+      if (!isEnrollmentAllowed(selectedSession)) return;
 
       try {
-        const response = await fetch('/api/records/enroll', {
+        const response = await fetch(apiUrl("/records/enroll"), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             recordId: selectedSession.id,
             labId,
-            teamId: teamId || null // Явно указываем null если команда не выбрана
-          })
+            teamId: teamId || null
+          }),
+          credentials: "include"
         });
 
-        if (response.ok) {
-          const updated = await fetch(apiUrl(`/schedules/week?week=${currentWeekIndex}`), { credentials: "include" }).then(r => r.json())
-          setScheduleData(prev => {
-            const newData = [...prev]
-            newData[currentWeekIndex] = updated
-            return newData
-          })
-          setSelectedSession(null)
-          setSelectedLab(null)
+        if (!response.ok) {
+          const err = await response.json().catch(() => ({}))
+          const msg = err?.message || err?.error || "Ошибка записи"
+          if (typeof window !== "undefined" && window.alert) window.alert(msg)
+          return
         }
+        const updated = await fetch(apiUrl(`/schedules/week?week=${currentWeekIndex}`), { credentials: "include" }).then(r => r.json())
+        setScheduleData(prev => {
+          const newData = [...prev]
+          newData[currentWeekIndex] = updated
+          return newData
+        })
+        setSelectedSession(null)
+        setSelectedLab(null)
       } catch (error) {
         console.error("Ошибка записи:", error)
       }
     }
-    const groupRecordsByTimeSlot = (records: ScheduleItem[]) => {
-      const grouped: { [key: string]: ScheduleItem[] } = {};
-
-      records.forEach(record => {
+    const groupRecordsByTimeSlot = (records: ScheduleItem[] | null | undefined) => {
+      const grouped: { [key: string]: ScheduleItem[] } = {}
+      ;(records ?? []).forEach(record => {
         try {
           // Нормализуем дату - берем только часть до 'T'
           const datePart = record.labDate.split('T')[0];
@@ -199,6 +205,19 @@ const TIME_SLOTS = [
     //   return lab? lab.maxStudents - totalUsed > 0:false
     // }
 
+
+    const isEnrollmentAllowed = (record: ScheduleItem) => {
+      const dateStr = record.labDate?.split?.("T")?.[0] ?? ""
+      if (!dateStr) return false
+      const labDate = new Date(dateStr + "T00:00:00Z")
+      const now = new Date()
+      const today = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()))
+      const limit = new Date(today)
+      limit.setUTCDate(limit.getUTCDate() + 21)
+      if (labDate < today) return false
+      if (labDate > limit) return false
+      return true
+    }
 
     const isRecordAvailable = (record: ScheduleItem) => {
       if (!userLabs) return false;
@@ -246,7 +265,7 @@ const TIME_SLOTS = [
     };
 
     const renderTimeSlots = (date: string) => {
-      const currentWeekRecords = scheduleData[currentWeekIndex] || [];
+      const currentWeekRecords = (scheduleData ?? [])[currentWeekIndex] || [];
       const groupedRecords = groupRecordsByTimeSlot(currentWeekRecords);
 
       return TIME_SLOTS.map((slot, index) => {
@@ -266,14 +285,15 @@ const TIME_SLOTS = [
               {records.map(record => {
                 const isAvailable = isRecordAvailable(record);
                 const isScheduled = isScheduledInSlot || isUserScheduled(record);
+                const canEnroll = isEnrollmentAllowed(record);
 
                 return (
                     <div
                         key={record.id}
                         className={`mb-2 p-2 rounded-lg ${
-                            isAvailable && !isScheduled
-                                ? 'bg-green-100'
-                                : 'bg-gray-100'
+                            isAvailable && !isScheduled && canEnroll
+                                ? "bg-green-100"
+                                : "bg-gray-100"
                         }`}
                     >
                       <div className="flex justify-between items-center">
@@ -286,7 +306,7 @@ const TIME_SLOTS = [
                           </div>
                         </div>
 
-                        {isAvailable && !isScheduled && (
+                        {isAvailable && !isScheduled && canEnroll && (
                             <Button
                                 onClick={() => setSelectedSession(record)}
                                 size="sm"
@@ -294,6 +314,11 @@ const TIME_SLOTS = [
                             >
                               Записаться
                             </Button>
+                        )}
+                        {isAvailable && !isScheduled && !canEnroll && (
+                            <span className="text-xs text-amber-600 ml-2" title="Запись открывается не ранее чем за 3 недели до занятия">
+                              Запись недоступна
+                            </span>
                         )}
                       </div>
 
@@ -378,28 +403,47 @@ const TIME_SLOTS = [
       <DialogContent className="max-w-3xl w-[calc(100vw-2rem)] sm:rounded-lg bg-white shadow-xl">
       {!selectedLab ? (
 
-            <div className="space-y-4 ">
+            <div className="space-y-4">
               <DialogHeader>
-                <DialogTitle className="text-xl font-semibold text-gray-800">
+                <DialogTitle className="text-xl font-semibold text-gray-900">
                   Выбор лабораторной работы
                 </DialogTitle>
-                <DialogDescription className="text-sm text-gray-600">
-                  <div className="grid grid-cols-2 gap-2 mt-2">
-                    <div>
-                      <span className="font-medium">Аудитория:</span> {selectedSession?.audienceNumber}
+                <DialogDescription asChild>
+                  <div className="text-sm text-gray-600 space-y-3 mt-2">
+                    <div className="grid grid-cols-2 gap-x-6 gap-y-1">
+                      <div><span className="font-medium text-gray-700">Аудитория:</span> {selectedSession?.audienceNumber}</div>
+                      <div><span className="font-medium text-gray-700">Преподаватель:</span> {formatFIO(selectedSession?.tutor.fullName as string)}</div>
                     </div>
-                    <div>
-                      <span className="font-medium">Преподаватель:</span> {formatFIO(selectedSession?.tutor.fullName as string)}
-                    </div>
-                    <div className="col-span-2">
-                      <span className="font-medium">Оборудование:</span>
-                      <div className=" pl-5 mt-1 grid-cols-1 gap-1">
-                        <div><span>Роутеры: {selectedSession?.routers}</span></div>
-                        <div><span>Коммутаторы: {selectedSession?.switches}</span></div>
-                        <div><span>Беспроводные роутеры: {selectedSession?.wirelessRouters}</span></div>
-                        <div><span>HP Роутеры: {selectedSession?.hpRouters}</span></div>
-                        <div><span>HP Коммутаторы: {selectedSession?.hpSwitches}</span></div>
-                      </div>
+                    <div className="border-t pt-3">
+                      <span className="font-medium text-gray-700 block mb-2">Оборудование в слоте</span>
+                      {(() => {
+                        const s = selectedSession
+                        if (!s) return null
+                        const used = (s.entries ?? []).reduce(
+                          (acc, e) => ({
+                            routers: acc.routers + (e.lab?.routersRequired ?? 0),
+                            switches: acc.switches + (e.lab?.switchesRequired ?? 0),
+                            wireless: acc.wireless + (e.lab?.wirelessRoutersRequired ?? 0),
+                            hpR: acc.hpR + (e.lab?.hpRoutersRequired ?? 0),
+                            hpS: acc.hpS + (e.lab?.hpSwitchesRequired ?? 0)
+                          }),
+                          { routers: 0, switches: 0, wireless: 0, hpR: 0, hpS: 0 }
+                        )
+                        const total = (name: keyof typeof used) => {
+                          const rem = { routers: s.routers ?? 0, switches: s.switches ?? 0, wireless: s.wirelessRouters ?? 0, hpR: s.hpRouters ?? 0, hpS: s.hpSwitches ?? 0 }
+                          const k = name === "wireless" ? "wireless" : name === "hpR" ? "hpR" : name === "hpS" ? "hpS" : name
+                          return (rem[k as keyof typeof rem] ?? 0) + (used[k as keyof typeof used] ?? 0)
+                        }
+                        return (
+                          <ul className="space-y-2 text-sm">
+                            <li className="flex items-center gap-2"><Route className="h-4 w-4 text-muted-foreground shrink-0" /><span className="text-gray-700">Роутеры:</span> <span className="font-medium">{s.routers ?? 0} из {total("routers")}</span></li>
+                            <li className="flex items-center gap-2"><EthernetPort className="h-4 w-4 text-muted-foreground shrink-0" /><span className="text-gray-700">Коммутаторы:</span> <span className="font-medium">{s.switches ?? 0} из {total("switches")}</span></li>
+                            <li className="flex items-center gap-2"><Router className="h-4 w-4 text-muted-foreground shrink-0" /><span className="text-gray-700">Беспроводные роутеры:</span> <span className="font-medium">{s.wirelessRouters ?? 0} из {total("wireless")}</span></li>
+                            <li className="flex items-center gap-2"><Route className="h-4 w-4 text-muted-foreground shrink-0" /><span className="text-gray-700">HP роутеры:</span> <span className="font-medium">{s.hpRouters ?? 0} из {total("hpR")}</span></li>
+                            <li className="flex items-center gap-2"><EthernetPort className="h-4 w-4 text-muted-foreground shrink-0" /><span className="text-gray-700">HP коммутаторы:</span> <span className="font-medium">{s.hpSwitches ?? 0} из {total("hpS")}</span></li>
+                          </ul>
+                        )
+                      })()}
                     </div>
                   </div>
                 </DialogDescription>
@@ -430,22 +474,30 @@ const TIME_SLOTS = [
           <Button 
             key={lab.id}
             onClick={() => setSelectedLab(lab)}
-            className="mb-2 text-white w-full h-12 max-h-14 text-left justify-start bg-blue-700 hover:bg-blue-800"
+            className="mb-2 text-white w-full min-h-12 text-left justify-start bg-blue-700 hover:bg-blue-800 py-3"
           >
-            <div className="flex-1 p-2 min-w-0">
-              <div className="font-medium text-white truncate">
-                {lab.number} - {lab.description}
+            <div className="flex-1 p-2 min-w-0 w-full">
+              <div className="font-medium text-white truncate flex items-center gap-2">
+                <span>{lab.number} — {lab.description}</span>
+                {lab.isMandatory === false && (
+                  <span className="text-xs font-normal text-blue-200 shrink-0">(необязательная)</span>
+                )}
               </div>
-              
-              {calculateAvailableSlotsInTeam(lab.id) > 0 ? (
-                <div className="text-xs text-gray-100 mt-1">
-                  Свободно мест: {calculateAvailableSlotsInTeam(lab.id)}
-                </div>
-              ) : (
-                <div className="text-xs text-gray-100 mt-1">
-                  Можно записаться с новой командой
-                </div>
-              )}
+              {(() => {
+                const available = calculateAvailableSlotsInTeam(lab.id)
+                const labEntries = selectedSession?.entries?.filter(e => e.lab.id === lab.id) || []
+                const totalSlots = labEntries.length * lab.maxStudents
+                const used = labEntries.reduce((s, e) => s + (Array.isArray(e.team.members) ? e.team.members.length : 0), 0)
+                return (
+                  <div className="text-xs text-blue-100 mt-1">
+                    {available > 0 ? (
+                      <>Свободно мест: {available} · {used} из {totalSlots || lab.maxStudents} в слоте</>
+                    ) : (
+                      <>Можно записаться с новой командой{totalSlots > 0 ? ` · ${used} из ${totalSlots}` : ""}</>
+                    )}
+                  </div>
+                )
+              })()}
             </div>
           </Button>
         ))}

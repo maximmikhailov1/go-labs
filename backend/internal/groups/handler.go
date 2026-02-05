@@ -126,3 +126,24 @@ func (h *Handler) DeleteGroup(c *fiber.Ctx) error {
 
 	return c.SendStatus(fiber.StatusNoContent)
 }
+
+func (h *Handler) GetGroupMembers(c *fiber.Ctx) error {
+	claims := c.Locals("user").(*middleware.AuthClaims)
+	if claims.Role != "tutor" {
+		return fiber.NewError(fiber.StatusForbidden, "only tutors can view group members")
+	}
+
+	groupID, err := c.ParamsInt("id")
+	if err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, "invalid group ID")
+	}
+
+	members, err := h.service.GetGroupMembers(c.Context(), uint(groupID))
+	if err != nil {
+		if err.Error() == "group not found" {
+			return fiber.NewError(fiber.StatusNotFound, err.Error())
+		}
+		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+	}
+	return c.JSON(members)
+}

@@ -5,9 +5,11 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
-import { Users, BookOpen, Plus, Trash2 } from "lucide-react"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Users, BookOpen, Plus, Trash2, Eye } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
 import { toast } from "sonner"
+import { apiUrl } from "@/lib/api"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -34,6 +36,13 @@ interface Subject {
   name: string
 }
 
+interface GroupMember {
+  fullName: string
+  groupName: string
+  completedCount: number
+  defendedCount: number
+}
+
 const GroupSubjectAssignment: React.FC = () => {
   const [groups, setGroups] = useState<Group[]>([])
   const [subjects, setSubjects] = useState<Subject[]>([])
@@ -44,14 +53,36 @@ const GroupSubjectAssignment: React.FC = () => {
   const [error, setError] = useState("")
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [groupToDelete, setGroupToDelete] = useState<Group | null>(null)
+  const [membersDialogOpen, setMembersDialogOpen] = useState(false)
+  const [membersDialogGroup, setMembersDialogGroup] = useState<Group | null>(null)
+  const [membersList, setMembersList] = useState<GroupMember[]>([])
+  const [membersLoading, setMembersLoading] = useState(false)
+
+  const openMembersDialog = async (group: Group) => {
+    setMembersDialogGroup(group)
+    setMembersDialogOpen(true)
+    setMembersLoading(true)
+    setMembersList([])
+    try {
+      const res = await fetch(apiUrl(`/groups/${group.id}/members`), { credentials: "include" })
+      if (res.ok) {
+        const data = await res.json()
+        setMembersList(Array.isArray(data) ? data : [])
+      }
+    } catch {
+      toast.error("Не удалось загрузить участников")
+    } finally {
+      setMembersLoading(false)
+    }
+  }
 
   // Загрузка данных
   useEffect(() => {
     const fetchData = async () => {
       try {
         const [groupsRes, subjectsRes] = await Promise.all([
-          fetch('/api/groups'),
-          fetch('/api/subjects')
+          fetch(apiUrl("/groups"), { credentials: "include" }),
+          fetch(apiUrl("/subjects"), { credentials: "include" })
         ])
 
         if (!groupsRes.ok || !subjectsRes.ok) throw new Error('Ошибка загрузки данных')
@@ -74,10 +105,11 @@ const GroupSubjectAssignment: React.FC = () => {
     if (!newGroupName) return
 
     try {
-      const response = await fetch('/api/groups', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: newGroupName })
+      const response = await fetch(apiUrl("/groups"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: newGroupName }),
+        credentials: "include"
       })
 
       if (!response.ok) throw new Error('Ошибка создания группы')
@@ -103,8 +135,9 @@ const GroupSubjectAssignment: React.FC = () => {
     if (!groupToDelete) return
 
     try {
-      const response = await fetch(`/api/groups/${groupToDelete.id}`, {
-        method: 'DELETE'
+      const response = await fetch(apiUrl(`/groups/${groupToDelete.id}`), {
+        method: "DELETE",
+        credentials: "include"
       })
 
       if (!response.ok) throw new Error('Ошибка удаления группы')
@@ -126,13 +159,14 @@ const GroupSubjectAssignment: React.FC = () => {
     if (!selectedGroupId || !selectedSubjectId) return
 
     try {
-      const response = await fetch('/api/groups/subject', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch(apiUrl("/groups/subject"), {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           groupId: Number(selectedGroupId),
           subjectId: Number(selectedSubjectId)
-        })
+        }),
+        credentials: "include"
       })
 
       if (!response.ok) throw new Error('Ошибка обновления предмета')
@@ -177,6 +211,46 @@ const GroupSubjectAssignment: React.FC = () => {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
+        <Dialog open={membersDialogOpen} onOpenChange={setMembersDialogOpen}>
+          <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
+            <DialogHeader>
+              <DialogTitle>Участники группы {membersDialogGroup?.name ?? ""}</DialogTitle>
+            </DialogHeader>
+            <div className="overflow-auto flex-1 min-h-0">
+              {membersLoading ? (
+                <div className="space-y-2">
+                  {[1, 2, 3].map((i) => (
+                    <Skeleton key={i} className="h-10 w-full" />
+                  ))}
+                </div>
+              ) : membersList.length === 0 ? (
+                <p className="text-sm text-gray-500">Нет участников или группа не загружена.</p>
+              ) : (
+                <table className="w-full text-sm border-collapse">
+                  <thead>
+                    <tr className="border-b">
+                      <th className="text-left py-2 font-medium">ФИО</th>
+                      <th className="text-left py-2 font-medium">Группа</th>
+                      <th className="text-right py-2 font-medium">Выполнено</th>
+                      <th className="text-right py-2 font-medium">Защищено</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {membersList.map((m, i) => (
+                      <tr key={i} className="border-b border-gray-100">
+                        <td className="py-2">{m.fullName}</td>
+                        <td className="py-2">{m.groupName}</td>
+                        <td className="py-2 text-right">{m.completedCount}</td>
+                        <td className="py-2 text-right">{m.defendedCount}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
 
         {/* Форма создания группы */}
         <Card className="border-0 shadow-sm rounded-xl bg-white">
@@ -224,22 +298,33 @@ const GroupSubjectAssignment: React.FC = () => {
                 <div className="space-y-4">
                   {groups.map((group) => (
                       <div key={group.id} className="p-4 border rounded-lg hover:shadow-sm transition-shadow">
-                        <div className="flex justify-between items-start">
+                        <div className="flex justify-between items-center gap-2">
                           <div>
                             <h3 className="font-semibold">{group.name}</h3>
                             <p className="text-sm text-gray-500">Код: {group.code}</p>
                             <p className="text-sm mt-1">
-                              Текущий предмет: {group.subject?.name || 'Не назначен'}
+                              Текущий предмет: {group.subject?.name || "Не назначен"}
                             </p>
                           </div>
-                          <Button
-                              variant="ghost"
-                              size="sm"
-                              className="text-red-600 hover:text-red-800"
-                              onClick={() => confirmDeleteGroup(group)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                          <div className="flex items-center gap-1 shrink-0">
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-blue-600 hover:text-blue-800"
+                                onClick={() => openMembersDialog(group)}
+                                title="Участники группы"
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-red-600 hover:text-red-800"
+                                onClick={() => confirmDeleteGroup(group)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </div>
                       </div>
                   ))}

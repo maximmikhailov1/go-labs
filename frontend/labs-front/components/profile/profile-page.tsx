@@ -8,10 +8,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Plus } from "lucide-react"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Plus, BookOpen, CheckCircle, Clock, Shield } from "lucide-react"
 import { parseISO } from "date-fns/parseISO"
 import { format } from "date-fns"
 import { ru } from "date-fns/locale"
+import { apiUrl } from "@/lib/api"
 
 interface Team {
   id: string
@@ -21,18 +23,139 @@ interface Team {
 }
 interface User {
   fullName: string
-  groupName:string
+  groupName: string
+  subjectId?: number
+  subjectName?: string
 }
 interface Record {
-    id:           number
-    labName:     string
-    labDate:     string
-    labNumber:   string
-    classNumber: number
-    audienceNumber:     number
-    status:       string
-    teamName:    string
-    teamMember:  number
+  id: number
+  labName: string
+  labDate: string
+  labNumber: string
+  classNumber: number
+  audienceNumber: number
+  status: string
+  teamName: string
+  teamMember: number
+}
+
+interface LabForSubject {
+  id: number
+  number: string
+  description: string
+  isMandatory?: boolean
+}
+
+function LabsBySubjectDialog({
+  open,
+  onOpenChange,
+  subjectId,
+  subjectName,
+}: {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  subjectId: number
+  subjectName: string
+}) {
+  const [labs, setLabs] = useState<LabForSubject[]>([])
+  const [records, setRecords] = useState<Record[]>([])
+  const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    if (!open || !subjectId) return
+    setLoading(true)
+    Promise.all([
+      fetch(apiUrl(`/labs?subjectId=${subjectId}`), { credentials: "include" }).then((r) => (r.ok ? r.json() : [])),
+      fetch(apiUrl("/records"), { credentials: "include" }).then((r) => (r.ok ? r.json() : [])),
+    ])
+      .then(([labsData, recordsData]) => {
+        setLabs(Array.isArray(labsData) ? labsData : [])
+        setRecords(Array.isArray(recordsData) ? recordsData : [])
+      })
+      .finally(() => setLoading(false))
+  }, [open, subjectId])
+
+  const statusByLab: { [labNum: string]: string } = {}
+  ;(records ?? []).forEach((r: Record) => {
+    const prev = statusByLab[r.labNumber]
+    const order = { defended: 3, completed: 2, scheduled: 1 }
+    const currOrder = order[r.status as keyof typeof order] ?? 0
+    const prevOrder = prev ? (order[prev as keyof typeof order] ?? 0) : 0
+    if (currOrder > prevOrder) statusByLab[r.labNumber] = r.status
+  })
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
+        <DialogHeader>
+          <DialogTitle className="text-xl font-semibold text-gray-800">
+            Лабораторные работы — {subjectName || "Предмет"}
+          </DialogTitle>
+        </DialogHeader>
+        {loading ? (
+          <div className="py-8 text-center text-gray-500">Загрузка...</div>
+        ) : (
+          <div className="overflow-y-auto flex-1 pr-2">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-gray-50">
+                  <TableHead className="font-medium text-gray-600">Лабораторная</TableHead>
+                  <TableHead className="font-medium text-gray-600">Тип</TableHead>
+                  <TableHead className="font-medium text-gray-600">Статус</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {labs.map((lab) => {
+                  const status = statusByLab[lab.number]
+                  const statusLabel =
+                    status === "defended"
+                      ? "Защищено"
+                      : status === "completed"
+                        ? "Выполнено"
+                        : status === "scheduled"
+                          ? "Записан"
+                          : "Не начато"
+                  return (
+                    <TableRow key={lab.id}>
+                      <TableCell className="font-medium text-gray-800">
+                        {lab.number} — {lab.description}
+                      </TableCell>
+                      <TableCell className="text-gray-600">
+                        {lab.isMandatory === false ? "Необязательная" : "Обязательная"}
+                      </TableCell>
+                      <TableCell>
+                        <span className="inline-flex items-center gap-1">
+                          {status === "defended" && <Shield className="h-4 w-4 text-green-600" />}
+                          {status === "completed" && <CheckCircle className="h-4 w-4 text-blue-600" />}
+                          {status === "scheduled" && <Clock className="h-4 w-4 text-amber-600" />}
+                          <span
+                            className={
+                              status === "defended"
+                                ? "text-green-700"
+                                : status === "completed"
+                                  ? "text-blue-700"
+                                  : status === "scheduled"
+                                    ? "text-amber-700"
+                                    : "text-gray-500"
+                            }
+                          >
+                            {statusLabel}
+                          </span>
+                        </span>
+                      </TableCell>
+                    </TableRow>
+                  )
+                })}
+              </TableBody>
+            </Table>
+            {labs.length === 0 && !loading && (
+              <p className="text-center text-gray-500 py-6">Нет лабораторных по этому предмету.</p>
+            )}
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+  )
 }
 
 const ProfilePage: React.FC = () => {
@@ -45,25 +168,20 @@ const ProfilePage: React.FC = () => {
   const [editingTeam, setEditingTeam] = useState<string | null>(null);
   const [editTeamName, setEditTeamName] = useState("");
   const [user, setUser] = useState<User>(() => {
-
-    const savedUser = typeof window !== 'undefined' ? localStorage.getItem('userProfile') : null;
-    return savedUser ? JSON.parse(savedUser) : { fullName: "", groupName: "" };
-  });
+    const savedUser = typeof window !== "undefined" ? localStorage.getItem("userProfile") : null
+    return savedUser ? JSON.parse(savedUser) : { fullName: "", groupName: "" }
+  })
+  const [labsDialogOpen, setLabsDialogOpen] = useState(false)
 
   useEffect(() => {
     const loadData = async () => {
-      // Загрузка пользователя с кэшированием
-      const cachedUser = localStorage.getItem('userProfile');
-      if (!cachedUser) {
-        await fetchUser();
-      }
-      
-      // Всегда загружаем свежие данные команд
-      await fetchTeams();
-      await fetchRecords();
-    };
-    loadData();
-  }, []);
+      await fetchUser()
+      await fetchTeams()
+      await fetchRecords()
+    }
+    loadData()
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- run once on mount
+  }, [])
 
   const fetchRecords = async () => {
     try{
@@ -122,7 +240,7 @@ const ProfilePage: React.FC = () => {
   
   async function updateTeamName(teamCode: string, newName: string) {
     try {
-      const response = await fetch(`/api/teams?code=${teamCode}`, {
+      const response = await fetch(apiUrl(`/teams?code=${teamCode}`), {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -145,7 +263,7 @@ const ProfilePage: React.FC = () => {
   
   async function joinTeam(teamCode: string) {
     try {
-      const response = await fetch(`/api/teams?code=${teamCode}`, {
+      const response = await fetch(apiUrl(`/teams?code=${teamCode}`), {
         method: "PUT",
         credentials: "include",
       })
@@ -165,7 +283,7 @@ const ProfilePage: React.FC = () => {
   
   async function getUserTeams() {
     try {
-      const response = await fetch("/api/teams", {
+      const response = await fetch(apiUrl("/teams"), {
         credentials: "include",
       })
   
@@ -200,11 +318,11 @@ const ProfilePage: React.FC = () => {
       }
     }
   
-  async function getUser(){
-    try{
-      const response = await fetch("/api/users",{
+  async function getUser() {
+    try {
+      const response = await fetch(apiUrl("/users"), {
         method: "GET",
-        credentials:"include"
+        credentials: "include",
       })
       if (response.ok){
         const data = await response.json()
@@ -264,8 +382,8 @@ const ProfilePage: React.FC = () => {
 
   const handleDeleteRecord = async (recordId: number) => {
     try {
-      const response = await fetch("/api/schedules", {
-        method: 'DELETE',
+      const response = await fetch(apiUrl("/schedules"), {
+        method: "DELETE",
         credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
@@ -323,14 +441,41 @@ const ProfilePage: React.FC = () => {
               </div>
             </div>
             <div className="space-y-1">
-              <Label className="text-sm text-gray-500">{user.groupName && <span>Группа</span> || <span>Должность</span>}</Label>
+              <Label className="text-sm text-gray-500">{user.groupName ? "Группа" : "Должность"}</Label>
               <div className="font-medium text-gray-800 text-lg animate-fade-in">
-                { user.groupName && <span className="text-gray-800">{user.groupName}</span> || <span className="text-gray-800">Преподаватель</span>}
+                {user.groupName ? <span className="text-gray-800">{user.groupName}</span> : <span className="text-gray-800">Преподаватель</span>}
               </div>
             </div>
+            {user.groupName && (user.subjectId != null || user.subjectName) && (
+              <div className="space-y-1 md:col-span-2">
+                <Label className="text-sm text-gray-500">Предмет</Label>
+                <div className="font-medium text-gray-800 text-lg animate-fade-in flex items-center gap-2 flex-wrap">
+                  <span>{user.subjectName || "—"}</span>
+                  {user.subjectId != null && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="rounded-lg"
+                      onClick={() => setLabsDialogOpen(true)}
+                    >
+                      <BookOpen className="h-4 w-4 mr-1" />
+                      Лабораторные по предмету
+                    </Button>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
+
+      <LabsBySubjectDialog
+        open={labsDialogOpen}
+        onOpenChange={setLabsDialogOpen}
+        subjectId={user.subjectId ?? 0}
+        subjectName={user.subjectName ?? ""}
+      />
 
       {/* Правая колонка */}
       <Card className="border-0 shadow-sm rounded-xl bg-white">

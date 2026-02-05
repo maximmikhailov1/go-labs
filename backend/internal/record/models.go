@@ -71,3 +71,7 @@ type EnrollResponse struct {
 	TeamID  uint   `json:"teamId,omitempty"`
 	Message string `json:"message,omitempty"`
 }
+
+type PatchEntryStatusRequest struct {
+	Status string `json:"status" validate:"required,oneof=scheduled completed defended"`
+}

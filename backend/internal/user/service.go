@@ -2,6 +2,7 @@ package user
 
 import (
 	"errors"
+
 	"github.com/maximmikhailov1/go-labs/backend/internal/models"
 )
 
@@ -40,7 +41,14 @@ func (s *UserService) GetUserProfile(userID uint) (*ProfileResponse, error) {
 		return nil, errors.New("user not found")
 	}
 	group := user.Group
-	if group == nil {
+	subjectID := uint(0)
+	subjectName := ""
+	if group != nil {
+		if group.Subject != nil {
+			subjectID = group.Subject.ID
+			subjectName = group.Subject.Name
+		}
+	} else {
 		group = &models.Group{
 			ID:        0,
 			Code:      "none",
@@ -51,9 +59,11 @@ func (s *UserService) GetUserProfile(userID uint) (*ProfileResponse, error) {
 		}
 	}
 	return &ProfileResponse{
-		ID:        user.ID,
-		FullName:  user.FullName,
-		GroupName: group.Name,
+		ID:          user.ID,
+		FullName:    user.FullName,
+		GroupName:   group.Name,
+		SubjectID:   subjectID,
+		SubjectName: subjectName,
 	}, nil
 }
 

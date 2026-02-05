@@ -17,6 +17,7 @@ type Record struct {
 	WirelessRoutersRemaining int            `gorm:"default:2;check:wireless_routers_remaining >= 0"`
 	HPRoutersRemaining       int            `gorm:"default:2;check:hp_routers_remaining >= 0"`
 	HPSwitchesRemaining      int            `gorm:"default:2;check:hp_switches_remaining >= 0"`
+	Status                   string         `gorm:"default:'planned'"` // planned | cancelled | passed
 	Tutor                    User           `gorm:"constraint:OnUpdate:CASCADE,OnDelete:RESTRICT"`
 	Entries                  []Entry        `gorm:"foreignKey:RecordID"`
 }

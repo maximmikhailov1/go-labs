@@ -2,6 +2,7 @@ package lab
 
 import (
 	"errors"
+
 	"github.com/maximmikhailov1/go-labs/backend/internal/models"
 )
 
@@ -14,10 +15,15 @@ func NewService(repo *Repository) *Service {
 }
 
 func (s *Service) CreateLab(req CreateRequest) (*LabResponse, error) {
+	mandatory := true
+	if req.IsMandatory != nil {
+		mandatory = *req.IsMandatory
+	}
 	lab := models.Lab{
 		Number:                  req.Number,
 		Description:             req.Description,
 		MaxStudents:             req.MaxStudents,
+		IsMandatory:             mandatory,
 		SwitchesRequired:        req.SwitchesRequired,
 		RoutersRequired:         req.RoutersRequired,
 		WirelessRoutersRequired: req.WirelessRoutersRequired,
@@ -70,6 +76,7 @@ func (s *Service) toLabResponse(lab *models.Lab) *LabResponse {
 		Number:                  lab.Number,
 		Description:             lab.Description,
 		MaxStudents:             lab.MaxStudents,
+		IsMandatory:             lab.IsMandatory,
 		SwitchesRequired:        lab.SwitchesRequired,
 		RoutersRequired:         lab.RoutersRequired,
 		WirelessRoutersRequired: lab.WirelessRoutersRequired,
