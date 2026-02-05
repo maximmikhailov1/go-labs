@@ -3,6 +3,7 @@
 import type React from "react"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
+import { apiUrl } from "@/lib/api"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -28,16 +29,22 @@ export const TabsDemo: React.FC<TabsDemoProps> = ({ onLogin }) => {
 
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setLoginError(null) // Сбрасываем ошибку перед отправкой
+    setLoginError(null)
 
-    const formData = new FormData()
-    formData.append("username", loginData.username)
-    formData.append("password", loginData.password)
+    const username = (loginData.username ?? "").trim()
+    const password = loginData.password ?? ""
+    if (!username) {
+      setLoginError("Введите логин")
+      toast.error("Введите логин")
+      return
+    }
 
     try {
-      const response = await fetch("/api/auth/signin", {
+      const response = await fetch(apiUrl("/auth/signin"), {
         method: "POST",
-        body: formData,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password }),
+        credentials: "include",
       })
 
       if (!response.ok) {
@@ -63,10 +70,11 @@ export const TabsDemo: React.FC<TabsDemoProps> = ({ onLogin }) => {
     setRegisterError(null) // Сбрасываем ошибку перед отправкой
 
     try {
-      const response = await fetch("/api/auth/signup", {
+      const response = await fetch(apiUrl("/auth/signup"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(registerData),
+        credentials: "include",
       })
 
       if (!response.ok) {
