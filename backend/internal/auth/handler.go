@@ -24,6 +24,9 @@ func (h *AuthHandler) SignIn(c *fiber.Ctx) error {
 	if err := c.BodyParser(&req); err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, "invalid request")
 	}
+	if req.Username == "" {
+		return fiber.NewError(fiber.StatusBadRequest, "логин обязателен")
+	}
 
 	user, role, err := h.service.SignIn(req)
 	if err != nil {

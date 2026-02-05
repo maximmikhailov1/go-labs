@@ -3,6 +3,7 @@ package auth
 import (
 	"errors"
 	"os"
+	"strings"
 
 	"github.com/maximmikhailov1/go-labs/backend/internal/models"
 	"golang.org/x/crypto/bcrypt"
@@ -69,7 +70,10 @@ func (s *AuthService) SignUp(req SignUpRequest) (*models.User, error) {
 	}
 
 	if err := s.repo.CreateUser(user); err != nil {
-		return nil, errors.New("failed to create user")
+		if strings.Contains(err.Error(), "duplicate") || strings.Contains(err.Error(), "unique") {
+			return nil, errors.New("пользователь с таким логином уже существует")
+		}
+		return nil, errors.New("не удалось создать пользователя")
 	}
 
 	return user, nil

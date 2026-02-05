@@ -58,7 +58,7 @@ export async function signUp(formData: FormData) {
   const signUpCode = formData.get("signUpCode")
 
   try {
-    const response = await fetch("/api/v1/auth/signup", {
+    const response = await fetch(apiUrl("/auth/signup"), {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
