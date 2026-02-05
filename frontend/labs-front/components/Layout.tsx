@@ -33,36 +33,30 @@ const Layout: React.FC<LayoutProps> = ({ searchParams }) => {
     const page = pathname === "/" ? "home" : pathname.slice(1).split("?")[0] ?? "home"
     setCurrentPage(page)
 
-    const hasToken = typeof document !== "undefined" && document.cookie.includes("token=")
-
     if (pathname === "/auth") {
       setIsLoggedIn(false)
       setUserRole(null)
-      if (hasToken) {
-        const lastPage = localStorage.getItem("lastPage")
-        const params = new URLSearchParams(searchParams ?? "")
-        const callbackUrl = params.get("callbackUrl")
-        router.replace(callbackUrl || lastPage || "/")
+      const verifyFromAuth = async () => {
+        try {
+          const result = await getUser()
+          if (result?.success && result?.user) {
+            const lastPage = localStorage.getItem("lastPage")
+            const params = new URLSearchParams(searchParams ?? "")
+            const callbackUrl = params.get("callbackUrl")
+            router.replace(callbackUrl || lastPage || "/")
+          }
+        } catch {
+          // not logged in, stay on auth
+        }
       }
+      verifyFromAuth()
       return
     }
 
-    if (!hasToken) {
-      hasVerifiedAuth.current = false
-      setIsLoggedIn(false)
-      setUserRole(null)
-      localStorage.setItem("lastPage", pathname)
-      router.replace("/auth")
-      return
-    }
-
-    setIsLoggedIn(true)
     const storedRole = localStorage.getItem("userRole") as "student" | "tutor" | null
-    if (storedRole) setUserRole(storedRole)
-
-    if (storedRole === "tutor" && (pathname === "/" || pathname === "/home")) {
-      router.replace("/all-teachers-schedule")
-      setCurrentPage("all-teachers-schedule")
+    if (storedRole) {
+      setUserRole(storedRole)
+      setIsLoggedIn(true)
     }
 
     if (hasVerifiedAuth.current) return
@@ -73,6 +67,7 @@ const Layout: React.FC<LayoutProps> = ({ searchParams }) => {
         hasVerifiedAuth.current = true
         if (result?.success && result?.user) {
           const role = (result.user.role === "tutor" ? "tutor" : "student") as "student" | "tutor"
+          setIsLoggedIn(true)
           setUserRole(role)
           localStorage.setItem("isLoggedIn", "true")
           localStorage.setItem("userRole", role)
@@ -88,6 +83,7 @@ const Layout: React.FC<LayoutProps> = ({ searchParams }) => {
           localStorage.removeItem("isLoggedIn")
           localStorage.removeItem("userRole")
           localStorage.removeItem("userProfile")
+          localStorage.setItem("lastPage", pathname)
           router.replace("/auth")
         }
       } catch {
@@ -97,6 +93,7 @@ const Layout: React.FC<LayoutProps> = ({ searchParams }) => {
         localStorage.removeItem("isLoggedIn")
         localStorage.removeItem("userRole")
         localStorage.removeItem("userProfile")
+        localStorage.setItem("lastPage", pathname)
         router.replace("/auth")
       }
     }
