@@ -1,24 +1,36 @@
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
 
-export function middleware(request: NextRequest) {
-  // Проверяем куки авторизации
-  const token = request.cookies.get("token")?.value
-  const isAuthPage = request.nextUrl.pathname === "/auth"
+function getBaseUrl(request: NextRequest): string {
+  const proto = request.headers.get("x-forwarded-proto") ?? request.nextUrl.protocol.replace(":", "")
+  const host = request.headers.get("x-forwarded-host") ?? request.headers.get("host") ?? request.nextUrl.host
+  return `${proto}://${host}`
+}
 
-  // Если пользователь не авторизован и не на странице авторизации
+export function middleware(request: NextRequest) {
+  const path = request.nextUrl.pathname
+  const method = request.method
+  const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? request.headers.get("x-real-ip") ?? "unknown"
+  const ts = new Date().toISOString()
+  console.warn(`[MW] REQ ${method} ${path} ip=${ip} ts=${ts}`)
+
+  const token = request.cookies.get("token")?.value
+  const isAuthPage = path === "/auth"
+
   if (!token && !isAuthPage) {
-    // Сохраняем текущий URL перед редиректом
-    const url = new URL("/auth", request.url)
-    url.searchParams.set("callbackUrl", request.nextUrl.pathname)
+    const base = getBaseUrl(request)
+    const url = new URL("/auth", base)
+    url.searchParams.set("callbackUrl", path)
+    console.warn(`[MW] REDIRECT to /auth path=${path} ip=${ip} ts=${ts} url=${url.toString()}`)
     return NextResponse.redirect(url)
   }
 
-  // Если пользователь авторизован и пытается зайти на страницу авторизации
   if (token && isAuthPage) {
-    // Получаем URL для возврата или используем главную страницу
     const callbackUrl = request.nextUrl.searchParams.get("callbackUrl") || "/"
-    return NextResponse.redirect(new URL(callbackUrl, request.url))
+    const base = getBaseUrl(request)
+    const url = new URL(callbackUrl, base)
+    console.warn(`[MW] REDIRECT to callback path=${callbackUrl} ip=${ip} ts=${ts} url=${url.toString()}`)
+    return NextResponse.redirect(url)
   }
 
   return NextResponse.next()

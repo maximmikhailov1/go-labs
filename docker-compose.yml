@@ -46,11 +46,14 @@ services:
       dockerfile: Dockerfile
       args:
         NEXT_PUBLIC_API_URL: http://backend:3000
+    environment:
+      NEXT_PUBLIC_APP_URL: https://spmulabs.ru
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.frontend.rule=Host(`spmulabs.ru`)"
       - "traefik.http.routers.frontend.entryPoints=websecure"
       - "traefik.http.routers.frontend.tls.certresolver=myresolver"
+      - "traefik.http.services.frontend.loadbalancer.passhostheader=true"
     deploy:
       mode: replicated
       replicas: 2
