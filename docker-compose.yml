@@ -12,6 +12,9 @@ services:
       - "--entrypoints.web.address=:80"
       - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
       - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
+      - "--accesslog=true"
+      - "--accesslog.filepath=/var/log/traefik/access.log"
+      - "--accesslog.format=json"
     ports:
       - "80:80"
       - "443:443"
@@ -19,6 +22,11 @@ services:
     volumes:
       - letsencrypt:/letsencrypt
       - /var/run/docker.sock:/var/run/docker.sock
+      - traefik_logs:/var/log/traefik
+    labels:
+      - "traefik.http.middlewares.ratelimit-global.ratelimit.average=60"
+      - "traefik.http.middlewares.ratelimit-global.ratelimit.period=1m"
+      - "traefik.http.middlewares.ratelimit-global.ratelimit.burst=20"
 
   backend:
     build: ./backend
@@ -53,6 +61,7 @@ services:
       - "traefik.http.routers.frontend.rule=Host(`spmulabs.ru`)"
       - "traefik.http.routers.frontend.entryPoints=websecure"
       - "traefik.http.routers.frontend.tls.certresolver=myresolver"
+      - "traefik.http.routers.frontend.middlewares=ratelimit-global"
       - "traefik.http.services.frontend.loadbalancer.passhostheader=true"
     deploy:
       mode: replicated
@@ -88,3 +97,4 @@ services:
 volumes:
   letsencrypt:
   postgres_data:
+  traefik_logs:
