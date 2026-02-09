@@ -26,15 +26,16 @@ func (r *Repository) GetUserRecords(userID uint) ([]UserRecordDTO, error) {
 			labs.number as lab_number,
 			records.class_number as class_number,
 			records.audience_number as audience_number,
-			entries.status as status,
+			COALESCE(ems.status, entries.status, 'scheduled') as status,
 			teams.name as team_name
 		`).
 		Joins("JOIN teams ON entries.team_id = teams.id").
 		Joins("JOIN users_teams ON teams.id = users_teams.team_id").
 		Joins("JOIN labs ON entries.lab_id = labs.id").
 		Joins("JOIN records ON entries.record_id = records.id").
+		Joins("LEFT JOIN entry_member_statuses ems ON ems.entry_id = entries.id AND ems.user_id = ?", userID).
 		Where("users_teams.user_id = ?", userID).
-		Group("entries.id, labs.number, records.lab_date, records.class_number, labs.description, records.audience_number, entries.status, teams.name").
+		Group("entries.id, labs.number, records.lab_date, records.class_number, labs.description, records.audience_number, entries.status, teams.name, ems.status").
 		Order("lab_date DESC").
 		Find(&records).Error
 
