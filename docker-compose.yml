@@ -23,10 +23,6 @@ services:
       - letsencrypt:/letsencrypt
       - /var/run/docker.sock:/var/run/docker.sock
       - traefik_logs:/var/log/traefik
-    labels:
-      - "traefik.http.middlewares.ratelimit-global.ratelimit.average=60"
-      - "traefik.http.middlewares.ratelimit-global.ratelimit.period=1m"
-      - "traefik.http.middlewares.ratelimit-global.ratelimit.burst=20"
 
   backend:
     build: ./backend
@@ -58,6 +54,9 @@ services:
       NEXT_PUBLIC_APP_URL: https://spmulabs.ru
     labels:
       - "traefik.enable=true"
+      - "traefik.http.middlewares.ratelimit-global.ratelimit.average=60"
+      - "traefik.http.middlewares.ratelimit-global.ratelimit.period=1m"
+      - "traefik.http.middlewares.ratelimit-global.ratelimit.burst=20"
       - "traefik.http.routers.frontend.rule=Host(`spmulabs.ru`)"
       - "traefik.http.routers.frontend.entryPoints=websecure"
       - "traefik.http.routers.frontend.tls.certresolver=myresolver"
@@ -69,6 +68,11 @@ services:
     depends_on:
       - backend
     restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp:noexec,nosuid,size=64M
+    security_opt:
+      - no-new-privileges:true
 
   redis:
     image: redis:7-alpine
